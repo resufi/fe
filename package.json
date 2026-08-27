@@ -1,0 +1,32 @@
+{
+    "name": "resu-frontend",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit",
+        "selftest": "node --experimental-strip-types --no-warnings selftest.ts",
+        "smoke": "vite build --config vite.smoke.config.ts && node smoke.mjs",
+        "check": "npm run typecheck && npm run selftest && npm run smoke"
+    },
+    "dependencies": {
+        "@orbs-network/ton-access": "^2.3.3",
+        "@ton/core": "^0.63.0",
+        "@ton/ton": "^16.2.2",
+        "@tonconnect/ui-react": "^2.4.0",
+        "buffer": "^6.0.3",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "@vitejs/plugin-react": "^4.3.4",
+        "jsdom": "^29.1.1",
+        "typescript": "^5.9.2",
+        "vite": "^6.0.0"
+    }
+}

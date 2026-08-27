@@ -1,0 +1,16 @@
+{
+    "network": "testnet",
+    "deployedAt": null,
+    "admin": null,
+    "vault": null,
+    "registry": null,
+    "jettonMaster": null,
+    "vaultJettonWallet": null,
+    "mandate": {
+        "maxLossBps": 3000,
+        "withdrawDelay": 259200,
+        "seniorFeeBps": 200,
+        "seniorFeeToMezzBps": 300,
+        "mezzFeeBps": 0
+    }
+}
