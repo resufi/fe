@@ -10,6 +10,7 @@
         "typecheck": "tsc --noEmit",
         "selftest": "node --experimental-strip-types --no-warnings selftest.ts",
         "smoke": "vite build --config vite.smoke.config.ts && node smoke.mjs",
+        "verify-deploy": "node check-deploy.mjs",
         "check": "npm run typecheck && npm run selftest && npm run smoke"
     },
     "dependencies": {

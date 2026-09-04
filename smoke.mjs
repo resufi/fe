@@ -27,6 +27,9 @@ const { window } = dom;
 
 // В настоящем браузере это есть, в jsdom — нет. Всё остальное намеренно
 // НЕ подставляем: нодовские глобали должны отсутствовать, в этом весь смысл.
+//
+// fetch пробрасываем нодовский, а не заглушку: TonConnect скачивает через
+// него манифест, и подделка скрыла бы настоящие ошибки загрузки.
 window.matchMedia ??= () => ({
     matches: false,
     addEventListener() {},
@@ -35,6 +38,10 @@ window.matchMedia ??= () => ({
     removeListener() {},
 });
 window.scrollTo ??= () => {};
+window.fetch ??= (...args) => fetch(...args);
+window.Headers ??= Headers;
+window.Request ??= Request;
+window.Response ??= Response;
 
 if (typeof window.Buffer !== 'undefined') {
     console.log('  ВНИМАНИЕ: Buffer просочился в окружение — тест не доказателен');
@@ -44,7 +51,9 @@ const script = window.document.createElement('script');
 script.textContent = bundle;
 window.document.body.appendChild(script);
 
-await new Promise((r) => setTimeout(r, 1500));
+// По умолчанию коротко — тест не должен зависеть от живой сети. SMOKE_WAIT
+// позволяет дождаться реальных данных, когда нужно посмотреть на результат.
+await new Promise((r) => setTimeout(r, Number(process.env.SMOKE_WAIT ?? 1500)));
 
 const root = window.document.getElementById('root');
 const html = root?.innerHTML ?? '';
@@ -58,15 +67,62 @@ function check(name, cond, extra = '') {
 console.log('запуск приложения в браузероподобной среде');
 check('ни одной необработанной ошибки', errors.length === 0, `\n${errors.join('\n')}`);
 check('React отрендерил дерево', html.length > 0);
-check('заголовок на месте', html.includes('Стейкинг с понятным лимитом потерь'));
+// Проверяем по структуре, а не по тексту: копирайт правится часто, и тест,
+// падающий от смены формулировки, только мешает.
+check('заголовок отрендерен', html.includes('class="lede"'));
 check('кнопка кошелька смонтирована', html.includes('data-tc-connect-button'));
-check(
-    'без адресов показана инструкция, а не выдуманные данные',
-    html.includes('не развёрнут'),
-);
+// Что именно должно быть на странице, зависит от того, развёрнут ли протокол
+// в выбранной сети. Оба состояния законны, но подменять одно другим нельзя:
+// без адресов интерфейс обязан честно сказать об этом, а не рисовать нули.
+// Сеть берём оттуда же, откуда её берёт сборка — из .env. Читать
+// process.env нельзя: vite подставляет переменные в бандл сам, а в процессе
+// node их нет, и тест сверялся бы не с той сетью, что собрана.
+function envNetwork() {
+    try {
+        const env = readFileSync(new URL('./.env', import.meta.url), 'utf8');
+        const m = env.match(/^\s*VITE_NETWORK\s*=\s*(\S+)/m);
+        return m ? m[1] : 'testnet';
+    } catch {
+        return 'testnet';
+    }
+}
+
+const network = envNetwork();
+const deployed = JSON.parse(
+    readFileSync(new URL(`./src/deployments/${network}.json`, import.meta.url), 'utf8'),
+).vault !== null;
+console.log(`  (сеть: ${network}, развёрнут: ${deployed ? 'да' : 'нет'})`);
+
+if (deployed) {
+    // К моменту снимка приложение может быть в любом из трёх законных
+    // состояний — что успеет за отведённое время. Сеть здесь настоящая,
+    // поэтому гадать бессмысленно: перечисляем все три и проверяем, что
+    // приложение оказалось в одном из них, а не застряло на пустой странице.
+    const states = {
+        'читает состояние': html.includes('class="muted state"'),
+        'показал ошибку сети с кнопкой повтора': html.includes('Retry'),
+        'отрисовал транши': html.includes('class="tranches"'),
+    };
+    const reached = Object.entries(states).find(([, v]) => v)?.[0];
+    check(`приложение дошло до работы с протоколом (${reached ?? 'ни одного состояния'})`, Boolean(reached));
+    check('инструкции по деплою нет — протокол развёрнут', !html.includes('not deployed'));
+} else {
+    check('без адресов показана инструкция, а не выдуманные данные', html.includes('not deployed'));
+    check('карточек траншей нет — рисовать нечего', !html.includes('class="tranches"'));
+}
+
+if (process.env.SMOKE_PROBE) {
+    const t = html.replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    console.log('  ТЕКСТ:', JSON.stringify(t.slice(0, 400)));
+}
 
 if (process.env.SMOKE_DUMP) {
-    console.log('\n--- разметка ---\n' + html.slice(0, 1200));
+    // Без вырезания svg дамп целиком уходит на иконку кошелька.
+    const text = html
+        .replace(/<svg[\s\S]*?<\/svg>/g, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ');
+    console.log('\n--- текст страницы ---\n' + text.slice(0, 900));
 }
 
 dom.window.close();

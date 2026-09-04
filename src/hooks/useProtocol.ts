@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Address } from '@ton/core';
 import { useTonAddress } from '@tonconnect/ui-react';
 import { addr, deployment, isDeployed, TRANCHES } from '../lib/config';
+import { hasApiKey } from '../lib/chain';
 import {
     PositionState,
-    readHeadroom,
     readJettonBalance,
     readJettonWallet,
     readPosition,
+    readAssetRate,
     readPositionAddress,
     readTranche,
     readVaultState,
@@ -22,19 +23,52 @@ export type MyPosition = PositionState & {
     valueNow: bigint;
 };
 
+/**
+ * Данные кошелька отделены от данных пула намеренно.
+ *
+ * Чтение кошелька — это ещё несколько запросов поверх пула, а публичный узел
+ * лимитирован. Раньше всё грузилось одним куском, и до окончания чтения на
+ * экране висел баланс из прошлого снимка — то есть ноль, снятый до
+ * подключения кошелька. `null` здесь означает «ещё не знаем», и интерфейс
+ * обязан показать это, а не выдумать ноль.
+ */
+export type WalletData = {
+    balance: bigint;
+    jettonWallet: Address;
+    positions: MyPosition[];
+};
+
 export type ProtocolData = {
     tranches: TrancheState[];
     vault: VaultState;
     headroom: bigint;
-    myBalance: bigint;
-    myJettonWallet: Address | null;
-    myPositions: MyPosition[];
+    wallet: WalletData | null;
+    /** Сколько GRAM за один базовый жетон. null — курс недоступен. */
+    rate: number | null;
 };
 
 function assetsForShares(t: TrancheState, shares: bigint): bigint {
     if (t.totalShares === 0n) return 0n;
     return (shares * t.totalAssets) / t.totalShares;
 }
+
+/**
+ * Сколько убытка протокол способен списать сейчас.
+ *
+ * Повторяет lossHeadroom из контракта, но считается на клиенте. Это не только
+ * экономит запрос: отдельное чтение могло прийтись на момент между двумя
+ * изменениями, и ёмкость на экране не сходилась бы с показанными траншами.
+ * Здесь всё считается из одного снимка.
+ */
+function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
+    const cap = (vault.principalDeposited * BigInt(vault.maxLossBps)) / 10000n;
+    const byMandate = cap > vault.cumulativeLoss ? cap - vault.cumulativeLoss : 0n;
+    const byAssets = tranches.reduce((sum, t) => sum + t.totalAssets, 0n);
+    return byMandate < byAssets ? byMandate : byAssets;
+}
+
+/** Пауза между обновлениями, отсчитывается от окончания предыдущего. */
+const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
 
 export function useProtocol() {
     const wallet = useTonAddress();
@@ -48,38 +82,43 @@ export function useProtocol() {
         setError(null);
         try {
             const vaultAddr = addr.vault();
-            const [tranches, vault, headroom] = await Promise.all([
-                Promise.all(TRANCHES.map((t) => readTranche(vaultAddr, t.id))),
-                readVaultState(vaultAddr),
-                readHeadroom(vaultAddr),
-            ]);
+            const tranches: TrancheState[] = [];
+            for (const t of TRANCHES) {
+                tranches.push(await readTranche(vaultAddr, t.id));
+            }
+            const vault = await readVaultState(vaultAddr);
+            const headroom = lossHeadroom(tranches, vault);
 
-            let myBalance = 0n;
-            let myJettonWallet: Address | null = null;
-            let myPositions: MyPosition[] = [];
+            // Пул показываем сразу, не дожидаясь кошелька: это ещё несколько
+            // секунд запросов, и держать экран пустым всё это время незачем.
+            const pool = addr.assetPool();
+            const rate = pool ? await readAssetRate(pool, addr.jettonMaster()) : null;
 
-            if (wallet) {
-                const owner = Address.parse(wallet);
-                myJettonWallet = await readJettonWallet(addr.jettonMaster(), owner);
-                myBalance = await readJettonBalance(myJettonWallet);
-
-                const found: (MyPosition | null)[] = await Promise.all(
-                    TRANCHES.map(async (t): Promise<MyPosition | null> => {
-                        const posAddr = await readPositionAddress(vaultAddr, owner, t.id);
-                        const pos = await readPosition(posAddr);
-                        if (!pos || (pos.shares === 0n && pos.lockedShares === 0n)) return null;
-                        return {
-                            ...pos,
-                            trancheId: t.id,
-                            address: posAddr,
-                            valueNow: assetsForShares(tranches[t.id], pos.shares + pos.lockedShares),
-                        };
-                    }),
-                );
-                myPositions = found.filter((p): p is MyPosition => p !== null);
+            setData({ tranches, vault, headroom, rate, wallet: null });
+            if (!wallet) {
+                return;
             }
 
-            setData({ tranches, vault, headroom, myBalance, myJettonWallet, myPositions });
+            const owner = Address.parse(wallet);
+            const jettonWallet = await readJettonWallet(addr.jettonMaster(), owner);
+            const balance = await readJettonBalance(jettonWallet);
+
+            // Последовательно, а не Promise.all: залп упирается в лимит
+            // публичного RPC и возвращает отказы вместо данных.
+            const positions: MyPosition[] = [];
+            for (const t of TRANCHES) {
+                const posAddr = await readPositionAddress(vaultAddr, owner, t.id);
+                const pos = await readPosition(posAddr);
+                if (!pos || (pos.shares === 0n && pos.lockedShares === 0n)) continue;
+                positions.push({
+                    ...pos,
+                    trancheId: t.id,
+                    address: posAddr,
+                    valueNow: assetsForShares(tranches[t.id], pos.shares + pos.lockedShares),
+                });
+            }
+
+            setData({ tranches, vault, headroom, rate, wallet: { balance, jettonWallet, positions } });
         } catch (e) {
             // Публичные RPC регулярно отвечают 429 — показываем это как есть,
             // а не как «протокол сломался».
@@ -90,9 +129,23 @@ export function useProtocol() {
     }, [wallet]);
 
     useEffect(() => {
-        void refresh();
-        const id = setInterval(() => void refresh(), 20000);
-        return () => clearInterval(id);
+        let stopped = false;
+        let timer: ReturnType<typeof setTimeout>;
+
+        // Отсчёт от ОКОНЧАНИЯ прошлого обновления, а не по расписанию.
+        // На публичном узле без ключа полный проход занимает секунды, и
+        // фиксированный интервал накладывал бы обновления друг на друга,
+        // держа узел под постоянной нагрузкой.
+        const loop = async () => {
+            await refresh();
+            if (!stopped) timer = setTimeout(() => void loop(), REFRESH_GAP_MS);
+        };
+        void loop();
+
+        return () => {
+            stopped = true;
+            clearTimeout(timer);
+        };
     }, [refresh]);
 
     return { data, error, loading, refresh, network: deployment.network };

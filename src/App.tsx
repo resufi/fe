@@ -3,6 +3,7 @@ import { TonConnectButton, useTonAddress } from '@tonconnect/ui-react';
 import { deployment, isDeployed, TRANCHES } from './lib/config';
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from './lib/format';
 import { useProtocol } from './hooks/useProtocol';
+import { hasApiKey } from './lib/chain';
 import { TrancheCard } from './components/TrancheCard';
 import { Waterfall } from './components/Waterfall';
 import { DepositPanel } from './components/DepositPanel';
@@ -13,167 +14,170 @@ export default function App() {
     const wallet = useTonAddress();
     const [selected, setSelected] = useState(0);
     const [hover, setHover] = useState<number | null>(null);
-    const m = deployment.mandate;
 
     return (
         <div className="app">
             <header className="topbar">
-                <div className="brand">
-                    <span className="brand__mark" aria-hidden="true" />
-                    <span className="brand__name">Resu</span>
+                <span className="brand">
+                    Resu
                     {network === 'testnet' && <span className="chip">testnet</span>}
-                </div>
+                </span>
                 <TonConnectButton />
             </header>
 
-            <main>
-                <section className="hero">
-                    <h1>Стейкинг с понятным лимитом потерь</h1>
-                    <p>
-                        Обычный ликвидный стейкинг размазывает убыток по всем держателям поровну.
-                        Здесь вы выбираете своё место в очереди на убыток — и знаете его заранее,
-                        потому что оно записано в контракте, а не в блоге.
-                    </p>
-                </section>
+            {/* Одна строка вместо абзаца: если продукт нельзя объяснить одной
+                фразой, лишний текст этого не исправит. */}
+            <h1 className="lede">
+                Staking where you pick
+                <br />
+                your place in the loss queue.
+            </h1>
 
-                {!isDeployed ? (
-                    <NotDeployed />
-                ) : !data ? (
-                    <div className="card panel">
-                        <p className="muted">{error ?? 'Читаю состояние протокола…'}</p>
-                        {error && (
-                            <button className="btn btn--ghost" onClick={() => void refresh()}>
-                                Повторить
+            {!isDeployed ? (
+                <NotDeployed />
+            ) : !data ? (
+                <p className="muted state">
+                    {error ?? 'Loading…'}
+                    {error && (
+                        <button className="linkish" onClick={() => void refresh()}>
+                            Retry
+                        </button>
+                    )}
+                </p>
+            ) : (
+                <>
+                    {(error || !hasApiKey) && (
+                        <p className="muted small state">
+                            {error
+                                ? 'Data may be stale.'
+                                : 'Public node is rate-limited, so reads are slow.'}
+                            {!hasApiKey && ' A toncenter API key removes the limit.'}{' '}
+                            <button className="linkish" onClick={() => void refresh()}>
+                                Refresh
                             </button>
-                        )}
+                        </p>
+                    )}
+
+                    <div className="tranches">
+                        {TRANCHES.map((t) => (
+                            <TrancheCard
+                                key={t.id}
+                                meta={t}
+                                state={data.tranches[t.id]}
+                                mandate={deployment.mandate}
+                                rate={data.rate}
+                                selected={selected === t.id}
+                                onSelect={() => setSelected(t.id)}
+                                onHover={setHover}
+                            />
+                        ))}
                     </div>
-                ) : (
-                    <>
-                        {error && (
-                            <div className="banner banner--warn">
-                                Данные могли устареть: {error}
-                                <button className="btn btn--ghost" onClick={() => void refresh()}>
-                                    Обновить
-                                </button>
-                            </div>
-                        )}
 
-                        <section className="tranches">
-                            {TRANCHES.map((t) => (
-                                <TrancheCard
-                                    key={t.id}
-                                    meta={t}
-                                    state={data.tranches[t.id]}
-                                    mandate={m}
-                                    selected={selected === t.id}
-                                    onSelect={() => setSelected(t.id)}
-                                    onHover={setHover}
-                                />
-                            ))}
-                        </section>
+                    <div className="split">
+                        <Waterfall
+                            tranches={data.tranches}
+                            headroom={data.headroom}
+                            highlight={hover ?? selected}
+                        />
 
-                        <div className="split">
-                            <div className="card">
-                                <Waterfall
-                                    tranches={data.tranches}
-                                    headroom={data.headroom}
-                                    highlight={hover ?? selected}
-                                />
-                            </div>
-
-                            <div className="stack">
-                                {wallet ? (
-                                    <>
-                                        <DepositPanel data={data} trancheId={selected} onDone={() => void refresh()} />
-                                        <PositionsPanel
-                                            data={data}
-                                            withdrawDelay={data.vault.withdrawDelay}
-                                            onDone={() => void refresh()}
-                                        />
-                                    </>
-                                ) : (
-                                    <section className="card panel">
-                                        <h3>Подключите кошелёк</h3>
-                                        <p className="muted">
-                                            Чтобы внести депозит и увидеть свои позиции, подключите TON-кошелёк
-                                            кнопкой наверху.
-                                        </p>
-                                    </section>
-                                )}
-                            </div>
+                        <div className="stack">
+                            {wallet ? (
+                                <>
+                                    <DepositPanel
+                                        data={data}
+                                        trancheId={selected}
+                                        onDone={() => void refresh()}
+                                    />
+                                    <PositionsPanel
+                                        data={data}
+                                        withdrawDelay={data.vault.withdrawDelay}
+                                        onDone={() => void refresh()}
+                                    />
+                                </>
+                            ) : (
+                                <p className="muted state">Connect a wallet to deposit.</p>
+                            )}
                         </div>
+                    </div>
 
-                        <section className="card panel">
-                            <h3>Правила, которые нельзя изменить после запуска</h3>
-                            <dl className="kv kv--wide">
-                                <div>
-                                    <dt>Потолок потерь</dt>
-                                    <dd className="num">{fmtBps(data.vault.maxLossBps)}</dd>
-                                    <span className="muted small">
-                                        от внесённого капитала. Убыток сверх потолка контракт отвергает целиком.
-                                    </span>
-                                </div>
-                                <div>
-                                    <dt>Окно выхода</dt>
-                                    <dd className="num">{fmtDuration(data.vault.withdrawDelay)}</dd>
-                                    <span className="muted small">
-                                        нужно, чтобы выход не мог опередить убыток.
-                                    </span>
-                                </div>
-                                <div>
-                                    <dt>Плата senior</dt>
-                                    <dd className="num">{fmtBps(m.seniorFeeBps)}</dd>
-                                    <span className="muted small">
-                                        годовых, из них {fmtBps(m.seniorFeeToMezzBps)} достаётся mezzanine.
-                                    </span>
-                                </div>
-                                <div>
-                                    <dt>Списано убытка</dt>
-                                    <dd className="num">{fmtAmount(data.vault.cumulativeLoss)}</dd>
-                                    <span className="muted small">
-                                        всего внесено {fmtAmount(data.vault.principalDeposited)}.
-                                    </span>
-                                </div>
-                            </dl>
-                            <p className="muted small">
-                                Мандат неизменяем. Нужен другой профиль риска — это будет другой vault,
-                                а не правка этого.
-                                {loading && ' · обновляю…'}
-                            </p>
-                        </section>
-
-                        <footer className="footer">
-                            <span className="muted small">
-                                Vault <code>{shortAddress(deployment.vault!)}</code> · Registry{' '}
-                                <code>{shortAddress(deployment.registry!)}</code> · базовый актив{' '}
-                                <code>{shortAddress(deployment.jettonMaster!)}</code>
-                            </span>
-                        </footer>
-                    </>
-                )}
-            </main>
+                    <Details vault={data.vault} loading={loading} />
+                </>
+            )}
         </div>
+    );
+}
+
+/**
+ * Правила и адреса свёрнуты. Они важны, но не при каждом визите: человек,
+ * который хочет их проверить, раскроет сам, а остальным они мешают.
+ */
+function Details({
+    vault,
+    loading,
+}: {
+    vault: { maxLossBps: number; withdrawDelay: number; principalDeposited: bigint; cumulativeLoss: bigint };
+    loading: boolean;
+}) {
+    const m = deployment.mandate;
+    return (
+        <details className="details">
+            <summary>Rules and addresses{loading ? ' · refreshing' : ''}</summary>
+
+            <dl className="facts">
+                <div>
+                    <dt>Loss cap</dt>
+                    <dd className="num">{fmtBps(vault.maxLossBps)}</dd>
+                </div>
+                <div>
+                    <dt>Withdrawal</dt>
+                    <dd className="num">{fmtDuration(vault.withdrawDelay)}</dd>
+                </div>
+                <div>
+                    <dt>Senior fee</dt>
+                    <dd className="num">{fmtBps(m.seniorFeeBps)}</dd>
+                </div>
+                <div>
+                    <dt>Total deposited</dt>
+                    <dd className="num">{fmtAmount(vault.principalDeposited)}</dd>
+                </div>
+                <div>
+                    <dt>Losses applied</dt>
+                    <dd className="num">{fmtAmount(vault.cumulativeLoss)}</dd>
+                </div>
+            </dl>
+
+            <p className="muted small">
+                The mandate is immutable: different rules mean a different vault, not an edit.
+            </p>
+
+            <ul className="addrs">
+                <li>
+                    Vault <code>{shortAddress(deployment.vault!)}</code>
+                </li>
+                <li>
+                    Registry <code>{shortAddress(deployment.registry!)}</code>
+                </li>
+                <li>
+                    Asset <code>{shortAddress(deployment.jettonMaster!)}</code>
+                </li>
+            </ul>
+        </details>
     );
 }
 
 function NotDeployed() {
     return (
-        <section className="card panel">
-            <h3>Протокол ещё не развёрнут</h3>
-            <p className="muted">
-                В <code>src/deployments/{deployment.network}.json</code> нет адресов контрактов.
-                Разверните протокол и положите туда файл, который создаст скрипт:
+        <section className="panel">
+            <h2 className="section-title">Protocol not deployed</h2>
+            <p className="muted small">
+                No addresses in <code>src/deployments/{deployment.network}.json</code>.
             </p>
             <pre className="code">
                 <code>
-                    cd resu-sc-ton/resu-sc-ton{'\n'}
-                    npx blueprint run deployAll --testnet{'\n'}
-                    cp deployments/testnet.json ../../frontend/src/deployments/
+                    npx blueprint run deployAll --{deployment.network}
+                    {'\n'}cp deployments/{deployment.network}.json ../../frontend/src/deployments/
                 </code>
             </pre>
-            <p className="muted small">
-                Интерфейс намеренно не притворяется работающим на выдуманных данных.
-            </p>
         </section>
     );
 }

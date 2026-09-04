@@ -2,7 +2,11 @@ import { DECIMALS } from './units.ts';
 
 const ONE = 10n ** DECIMALS;
 
-/** Целочисленные единицы -> читаемая строка. Без плавающей точки в расчётах. */
+/**
+ * Integer units -> display string, English conventions: comma groups
+ * thousands, period marks the decimal. All arithmetic stays in bigint —
+ * money never touches floating point.
+ */
 export function fmtAmount(units: bigint, maxFractionDigits = 2): string {
     const negative = units < 0n;
     const abs = negative ? -units : units;
@@ -12,20 +16,33 @@ export function fmtAmount(units: bigint, maxFractionDigits = 2): string {
     let fracStr = frac.toString().padStart(Number(DECIMALS), '0').slice(0, maxFractionDigits);
     fracStr = fracStr.replace(/0+$/, '');
 
-    // Тонкий пробел U+2009 — типографски верный разделитель разрядов.
-    // Записан escape-последовательностью: невидимый символ в исходнике
-    // рано или поздно кто-нибудь заменит на обычный пробел не глядя.
-    const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
-    const body = fracStr ? `${wholeStr},${fracStr}` : wholeStr;
+    const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const body = fracStr ? `${wholeStr}.${fracStr}` : wholeStr;
+    // U+2212 minus, not a hyphen: it lines up with digits in tabular figures.
     return negative ? `−${body}` : body;
 }
 
-/** Читаемая строка -> целочисленные единицы. Возвращает null при мусоре. */
+/**
+ * Display string -> integer units. Returns null for anything unparseable.
+ *
+ * Commas are stripped only when they sit in valid thousands positions.
+ * Guessing would be dangerous: "1,5" means 1.5 to a European reader and
+ * 15 to anyone stripping separators blindly, so it is rejected instead.
+ */
 export function parseAmount(input: string): bigint | null {
-    const cleaned = input.trim().replace(/\s/g, '').replace(',', '.');
-    if (!cleaned || !/^\d*\.?\d*$/.test(cleaned)) return null;
+    const cleaned = input.trim().replace(/\s/g, '');
+    if (!cleaned) return null;
 
-    const [whole = '0', frac = ''] = cleaned.split('.');
+    let normalised: string;
+    if (/^\d{1,3}(,\d{3})*(\.\d*)?$/.test(cleaned)) {
+        normalised = cleaned.replace(/,/g, '');
+    } else if (/^\d*\.?\d*$/.test(cleaned)) {
+        normalised = cleaned;
+    } else {
+        return null;
+    }
+
+    const [whole = '0', frac = ''] = normalised.split('.');
     if (frac.length > Number(DECIMALS)) return null;
 
     const units = BigInt(whole || '0') * ONE + BigInt((frac || '0').padEnd(Number(DECIMALS), '0'));
@@ -33,31 +50,35 @@ export function parseAmount(input: string): bigint | null {
 }
 
 export function fmtBps(bps: number): string {
-    const pct = bps / 100;
-    return `${pct.toString().replace('.', ',')}%`;
+    return `${bps / 100}%`;
 }
 
 export function fmtDuration(seconds: number): string {
     const days = Math.round(seconds / 86400);
-    if (days >= 1) {
-        const mod10 = days % 10;
-        const mod100 = days % 100;
-        if (mod10 === 1 && mod100 !== 11) return `${days} день`;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${days} дня`;
-        return `${days} дней`;
-    }
-    return `${Math.round(seconds / 3600)} ч`;
+    if (days >= 1) return days === 1 ? '1 day' : `${days} days`;
+    const hours = Math.round(seconds / 3600);
+    return hours === 1 ? '1 hour' : `${hours} hours`;
 }
 
 export function shortAddress(a: string): string {
     return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 }
 
-/** Цена доли в единицах актива, с четырьмя знаками. */
+/**
+ * Asset units converted to GRAM.
+ *
+ * The protocol accounts in the staking token, so the token's own appreciation
+ * never shows up in our share price. Without this conversion a senior holder
+ * watches their share price drift down to 0.98 and reads it as a loss, while
+ * in GRAM terms they are ahead.
+ */
+export function toGram(units: bigint, rate: number): bigint {
+    return (units * BigInt(Math.round(rate * 1e6))) / 1_000_000n;
+}
+
+/** Share price in asset units, four decimals. */
 export function sharePrice(totalAssets: bigint, totalShares: bigint): string {
-    if (totalShares === 0n) return '1,0000';
+    if (totalShares === 0n) return '1.0000';
     const scaled = (totalAssets * 10000n) / totalShares;
-    const whole = scaled / 10000n;
-    const frac = (scaled % 10000n).toString().padStart(4, '0');
-    return `${whole},${frac}`;
+    return `${scaled / 10000n}.${(scaled % 10000n).toString().padStart(4, '0')}`;
 }

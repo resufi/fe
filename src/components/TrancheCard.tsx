@@ -1,76 +1,52 @@
 import { TrancheState } from '../lib/chain';
 import { Mandate, TrancheMeta } from '../lib/config';
-import { fmtAmount, fmtBps, sharePrice } from '../lib/format';
+import { fmtAmount, fmtBps, toGram } from '../lib/format';
 
 type Props = {
     meta: TrancheMeta;
     state: TrancheState;
     mandate: Mandate;
+    rate: number | null;
     selected: boolean;
     onSelect: () => void;
     onHover: (id: number | null) => void;
 };
 
 /**
- * Ставка транша выражена относительно базовой доходности, а не абсолютным
- * числом: сам стейкинг-жетон растёт независимо от нас, и обещать конкретный
- * APY означало бы врать.
+ * Ставка выражена относительно базовой доходности, а не абсолютным APY:
+ * стейкинг-жетон растёт сам по себе, и обещать конкретный процент было бы
+ * враньём.
  */
-function rateLabel(id: number, m: Mandate): { value: string; caption: string } {
-    if (id === 2) {
-        return {
-            value: `−${fmtBps(m.seniorFeeBps)}`,
-            caption: 'к базовой доходности — это цена защиты',
-        };
-    }
+function feeLabel(id: number, m: Mandate): string {
+    if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
     if (id === 1) {
         const net = (m.seniorFeeBps * m.seniorFeeToMezzBps) / 10000 - m.mezzFeeBps;
-        const sign = net >= 0 ? '+' : '−';
-        return {
-            value: `${sign}${fmtBps(Math.abs(net))}`,
-            caption: 'доля платы senior за принятие второго убытка',
-        };
+        return `${net >= 0 ? '+' : '−'}${fmtBps(Math.abs(net))}`;
     }
-    return {
-        value: 'остаток',
-        caption: 'вся плата старших траншей — но первый убыток тоже ваш',
-    };
+    return 'remainder';
 }
 
-export function TrancheCard({ meta, state, mandate, selected, onSelect, onHover }: Props) {
-    const rate = rateLabel(meta.id, mandate);
-
+export function TrancheCard({ meta, state, mandate, rate, selected, onSelect, onHover }: Props) {
     return (
         <button
             type="button"
-            className={`card tranche tranche--${meta.id} ${selected ? 'is-selected' : ''}`}
+            className={`tranche t${meta.id} ${selected ? 'is-on' : ''}`}
             onClick={onSelect}
             onMouseEnter={() => onHover(meta.id)}
             onMouseLeave={() => onHover(null)}
             aria-pressed={selected}
         >
-            <header className="tranche__head">
-                <h3>{meta.name}</h3>
-                <span className={`pill pill--${meta.id}`}>{meta.tagline}</span>
-            </header>
-
-            <div className="tranche__rate">
-                <span className="tranche__rate-value">{rate.value}</span>
-                <span className="muted">{rate.caption}</span>
-            </div>
-
-            <p className="tranche__blurb">{meta.blurb}</p>
-
-            <dl className="kv">
-                <div>
-                    <dt>В транше</dt>
-                    <dd className="num">{fmtAmount(state.totalAssets)}</dd>
-                </div>
-                <div>
-                    <dt>Цена доли</dt>
-                    <dd className="num">{sharePrice(state.totalAssets, state.totalShares)}</dd>
-                </div>
-            </dl>
+            <span className="tranche__name">
+                <i className="dot" aria-hidden="true" />
+                {meta.name}
+            </span>
+            <span className="tranche__rate num">{feeLabel(meta.id, mandate)}</span>
+            <span className="tranche__order">{meta.order}</span>
+            <span className="tranche__pool num">
+                {rate === null
+                    ? `${fmtAmount(state.totalAssets)} tsTON`
+                    : `${fmtAmount(toGram(state.totalAssets, rate))} GRAM`}
+            </span>
         </button>
     );
 }

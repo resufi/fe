@@ -1,0 +1,19 @@
+{
+  "network": "mainnet",
+  "deployedAt": "2026-09-01T22:20:26.121Z",
+  "admin": "EQBWUnEceDnlVZp9wRMff0_8Rg6ysoXUOP_G9OjCuY2ENPGu",
+  "vault": "EQCQh4q89Q5wknOs6I3INiTwwne6zgIV_cnS-rtHu26I7YFO",
+  "registry": "EQAyzLYKyDkIxoTE_dCxwLwrxBDLksNFkAsLHOvMhFziszS3",
+  "jettonMaster": "EQC98_qAmNEptUtPc7W6xdHh_ZHrBUFpw5Ft_IzNU20QAJav",
+  "vaultJettonWallet": "EQB9yu2Q4XXr57dUpIzctJxsRlVgPV80NxIsJYNZ9NNv3xSG",
+  "mandate": {
+    "maxLossBps": 3000,
+    "withdrawDelay": 259200,
+    "seniorFeeBps": 200,
+    "seniorFeeToMezzBps": 300,
+    "mezzFeeBps": 0
+  },
+  "upgradeTimelock": 0,
+  "positionVersion": 1,
+  "testingOnly": true
+}

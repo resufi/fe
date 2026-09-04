@@ -1,28 +1,30 @@
 import { useState } from 'react';
 import { useTonConnectUI } from '@tonconnect/ui-react';
 import { TRANCHES } from '../lib/config';
-import { fmtAmount, fmtDuration } from '../lib/format';
+import { fmtAmount, fmtDuration, toGram } from '../lib/format';
 import { withdrawClaimMessage, withdrawRequestMessage, WITHDRAW_CLAIM_TON, WITHDRAW_REQUEST_TON } from '../lib/payloads';
 import { MyPosition, ProtocolData } from '../hooks/useProtocol';
 
 type Props = { data: ProtocolData; withdrawDelay: number; onDone: () => void };
 
 export function PositionsPanel({ data, withdrawDelay, onDone }: Props) {
-    if (data.myPositions.length === 0) {
-        return (
-            <section className="card panel">
-                <h3>Мои позиции</h3>
-                <p className="muted">Пока пусто. Выберите транш выше и внесите депозит.</p>
-            </section>
-        );
+    // Пустой блок «позиций нет» — это шум. Просто не показываем ничего.
+    if (!data.wallet || data.wallet.positions.length === 0) {
+        return null;
     }
 
     return (
-        <section className="card panel">
-            <h3>Мои позиции</h3>
+        <section className="panel">
+            <h2 className="section-title">Your positions</h2>
             <div className="positions">
-                {data.myPositions.map((p) => (
-                    <PositionRow key={p.trancheId} pos={p} withdrawDelay={withdrawDelay} onDone={onDone} />
+                {data.wallet.positions.map((p) => (
+                    <PositionRow
+                        key={p.trancheId}
+                        pos={p}
+                        rate={data.rate}
+                        withdrawDelay={withdrawDelay}
+                        onDone={onDone}
+                    />
                 ))}
             </div>
         </section>
@@ -31,10 +33,12 @@ export function PositionsPanel({ data, withdrawDelay, onDone }: Props) {
 
 function PositionRow({
     pos,
+    rate,
     withdrawDelay,
     onDone,
 }: {
     pos: MyPosition;
+    rate: number | null;
     withdrawDelay: number;
     onDone: () => void;
 }) {
@@ -62,18 +66,25 @@ function PositionRow({
     return (
         <div className={`position position--${pos.trancheId}`}>
             <div className="position__main">
-                <span className={`pill pill--${pos.trancheId}`}>{meta.name}</span>
-                <div>
-                    <div className="num position__value">{fmtAmount(pos.valueNow)}</div>
-                    <div className="muted small">{fmtAmount(pos.shares + pos.lockedShares)} долей</div>
+                <span className="muted small">{meta.name}</span>
+                <div className="position__figures">
+                    {/* GRAM первым числом намеренно. Учёт ведётся в tsTON, и
+                        рост самого tsTON в наши цифры не попадает: senior
+                        видел бы уменьшающийся остаток и читал его как убыток,
+                        хотя в GRAM он в плюсе. */}
+                    <div className="num position__value">
+                        {rate === null ? fmtAmount(pos.valueNow) : fmtAmount(toGram(pos.valueNow, rate))}
+                        <span className="muted"> {rate === null ? 'tsTON' : 'GRAM'}</span>
+                    </div>
+                    <div className="muted small num">
+                        {rate === null ? null : <>{fmtAmount(pos.valueNow, 4)} tsTON · </>}
+                        {fmtAmount(pos.shares + pos.lockedShares, 4)} shares
+                    </div>
                 </div>
             </div>
 
             {waiting && (
-                <p className="muted small">
-                    {fmtAmount(pos.lockedShares)} долей заявлено к выходу. Забрать можно через{' '}
-                    {fmtDuration(pos.unlockAt - now)}.
-                </p>
+                <p className="muted small">Available in {fmtDuration(pos.unlockAt - now)}</p>
             )}
 
             <div className="position__actions">
@@ -85,25 +96,22 @@ function PositionRow({
                             send(withdrawRequestMessage(pos.shares).toBoc().toString('base64'), WITHDRAW_REQUEST_TON)
                         }
                     >
-                        Заявить выход
+                        Withdraw
                     </button>
                 )}
                 {matured && (
                     <button
-                        className="btn btn--primary"
+                        className="btn"
                         disabled={busy}
                         onClick={() => send(withdrawClaimMessage().toBoc().toString('base64'), WITHDRAW_CLAIM_TON)}
                     >
-                        Забрать
+                        Claim
                     </button>
                 )}
             </div>
 
             {pos.shares > 0n && pos.lockedShares === 0n && (
-                <p className="muted small">
-                    Выход занимает {fmtDuration(withdrawDelay)}. Цена доли считается на момент получения,
-                    а не заявки: убыток за это время ляжет и на вас.
-                </p>
+                <p className="muted small">Withdrawal takes {fmtDuration(withdrawDelay)}</p>
             )}
         </div>
     );

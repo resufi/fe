@@ -21,19 +21,29 @@ function check(name: string, cond: boolean, extra = '') {
 
 console.log('форматирование сумм');
 check('round-trip целого', parseAmount('1000') === 1000_000000000n);
-check('round-trip дробного', parseAmount('12,345') === 12_345000000n);
-check('точка и запятая равнозначны', parseAmount('12.345') === parseAmount('12,345'));
+check('round-trip дробного', parseAmount('12.345') === 12_345000000n);
 check('мусор отвергается', parseAmount('abc') === null && parseAmount('') === null);
 check('ноль не депозит', parseAmount('0') === null);
 check('лишние знаки отвергаются', parseAmount('1.0000000001') === null);
+
+// Разделители разрядов: то, что показали, должно читаться обратно.
+check('запятые как разделители разрядов принимаются', parseAmount('1,234.5') === 1234_500000000n);
+check('и дают то же, что без них', parseAmount('1,234.5') === parseAmount('1234.5'));
 check(
-    'разряды делятся тонким пробелом',
-    fmtAmount(1234567_000000000n) === '1\u2009234\u2009567',
+    'двусмысленная запятая отвергается, а не угадывается',
+    parseAmount('1,5') === null,
+    `"1,5" -> ${parseAmount('1,5')}`,
+);
+check('вывод читается обратно', parseAmount(fmtAmount(1234567_000000000n)) === 1234567_000000000n);
+
+check(
+    'разряды делятся запятой',
+    fmtAmount(1234567_000000000n) === '1,234,567',
     `-> "${fmtAmount(1234567_000000000n)}"`,
 );
-check('вывод дробного', fmtAmount(12_345000000n) === '12,34');
-check('цена доли 1:1 у пустого транша', sharePrice(0n, 0n) === '1,0000');
-check('цена доли после убытка', sharePrice(50n, 100n) === '0,5000');
+check('вывод дробного', fmtAmount(12_345000000n) === '12.34', `-> "${fmtAmount(12_345000000n)}"`);
+check('цена доли 1:1 у пустого транша', sharePrice(0n, 0n) === '1.0000');
+check('цена доли после убытка', sharePrice(50n, 100n) === '0.5000');
 
 console.log('\nсообщение депозита');
 const vault = new Address(0, Buffer.alloc(32, 0x11));

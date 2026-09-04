@@ -4,16 +4,15 @@ import { fmtAmount } from '../lib/format';
 type Props = {
     tranches: TrancheState[];
     headroom: bigint;
-    /** Подсветить транш при наведении на карточку. */
     highlight: number | null;
 };
 
 /**
- * Водопад потерь. Главное, что отличает нас от обычного ликвидного стейкинга:
- * убыток идёт снизу вверх и до senior может не дойти вовсе.
+ * Водопад потерь — то единственное, чего не показывает обычный ликвидный
+ * стейкинг, потому что там убыток размазан поровну и показывать нечего.
  *
- * Рисуем реальные пропорции капитала, а не декоративные блоки: если junior
- * тонкий, это должно быть видно, потому что тогда защита senior слабее.
+ * Полосы рисуются в реальных пропорциях капитала: если junior тонкий, это
+ * должно быть видно — тогда защита senior слабее.
  */
 export function Waterfall({ tranches, headroom, highlight }: Props) {
     const [junior, mezz, senior] = tranches;
@@ -21,52 +20,48 @@ export function Waterfall({ tranches, headroom, highlight }: Props) {
 
     if (total === 0n) {
         return (
-            <div className="waterfall waterfall--empty">
-                <p>В пуле пока нет капитала. Первый депозit задаст пропорции траншей.</p>
+            <div className="wf wf--empty">
+                <h2 className="section-title">Loss waterfall</h2>
+                <p className="muted">Pool is empty. The first deposit sets the proportions.</p>
             </div>
         );
     }
 
     const pct = (v: bigint) => Number((v * 10000n) / total) / 100;
     const rows = [
-        { id: 2, name: 'Senior', assets: senior.totalAssets, order: 'третий' },
-        { id: 1, name: 'Mezzanine', assets: mezz.totalAssets, order: 'второй' },
-        { id: 0, name: 'Junior', assets: junior.totalAssets, order: 'первый' },
+        { id: 2, name: 'Senior', assets: senior.totalAssets },
+        { id: 1, name: 'Mezzanine', assets: mezz.totalAssets },
+        { id: 0, name: 'Junior', assets: junior.totalAssets },
     ];
-
-    // Докуда способен дойти убыток при текущей ёмкости.
     const headroomPct = Math.min(100, Number((headroom * 10000n) / total) / 100);
 
     return (
-        <div className="waterfall">
-            <div className="waterfall__head">
-                <h3>Куда идёт убыток</h3>
-                <p className="muted">Снизу вверх. Пока junior не обнулён, старшие транши не страдают.</p>
-            </div>
+        <div className="wf">
+            <h2 className="section-title">
+                Loss waterfall
+                <span className="muted"> — bottom up</span>
+            </h2>
 
-            <div className="waterfall__stack">
+            <div className="wf__stack">
                 {rows.map((r) => (
                     <div
                         key={r.id}
-                        className={`wf-row wf-row--${r.id} ${highlight === r.id ? 'is-hot' : ''}`}
-                        style={{ flexGrow: Math.max(pct(r.assets), 4) }}
+                        className={`wf__row t${r.id} ${highlight === r.id ? 'is-on' : ''}`}
+                        style={{ flexGrow: Math.max(pct(r.assets), 6) }}
                     >
-                        <span className="wf-row__name">{r.name}</span>
-                        <span className="wf-row__meta">
-                            {fmtAmount(r.assets)} · {pct(r.assets).toFixed(1)}%
-                        </span>
-                        <span className="wf-row__order">{r.order} в очереди</span>
+                        <span>{r.name}</span>
+                        <span className="num muted">{fmtAmount(r.assets)}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="waterfall__gauge">
-                <div className="gauge">
-                    <div className="gauge__fill" style={{ width: `${headroomPct}%` }} />
+            <div className="wf__cap">
+                <div className="bar">
+                    <div className="bar__fill" style={{ width: `${headroomPct}%` }} />
                 </div>
-                <p className="muted">
-                    Максимум, который протокол может списать сейчас — <b>{fmtAmount(headroom)}</b>{' '}
-                    ({headroomPct.toFixed(1)}% пула). Выше этого убыток отвергается контрактом целиком.
+                <p className="muted small">
+                    Maximum writedown: <span className="num">{fmtAmount(headroom)}</span>. Above
+                    that the contract rejects the loss outright.
                 </p>
             </div>
         </div>

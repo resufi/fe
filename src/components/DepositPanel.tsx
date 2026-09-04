@@ -23,19 +23,25 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 
     const amount = parseAmount(raw);
     const meta = TRANCHES[trancheId];
+    const w = data.wallet;
 
+    // Пока баланс не прочитан, «превышает баланс» сказать нельзя: мы просто
+    // не знаем. Раньше в этот момент показывался ноль, и кнопка запрещала
+    // депозит человеку, у которого деньги есть.
     const problem = !wallet
-        ? 'Подключите кошелёк'
-        : raw && amount === null
-          ? 'Некорректная сумма'
-          : amount !== null && amount < MIN_DEPOSIT
-            ? 'Минимум 1 единица'
-            : amount !== null && amount > data.myBalance
-              ? 'Больше, чем есть на балансе'
-              : null;
+        ? 'Connect a wallet'
+        : !w
+          ? 'Loading balance…'
+          : raw && amount === null
+            ? 'Invalid amount'
+            : amount !== null && amount < MIN_DEPOSIT
+              ? 'Minimum is 1'
+              : amount !== null && amount > w.balance
+                ? 'Exceeds your balance'
+                : null;
 
     async function send() {
-        if (!wallet || amount === null || !data.myJettonWallet) return;
+        if (!wallet || amount === null || !w) return;
         setBusy(true);
         setNote(null);
         try {
@@ -44,60 +50,55 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
                 validUntil: Math.floor(Date.now() / 1000) + 300,
                 messages: [
                     {
-                        address: data.myJettonWallet.toString(),
+                        address: w.jettonWallet.toString(),
                         amount: DEPOSIT_TOTAL_TON.toString(),
                         payload: body.toBoc().toString('base64'),
                     },
                 ],
             });
             setRaw('');
-            setNote('Отправлено. Доли появятся, когда транзакция дойдёт до контракта — обычно несколько секунд.');
+            setNote('Sent. Shares appear once the transaction reaches the contract — usually a few seconds.');
             setTimeout(onDone, 6000);
         } catch (e) {
-            setNote(e instanceof Error ? e.message : 'Транзакция отклонена');
+            setNote(e instanceof Error ? e.message : 'Transaction rejected');
         } finally {
             setBusy(false);
         }
     }
 
     return (
-        <section className="card panel">
+        <section className="panel">
             <header className="panel__head">
-                <h3>Внести в {meta.name}</h3>
-                <span className="muted">
-                    Доступно: <b className="num">{fmtAmount(data.myBalance)}</b>
-                </span>
-            </header>
-
-            <div className="field">
-                <input
-                    className="input num"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={raw}
-                    onChange={(e) => setRaw(e.target.value)}
-                    aria-label="Сумма депозита"
-                />
+                <h2 className="section-title">Deposit into {meta.name}</h2>
                 <button
                     type="button"
-                    className="btn btn--ghost"
-                    onClick={() => setRaw(fmtAmount(data.myBalance, 9).replace(/\s/g, ''))}
-                    disabled={data.myBalance === 0n}
+                    className="linkish num"
+                    onClick={() => w && setRaw(fmtAmount(w.balance, 9).replace(/[\s,]/g, ''))}
+                    disabled={!w || w.balance === 0n}
                 >
-                    Всё
+                    {w ? fmtAmount(w.balance) : '…'}
                 </button>
-            </div>
+            </header>
 
-            <button className="btn btn--primary" onClick={send} disabled={busy || !!problem || amount === null}>
-                {busy ? 'Отправляю…' : problem ?? `Внести в ${meta.name}`}
+            <input
+                className="input num"
+                inputMode="decimal"
+                placeholder="0"
+                value={raw}
+                onChange={(e) => setRaw(e.target.value)}
+                aria-label="Deposit amount"
+            />
+
+            <button className="btn" onClick={send} disabled={busy || !!problem || amount === null}>
+                {busy ? 'Sending…' : (problem ?? 'Deposit')}
             </button>
 
             {note && <p className="note">{note}</p>}
 
+            {/* Про газ пишем мелко и только суммой: подробности нужны тому, кто
+                спросит, а не всем подряд. */}
             <p className="muted small">
-                К переводу прикладывается {fmtAmount(DEPOSIT_TOTAL_TON)} GRAM на газ. Это требование
-                стандарта жетонов: без оплаченного уведомления контракт не узнает о переводе.
-                Излишек вернётся на ваш кошелёк.
+                +{fmtAmount(DEPOSIT_TOTAL_TON)} GRAM for gas, excess is refunded
             </p>
         </section>
     );
