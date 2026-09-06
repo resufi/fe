@@ -1,67 +1,79 @@
-import { Address } from '@ton/core';
-import testnet from '../deployments/testnet.json';
-import mainnet from '../deployments/mainnet.json';
+import type { CSSProperties } from "react";
+import { Address } from "@ton/core";
+import testnet from "../deployments/testnet.json";
+import mainnet from "../deployments/mainnet.json";
 
 export type Mandate = {
-    maxLossBps: number;
-    withdrawDelay: number;
-    seniorFeeBps: number;
-    seniorFeeToMezzBps: number;
-    mezzFeeBps: number;
+	maxLossBps: number;
+	withdrawDelay: number;
+	seniorFeeBps: number;
+	seniorFeeToMezzBps: number;
+	mezzFeeBps: number;
 };
 
 export type Deployment = {
-    network: 'testnet' | 'mainnet';
-    vault: string | null;
-    registry: string | null;
-    jettonMaster: string | null;
-    vaultJettonWallet: string | null;
-    mandate: Mandate;
+	network: "testnet" | "mainnet";
+	vault: string | null;
+	registry: string | null;
+	jettonMaster: string | null;
+	vaultJettonWallet: string | null;
+	mandate: Mandate;
 };
 
-/**
- * Адреса берутся из deployments/<network>.json, который пишет скрипт деплоя.
- * Сеть выбирается через VITE_NETWORK (по умолчанию testnet), чтобы случайно
- * не показать боевые адреса при локальной разработке.
- *
- * Пока протокол не развёрнут, поля пустые — интерфейс это показывает честно,
- * а не притворяется работающим.
- */
-const NETWORK = (import.meta.env.VITE_NETWORK ?? 'testnet') as 'testnet' | 'mainnet';
+const NETWORK = (import.meta.env.VITE_NETWORK ?? "testnet") as
+	| "testnet"
+	| "mainnet";
 
-export const deployment = (NETWORK === 'mainnet' ? mainnet : testnet) as unknown as Deployment;
+export const deployment = (NETWORK === "mainnet"
+	? mainnet
+	: testnet) as unknown as Deployment;
 
 export const isDeployed = Boolean(deployment.vault && deployment.jettonMaster);
 
 export const addr = {
-    vault: () => Address.parse(deployment.vault!),
-    registry: () => Address.parse(deployment.registry!),
-    jettonMaster: () => Address.parse(deployment.jettonMaster!),
-    /** Пул Tonstakers — единственный источник курса tsTON к GRAM. */
-    assetPool: () => (ASSET_POOL ? Address.parse(ASSET_POOL) : null),
+	vault: () => Address.parse(deployment.vault!),
+	registry: () => Address.parse(deployment.registry!),
+	jettonMaster: () => Address.parse(deployment.jettonMaster!),
+	assetPool: () => (ASSET_POOL ? Address.parse(ASSET_POOL) : null),
 };
 
-/**
- * Пул ликвидного стейкинга, обеспечивающий базовый жетон.
- *
- * Отдельно от jettonMaster: у Tonstakers это два разных контракта, и пул
- * на get_wallet_address отвечает exit_code 11. Перепутать их легко.
- */
-const ASSET_POOL = 'EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR';
+const ASSET_POOL = "EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR";
 
 /**
- * Подписи траншей.
- *
- * Сознательно коротко: место в очереди на убыток — единственное, что человеку
- * нужно знать, чтобы выбрать. Всё остальное показывается только по запросу,
- * иначе экран превращается в статью, которую никто не читает.
+ * Единственный источник правды о траншах, включая их цвет: раньше он был
+ * размазан по CSS-классам `.t0/.t1/.t2` и `.position--0/1/2`, и добавление
+ * транша требовало правок в трёх местах. Здесь `hue` — имя токена из
+ * `styles/tokens.css`, компонент подставляет его в свою `--hue`.
  */
 export const TRANCHES = [
-    { id: 0, key: 'junior', name: 'Junior', order: 'Absorbs losses first' },
-    { id: 1, key: 'mezzanine', name: 'Mezzanine', order: 'Absorbs losses second' },
-    { id: 2, key: 'senior', name: 'Senior', order: 'Absorbs losses last' },
+	{
+		id: 0,
+		key: "junior",
+		name: "Junior",
+		order: "Absorbs losses first",
+		hue: "--junior",
+	},
+	{
+		id: 1,
+		key: "mezzanine",
+		name: "Middle",
+		order: "Absorbs losses second",
+		hue: "--mezz",
+	},
+	{
+		id: 2,
+		key: "senior",
+		name: "Senior",
+		order: "Absorbs losses last",
+		hue: "--senior",
+	},
 ] as const;
+
+/** Инлайновый стиль, задающий компоненту цвет его транша. */
+export function hueStyle(trancheId: number): CSSProperties {
+	return { ["--hue" as string]: `var(${TRANCHES[trancheId].hue})` };
+}
 
 export type TrancheMeta = (typeof TRANCHES)[number];
 
-export { DECIMALS } from './units.ts';
+export { DECIMALS } from "./units.ts";
