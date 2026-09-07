@@ -1,69 +1,109 @@
-import { TrancheState } from '../lib/chain';
-import { fmtAmount } from '../lib/format';
+import { TrancheState } from "../lib/chain";
+import { hueStyle, Mandate, TRANCHES } from "../lib/config";
+import { fmtAmount, fmtBps, toGram } from "../lib/format";
+import s from "./Waterfall.module.css";
 
 type Props = {
-    tranches: TrancheState[];
-    headroom: bigint;
-    highlight: number | null;
+	tranches: TrancheState[];
+	headroom: bigint;
+	mandate: Mandate;
+	rate: number | null;
+	selected: number;
+	onSelect: (id: number) => void;
 };
 
-/**
- * Водопад потерь — то единственное, чего не показывает обычный ликвидный
- * стейкинг, потому что там убыток размазан поровну и показывать нечего.
- *
- * Полосы рисуются в реальных пропорциях капитала: если junior тонкий, это
- * должно быть видно — тогда защита senior слабее.
- */
-export function Waterfall({ tranches, headroom, highlight }: Props) {
-    const [junior, mezz, senior] = tranches;
-    const total = junior.totalAssets + mezz.totalAssets + senior.totalAssets;
+function feeLabel(id: number, m: Mandate): string {
+	if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
+	if (id === 1) {
+		const net = (m.seniorFeeBps * m.seniorFeeToMezzBps) / 10000 - m.mezzFeeBps;
+		return `${net >= 0 ? "+" : "−"}${fmtBps(Math.abs(net))}`;
+	}
+	return "remainder";
+}
 
-    if (total === 0n) {
-        return (
-            <div className="wf wf--empty">
-                <h2 className="section-title">Loss waterfall</h2>
-                <p className="muted">Pool is empty. The first deposit sets the proportions.</p>
-            </div>
-        );
-    }
+export function Waterfall({
+	tranches,
+	headroom,
+	mandate,
+	rate,
+	selected,
+	onSelect,
+}: Props) {
+	const total = tranches.reduce((sum, t) => sum + t.totalAssets, 0n);
+	const empty = total === 0n;
 
-    const pct = (v: bigint) => Number((v * 10000n) / total) / 100;
-    const rows = [
-        { id: 2, name: 'Senior', assets: senior.totalAssets },
-        { id: 1, name: 'Mezzanine', assets: mezz.totalAssets },
-        { id: 0, name: 'Junior', assets: junior.totalAssets },
-    ];
-    const headroomPct = Math.min(100, Number((headroom * 10000n) / total) / 100);
+	const order = [2, 1, 0];
+	const share = (v: bigint) => Number((v * 10000n) / total) / 100;
+	const headroomPct = empty
+		? 0
+		: Math.min(100, Number((headroom * 10000n) / total) / 100);
 
-    return (
-        <div className="wf">
-            <h2 className="section-title">
-                Loss waterfall
-                <span className="muted"> — bottom up</span>
-            </h2>
+	return (
+		<section className={s.wf} data-waterfall>
+			<header className={s.head}>
+				<h2 className={s.title}>
+					Loss waterfall
+					<span className="muted"> — losses fill from the bottom</span>
+				</h2>
+				{!empty && (
+					<span className="muted small">{fmtAmount(total)} tsTON pooled</span>
+				)}
+			</header>
 
-            <div className="wf__stack">
-                {rows.map((r) => (
-                    <div
-                        key={r.id}
-                        className={`wf__row t${r.id} ${highlight === r.id ? 'is-on' : ''}`}
-                        style={{ flexGrow: Math.max(pct(r.assets), 6) }}
-                    >
-                        <span>{r.name}</span>
-                        <span className="num muted">{fmtAmount(r.assets)}</span>
-                    </div>
-                ))}
-            </div>
+			<div className={`${s.stack} ${empty ? s.empty : ""}`}>
+				{order.map((id) => {
+					const meta = TRANCHES[id];
+					const state = tranches[id];
+					const pct = empty ? 0 : share(state.totalAssets);
 
-            <div className="wf__cap">
-                <div className="bar">
-                    <div className="bar__fill" style={{ width: `${headroomPct}%` }} />
-                </div>
-                <p className="muted small">
-                    Maximum writedown: <span className="num">{fmtAmount(headroom)}</span>. Above
-                    that the contract rejects the loss outright.
-                </p>
-            </div>
-        </div>
-    );
+					return (
+						<button
+							key={id}
+							type="button"
+							className={`${s.band} ${selected === id ? s.on : ""}`}
+							style={{ ...hueStyle(id), flexGrow: pct }}
+							onClick={() => onSelect(id)}
+							disabled={empty}
+							aria-pressed={selected === id}
+						>
+							<span>
+								<span className={s.name}>
+									<i className={s.dot} aria-hidden="true" />
+									{meta.name}
+								</span>
+								<span className={s.order}>{meta.order}</span>
+							</span>
+
+							<span className={s.figures}>
+								<span className={`${s.rate} num`}>{feeLabel(id, mandate)}</span>
+								<span className={`${s.pool} num`}>
+									{rate === null
+										? `${fmtAmount(state.totalAssets)} tsTON`
+										: `${fmtAmount(toGram(state.totalAssets, rate))} GRAM`}
+									{!empty && ` · ${pct.toFixed(1)}%`}
+								</span>
+							</span>
+						</button>
+					);
+				})}
+			</div>
+
+			{empty ? (
+				<p className="muted small">
+					Pool is empty. The first deposit sets the proportions.
+				</p>
+			) : (
+				<div className={s.cap}>
+					<div className={s.bar}>
+						<div className={s.fill} style={{ width: `${headroomPct}%` }} />
+					</div>
+					<p className={s.capNote}>
+						Maximum writedown:{" "}
+						<span className="num">{fmtAmount(headroom)}</span>. Above that the
+						contract rejects the loss outright.
+					</p>
+				</div>
+			)}
+		</section>
+	);
 }

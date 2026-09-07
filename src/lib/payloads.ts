@@ -1,4 +1,4 @@
-import { Address, beginCell, toNano } from '@ton/core';
+import { Address, beginCell, toNano } from "@ton/core";
 
 const OP_JETTON_TRANSFER = 0x0f8a7ea5;
 const OP_JETTON_BURN = 0x595f07bc;
@@ -14,32 +14,37 @@ const PAYLOAD_DEPOSIT = 0;
  * Это свойство TEP-74, а не нашего контракта, — поэтому ноль здесь
  * недопустим ни при каких условиях.
  */
-export const DEPOSIT_FORWARD_TON = toNano('0.12');
-export const DEPOSIT_TOTAL_TON = toNano('0.25');
+export const DEPOSIT_FORWARD_TON = toNano("0.12");
+export const DEPOSIT_TOTAL_TON = toNano("0.25");
+
 /** Сжигание идёт через кошелёк жетона и мастера — цепочка длиннее заявки. */
-export const BURN_TON = toNano('0.2');
-export const CLAIM_TON = toNano('0.15');
+export const BURN_TON = toNano("0.2");
+export const CLAIM_TON = toNano("0.15");
 
-/** Перевод жетонов в vault с указанием транша. Шлётся на СВОЙ кошелёк жетона. */
-export function depositMessage(vault: Address, owner: Address, trancheId: number, amount: bigint) {
-    const forwardPayload = beginCell()
-        .storeUint(PAYLOAD_DEPOSIT, 8)
-        .storeUint(trancheId, 8)
-        .endCell();
+export function depositMessage(
+	vault: Address,
+	owner: Address,
+	trancheId: number,
+	amount: bigint,
+) {
+	const forwardPayload = beginCell()
+		.storeUint(PAYLOAD_DEPOSIT, 8)
+		.storeUint(trancheId, 8)
+		.endCell();
 
-    const body = beginCell()
-        .storeUint(OP_JETTON_TRANSFER, 32)
-        .storeUint(0, 64)
-        .storeCoins(amount)
-        .storeAddress(vault)
-        .storeAddress(owner) // излишек газа вернётся владельцу
-        .storeMaybeRef(null)
-        .storeCoins(DEPOSIT_FORWARD_TON)
-        .storeUint(1, 1)
-        .storeRef(forwardPayload)
-        .endCell();
+	const body = beginCell()
+		.storeUint(OP_JETTON_TRANSFER, 32)
+		.storeUint(0, 64)
+		.storeCoins(amount)
+		.storeAddress(vault)
+		.storeAddress(owner)
+		.storeMaybeRef(null)
+		.storeCoins(DEPOSIT_FORWARD_TON)
+		.storeUint(1, 1)
+		.storeRef(forwardPayload)
+		.endCell();
 
-    return body;
+	return body;
 }
 
 /**
@@ -49,16 +54,16 @@ export function depositMessage(vault: Address, owner: Address, trancheId: number
  * сообщает об этом vault'у, и тот заводит заявку с окном созревания.
  */
 export function burnMessage(shares: bigint, responseTo: Address) {
-    return beginCell()
-        .storeUint(OP_JETTON_BURN, 32)
-        .storeUint(0, 64)
-        .storeCoins(shares)
-        .storeAddress(responseTo)
-        .storeMaybeRef(null)
-        .endCell();
+	return beginCell()
+		.storeUint(OP_JETTON_BURN, 32)
+		.storeUint(0, 64)
+		.storeCoins(shares)
+		.storeAddress(responseTo)
+		.storeMaybeRef(null)
+		.endCell();
 }
 
 /** Забрать после созревания. Шлётся на контракт заявки. */
 export function claimMessage() {
-    return beginCell().storeUint(OP_TICKET_CLAIM, 32).endCell();
+	return beginCell().storeUint(OP_TICKET_CLAIM, 32).endCell();
 }

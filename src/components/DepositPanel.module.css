@@ -1,0 +1,87 @@
+.panel {
+	display: grid;
+	gap: var(--s3);
+}
+
+.head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--s3);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 500;
+	margin: 0;
+}
+
+.balance {
+	padding: 0;
+	font: inherit;
+	font-size: 13px;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.balance:hover:not(:disabled) {
+	color: var(--fg);
+}
+
+.balance:disabled {
+	cursor: default;
+	text-decoration: none;
+}
+
+.input {
+	width: 100%;
+	padding: var(--s3) 0;
+	font-size: 26px;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--line);
+	color: var(--fg);
+	transition: border-color 120ms ease;
+}
+
+.input:focus {
+	border-color: var(--fg);
+	outline: none;
+}
+
+.input::placeholder {
+	color: var(--line);
+}
+
+.submit {
+	width: 100%;
+	padding: var(--s3) var(--s4);
+	font: inherit;
+	font-size: 14px;
+	background: var(--brand);
+	color: white;
+	border: 1px solid var(--brand);
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: opacity 120ms ease;
+}
+
+.submit:hover:not(:disabled) {
+}
+
+.submit:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.problem,
+.note,
+.gas {
+	margin: 0;
+	font-size: 13px;
+	color: var(--muted);
+}

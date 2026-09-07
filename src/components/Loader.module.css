@@ -1,0 +1,48 @@
+.screen {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	align-content: center;
+	justify-items: center;
+	gap: var(--s5);
+	background: var(--bg);
+	z-index: 10;
+}
+
+.mark {
+	width: 96px;
+	height: auto;
+	display: block;
+}
+
+.sign {
+	margin: 0;
+	font-size: 13px;
+	color: var(--muted);
+	white-space: pre-wrap;
+	text-align: center;
+}
+
+.char {
+	display: inline-block;
+	opacity: 0;
+	animation: char-in 0.55s ease forwards;
+}
+
+@keyframes char-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Настройку «меньше движения» уважаем там, где можем: у SMIL внутри <img>
+   этого рычага нет, а у подписи есть — она показывается сразу и целиком. */
+@media (prefers-reduced-motion: reduce) {
+	.char {
+		opacity: 1;
+		animation: none;
+	}
+}
