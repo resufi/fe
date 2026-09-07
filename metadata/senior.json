@@ -1,0 +1,7 @@
+{
+  "name": "Resu Senior",
+  "symbol": "rsSENIOR",
+  "decimals": "9",
+  "description": "Senior tranche of the Resu pool. Pays a protection fee and absorbs losses last — only if both tranches below it are exhausted.",
+  "image": "https://ЗАМЕНИ-НА-СВОЙ-ХОСТ/resu-senior.png"
+}

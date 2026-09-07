@@ -1,0 +1,7 @@
+{
+  "name": "Resu Mezzanine",
+  "symbol": "rsMEZZ",
+  "decimals": "9",
+  "description": "Mezzanine tranche of the Resu pool. Absorbs losses only after the junior tranche is wiped out.",
+  "image": "https://ЗАМЕНИ-НА-СВОЙ-ХОСТ/resu-mezzanine.png"
+}

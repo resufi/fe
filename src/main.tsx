@@ -17,11 +17,18 @@ import './styles/tokens.css';
  *
  * На локальной разработке задайте VITE_TONCONNECT_MANIFEST_URL: любой
  * публичный https-адрес с этим json (raw.githubusercontent, gist, туннель).
- * В продакшене подойдёт путь по умолчанию — там origin уже публичный.
+ * После публикации на GitHub Pages переменная не нужна — там адрес уже
+ * публичный, и путь по умолчанию сработает сам.
  */
 const manifestUrl =
-    import.meta.env.VITE_TONCONNECT_MANIFEST_URL ??
-    new URL('/tonconnect-manifest.json', window.location.origin).toString();
+	import.meta.env.VITE_TONCONNECT_MANIFEST_URL ??
+	new URL(
+		// BASE_URL, а не корень сайта: на GitHub Pages приложение живёт по
+		// пути /<репозиторий>/, и ссылка от origin вела бы мимо — кошелёк
+		// получил бы 404 и ответил «invalid manifest».
+		`${import.meta.env.BASE_URL}tonconnect-manifest.json`.replace(/\/{2,}/g, "/"),
+		window.location.origin,
+	).toString();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

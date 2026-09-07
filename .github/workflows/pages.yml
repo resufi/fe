@@ -1,0 +1,63 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Позволяет запустить вручную из вкладки Actions, не делая коммит.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Одновременно идёт только одна публикация. Незавершённые не отменяем:
+# оборванный деплой Pages оставляет сайт в промежуточном состоянии.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Те же проверки, что и локально: типы, сборка сообщений для контрактов,
+      # запуск приложения в браузероподобной среде. Публиковать неработающее
+      # хуже, чем не публиковать вовсе.
+      - run: npm run typecheck
+      - run: npm run selftest
+      - run: npm run smoke
+
+      - name: Build
+        env:
+          # Pages раздаёт сайт по пути /<репозиторий>/, а не из корня домена.
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_NETWORK: mainnet
+          # Ключ toncenter снимает лимит запросов. В статической сборке он
+          # попадает в публичный бандл — см. README, раздел про Pages.
+          VITE_TONCENTER_API_KEY: ${{ secrets.VITE_TONCENTER_API_KEY }}
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
