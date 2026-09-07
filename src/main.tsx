@@ -5,7 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import App from './App';
-import './styles.css';
+import './styles/tokens.css';
 
 /**
  * Манифест TonConnect.

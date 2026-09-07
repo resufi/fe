@@ -1,0 +1,91 @@
+/* Токены и базовая типографика — единственный глобальный CSS в проекте.
+ * Всё остальное живёт в *.module.css рядом со своим компонентом.
+ *
+ * Тема одна, светлая. Иерархию задают типографика и воздух, а цвет марки
+ * приберегается для логотипа и кнопки депозита. */
+
+:root {
+	/* Тема одна — светлая. color-scheme говорит браузеру рисовать
+	   системные элементы (скроллбары, поля ввода) в светлом виде даже у
+	   пользователя с тёмной системной настройкой. */
+	color-scheme: light;
+
+	--bg: #fbfbfa;
+	--fg: #101010;
+	--muted: #8a8a85;
+	--line: #e6e6e1;
+	--raise: #f2f2ef;
+	--accent: #12100e;
+	--accent-fg: #ffffff;
+
+	--junior: #c0553c;
+	--mezz: #a8801f;
+	--senior: #2f7358;
+
+	/* Единственное действие на странице — депозит, и только его кнопка
+	   выходит из монохрома. Надпись на ней тёмная: белый на этом сиреневом
+	   даёт контраст 2.8:1 и не проходит AA, тёмный — 6.8:1. */
+	--brand: #a684ff;
+	--brand-fg: #12100e;
+
+	/* Шкала отступов. Значения вне этой шкалы — ошибка ревью. */
+	--s1: 4px;
+	--s2: 8px;
+	--s3: 12px;
+	--s4: 16px;
+	--s5: 24px;
+	--s6: 32px;
+	--s7: 48px;
+	--s8: 72px;
+
+	--radius: 6px;
+
+	--mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+	--sans:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--sans);
+	font-size: 15px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+
+code {
+	font-family: var(--mono);
+	font-size: 0.9em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--fg);
+	outline-offset: 2px;
+}
+
+.num {
+	font-family: var(--mono);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.01em;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.small {
+	font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+}

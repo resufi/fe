@@ -1,0 +1,80 @@
+.panel {
+	display: grid;
+	gap: var(--s4);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 500;
+	margin: 0;
+}
+
+.list {
+	display: grid;
+	gap: var(--s5);
+}
+
+/* Цвет транша приходит из --hue, которую ставит компонент по config.ts. */
+.position {
+	display: grid;
+	gap: var(--s3);
+	padding-left: var(--s3);
+	border-left: 2px solid var(--hue);
+}
+
+.main {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--s3);
+}
+
+.figures {
+	display: grid;
+	gap: var(--s1);
+	justify-items: end;
+	text-align: right;
+}
+
+.value {
+	font-size: 20px;
+}
+
+.actions {
+	display: flex;
+	gap: var(--s2);
+}
+
+.btn {
+	flex: 1;
+	padding: var(--s3) var(--s4);
+	font: inherit;
+	font-size: 14px;
+	background: var(--accent);
+	color: var(--accent-fg);
+	border: 1px solid var(--accent);
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: opacity 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+	opacity: 0.85;
+}
+
+.btn:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.ghost {
+	background: transparent;
+	color: var(--fg);
+	border-color: var(--line);
+}
+
+.hint {
+	margin: 0;
+	font-size: 13px;
+	color: var(--muted);
+}

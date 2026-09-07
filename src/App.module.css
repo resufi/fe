@@ -1,0 +1,162 @@
+.page {
+	max-width: 1040px;
+	margin: 0 auto;
+	padding: var(--s5) var(--s5) 96px;
+}
+
+.topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--s4);
+	margin-bottom: var(--s8);
+}
+
+.brand {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--s2);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+.chip {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--muted);
+	border: 1px solid var(--line);
+	border-radius: 3px;
+	padding: 1px 5px;
+}
+
+.lede {
+	font-size: clamp(30px, 5vw, 46px);
+	line-height: 1.1;
+	letter-spacing: -0.03em;
+	font-weight: 500;
+	margin: 0 0 var(--s7);
+	max-width: 16em;
+}
+
+.hero {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: var(--s7);
+	align-items: start;
+}
+
+.side {
+	position: sticky;
+	top: var(--s5);
+	display: grid;
+	gap: var(--s6);
+}
+
+@media (max-width: 900px) {
+	.hero {
+		grid-template-columns: 1fr;
+		gap: var(--s6);
+	}
+
+	.side {
+		position: static;
+	}
+}
+
+.state {
+	padding: var(--s5) 0;
+	color: var(--muted);
+}
+
+.linkish {
+	padding: 0;
+	font: inherit;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.linkish:hover {
+	color: var(--fg);
+}
+
+.details {
+	margin-top: var(--s8);
+	padding-top: var(--s5);
+	border-top: 1px solid var(--line);
+	font-size: 13px;
+}
+
+.details summary {
+	color: var(--muted);
+	cursor: pointer;
+	list-style: none;
+}
+
+.details summary::-webkit-details-marker {
+	display: none;
+}
+
+.details summary::before {
+	content: "+ ";
+}
+
+.details[open] summary::before {
+	content: "− ";
+}
+
+.facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: var(--s5);
+	margin: var(--s5) 0;
+}
+
+.facts div {
+	display: grid;
+	gap: 2px;
+}
+
+.facts dt {
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.facts dd {
+	margin: 0;
+	font-size: 15px;
+}
+
+.addrs {
+	list-style: none;
+	padding: 0;
+	margin: var(--s4) 0 0;
+	display: grid;
+	gap: var(--s1);
+	color: var(--muted);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 500;
+	margin: 0 0 var(--s4);
+}
+
+.code {
+	overflow-x: auto;
+	padding: var(--s3);
+	background: var(--raise);
+	font-family: var(--mono);
+	font-size: 12px;
+	line-height: 1.7;
+}
+
+.sign {
+	margin: var(--s7) 0 0;
+	font-size: 13px;
+	color: var(--muted);
+}
