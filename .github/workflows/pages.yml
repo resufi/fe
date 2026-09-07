@@ -37,11 +37,24 @@ jobs:
       - run: npm run selftest
       - run: npm run smoke
 
+      # Манифест — единственное, что кошелёк скачивает сам, и единственное,
+      # чего не видно до попытки подключения. Проверяем до публикации.
+      - name: Check TonConnect manifest
+        env:
+          VITE_TONCONNECT_MANIFEST_URL: ${{ secrets.VITE_TONCONNECT_MANIFEST_URL }}
+          PAGES_ORIGIN: https://${{ github.repository_owner }}.github.io
+        run: npm run check-manifest
+
       - name: Build
         env:
           # Pages раздаёт сайт по пути /<репозиторий>/, а не из корня домена.
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_NETWORK: mainnet
+
+          # Все VITE_* переменные обязаны быть здесь: сборка видит только то,
+          # что ей передали явно. Пропущенная переменная не ошибка сборки —
+          # приложение просто молча уходит в запасное поведение.
+          VITE_NETWORK: ${{ secrets.VITE_NETWORK || 'mainnet' }}
+          VITE_TONCONNECT_MANIFEST_URL: ${{ secrets.VITE_TONCONNECT_MANIFEST_URL }}
           # Ключ toncenter снимает лимит запросов. В статической сборке он
           # попадает в публичный бандл — см. README, раздел про Pages.
           VITE_TONCENTER_API_KEY: ${{ secrets.VITE_TONCENTER_API_KEY }}
