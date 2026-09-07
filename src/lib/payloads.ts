@@ -1,8 +1,8 @@
 import { Address, beginCell, toNano } from '@ton/core';
 
 const OP_JETTON_TRANSFER = 0x0f8a7ea5;
-const OP_WITHDRAW_REQUEST = 0x52455502;
-const OP_WITHDRAW_CLAIM = 0x52455503;
+const OP_JETTON_BURN = 0x595f07bc;
+const OP_TICKET_CLAIM = 0x52455553;
 
 const PAYLOAD_DEPOSIT = 0;
 
@@ -16,8 +16,9 @@ const PAYLOAD_DEPOSIT = 0;
  */
 export const DEPOSIT_FORWARD_TON = toNano('0.12');
 export const DEPOSIT_TOTAL_TON = toNano('0.25');
-export const WITHDRAW_REQUEST_TON = toNano('0.05');
-export const WITHDRAW_CLAIM_TON = toNano('0.15');
+/** Сжигание идёт через кошелёк жетона и мастера — цепочка длиннее заявки. */
+export const BURN_TON = toNano('0.2');
+export const CLAIM_TON = toNano('0.15');
 
 /** Перевод жетонов в vault с указанием транша. Шлётся на СВОЙ кошелёк жетона. */
 export function depositMessage(vault: Address, owner: Address, trancheId: number, amount: bigint) {
@@ -41,12 +42,23 @@ export function depositMessage(vault: Address, owner: Address, trancheId: number
     return body;
 }
 
-/** Заявка на выход. Шлётся на контракт позиции. */
-export function withdrawRequestMessage(shares: bigint) {
-    return beginCell().storeUint(OP_WITHDRAW_REQUEST, 32).storeCoins(shares).endCell();
+/**
+ * Выход: сжечь доли в своём кошельке жетона транша.
+ *
+ * Сжигание не уничтожает деньги, а превращается в заявку на выход — мастер
+ * сообщает об этом vault'у, и тот заводит заявку с окном созревания.
+ */
+export function burnMessage(shares: bigint, responseTo: Address) {
+    return beginCell()
+        .storeUint(OP_JETTON_BURN, 32)
+        .storeUint(0, 64)
+        .storeCoins(shares)
+        .storeAddress(responseTo)
+        .storeMaybeRef(null)
+        .endCell();
 }
 
-/** Забрать после созревания окна. Шлётся на контракт позиции. */
-export function withdrawClaimMessage() {
-    return beginCell().storeUint(OP_WITHDRAW_CLAIM, 32).endCell();
+/** Забрать после созревания. Шлётся на контракт заявки. */
+export function claimMessage() {
+    return beginCell().storeUint(OP_TICKET_CLAIM, 32).endCell();
 }

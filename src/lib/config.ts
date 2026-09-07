@@ -16,6 +16,8 @@ export type Deployment = {
     registry: string | null;
     jettonMaster: string | null;
     vaultJettonWallet: string | null;
+    /** Мастера жетонов траншей — по одному на транш, в порядке junior→senior. */
+    trancheMasters?: string[];
     mandate: Mandate;
 };
 
@@ -39,6 +41,10 @@ export const addr = {
     jettonMaster: () => Address.parse(deployment.jettonMaster!),
     /** Пул Tonstakers — единственный источник курса tsTON к GRAM. */
     assetPool: () => (ASSET_POOL ? Address.parse(ASSET_POOL) : null),
+    trancheMaster: (trancheId: number) => {
+        const m = deployment.trancheMasters?.[trancheId];
+        return m ? Address.parse(m) : null;
+    },
 };
 
 /**

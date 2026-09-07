@@ -6,7 +6,7 @@
  * бите Either-флага или в порядке полей означает потерянный депозит.
  */
 import { Address, Cell } from '@ton/core';
-import { depositMessage, DEPOSIT_FORWARD_TON, withdrawClaimMessage, withdrawRequestMessage } from './src/lib/payloads.ts';
+import { burnMessage, claimMessage, depositMessage, DEPOSIT_FORWARD_TON } from './src/lib/payloads.ts';
 import { fmtAmount, parseAmount, sharePrice } from './src/lib/format.ts';
 
 let failed = 0;
@@ -69,13 +69,18 @@ check('номер транша', fwd.loadUint(8) === 1);
 check('в нагрузке больше ничего нет', fwd.remainingBits === 0 && fwd.remainingRefs === 0);
 
 console.log('\nсообщения выхода');
-const req = withdrawRequestMessage(40_000000000n).beginParse();
-check('опкод заявки', req.loadUint(32) === 0x52455502);
-check('доли в заявке', req.loadCoins() === 40_000000000n);
+// Выход теперь начинается со СЖИГАНИЯ доли в кошельке жетона транша,
+// а не с заявки в контракт позиции: доли стали переводимым жетоном.
+const burn = burnMessage(40_000000000n, owner).beginParse();
+check('опкод сжигания (TEP-74)', burn.loadUint(32) === 0x595f07bc);
+burn.loadUint(64); // queryId
+check('доли в сжигании', burn.loadCoins() === 40_000000000n);
+check('излишек газа возвращается владельцу', burn.loadAddress().equals(owner));
+check('customPayload при сжигании отсутствует', burn.loadMaybeRef() === null);
 
-const claim = withdrawClaimMessage().beginParse();
-check('опкод клейма', claim.loadUint(32) === 0x52455503);
-check('у клейма нет параметров', claim.remainingBits === 0);
+const claim = claimMessage().beginParse();
+check('опкод получения', claim.loadUint(32) === 0x52455553);
+check('у получения нет параметров', claim.remainingBits === 0);
 
 console.log('\nсериализация');
 check('BOC разбирается обратно', Cell.fromBase64(body.toBoc().toString('base64')).equals(body));

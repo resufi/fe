@@ -1,11 +1,16 @@
 {
   "network": "mainnet",
-  "deployedAt": "2026-09-01T22:20:26.121Z",
+  "deployedAt": "2026-09-06T16:23:34.403Z",
   "admin": "EQBWUnEceDnlVZp9wRMff0_8Rg6ysoXUOP_G9OjCuY2ENPGu",
-  "vault": "EQCQh4q89Q5wknOs6I3INiTwwne6zgIV_cnS-rtHu26I7YFO",
+  "vault": "EQAptHUC7lFd9vSwzPT-X5zpXUOFVZXAj89uqJVRD7yi_O0T",
   "registry": "EQAyzLYKyDkIxoTE_dCxwLwrxBDLksNFkAsLHOvMhFziszS3",
   "jettonMaster": "EQC98_qAmNEptUtPc7W6xdHh_ZHrBUFpw5Ft_IzNU20QAJav",
-  "vaultJettonWallet": "EQB9yu2Q4XXr57dUpIzctJxsRlVgPV80NxIsJYNZ9NNv3xSG",
+  "vaultJettonWallet": "EQBMWoktZJmo4WoAVW6pYG2dosuwjo_DqVd0jr09o0ptfpsn",
+  "trancheMasters": [
+    "EQBSuLVT1u3Ip8iScJk04MYhAdxh8KSLDKOBENPrMOpVXrpK",
+    "EQAN56yQq-AbTgQtSGdprN0GlkoOjkurKV98gEhO2Qd9IbT-",
+    "EQBGCffsm-wmyJkbDQAIHVAJH-l8mqmn6zUW2VpcReSU91aL"
+  ],
   "mandate": {
     "maxLossBps": 3000,
     "withdrawDelay": 259200,

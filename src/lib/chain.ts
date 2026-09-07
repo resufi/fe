@@ -200,31 +200,30 @@ export async function readVaultState(vault: Address): Promise<VaultState> {
     };
 }
 
-export async function readPositionAddress(vault: Address, owner: Address, trancheId: number): Promise<Address> {
-    return cachedAddress(`pos:${vault}:${owner}:${trancheId}`, async () => {
-        const res = await call(vault, 'positionAddress', [owner, BigInt(trancheId)]);
+/** Адрес заявки на выход. Выводится из владельца, поэтому кешируется. */
+export async function readTicketAddress(vault: Address, owner: Address, trancheId: number): Promise<Address> {
+    return cachedAddress(`ticket:${vault}:${owner}:${trancheId}`, async () => {
+        const res = await call(vault, 'ticketAddress', [owner, BigInt(trancheId)]);
         return res.stack.readAddress();
     });
 }
 
-export type PositionState = {
-    shares: bigint;
-    lockedShares: bigint;
-    unlockAt: number;
-};
+export type TicketState = { pendingShares: bigint; unlockAt: number };
 
-/** Позиции может не быть вовсе — это норма, а не ошибка. */
-export async function readPosition(position: Address): Promise<PositionState | null> {
-    const state = await enqueue(() => getClient().getContractState(position));
+/**
+ * Незакрытая заявка на выход. Её может не быть вовсе — это норма: заявка
+ * появляется только после сжигания долей.
+ */
+export async function readTicket(ticket: Address): Promise<TicketState | null> {
+    const state = await enqueue(() => getClient().getContractState(ticket));
     if (state.state !== 'active') return null;
 
-    const res = await call(position, 'positionData');
+    const res = await call(ticket, 'ticketData');
     res.stack.readAddress(); // vault
     res.stack.readAddress(); // owner
     res.stack.readNumber(); // trancheId
     return {
-        shares: res.stack.readBigNumber(),
-        lockedShares: res.stack.readBigNumber(),
+        pendingShares: res.stack.readBigNumber(),
         unlockAt: res.stack.readNumber(),
     };
 }

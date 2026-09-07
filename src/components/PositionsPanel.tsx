@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useTonConnectUI } from '@tonconnect/ui-react';
+import { useTonConnectUI, useTonAddress } from '@tonconnect/ui-react';
+import { Address } from '@ton/core';
 import { TRANCHES } from '../lib/config';
 import { fmtAmount, fmtDuration, toGram } from '../lib/format';
-import { withdrawClaimMessage, withdrawRequestMessage, WITHDRAW_CLAIM_TON, WITHDRAW_REQUEST_TON } from '../lib/payloads';
+import { burnMessage, claimMessage, BURN_TON, CLAIM_TON } from '../lib/payloads';
 import { MyPosition, ProtocolData } from '../hooks/useProtocol';
 
 type Props = { data: ProtocolData; withdrawDelay: number; onDone: () => void };
@@ -43,19 +44,20 @@ function PositionRow({
     onDone: () => void;
 }) {
     const [tonConnectUI] = useTonConnectUI();
+    const wallet = useTonAddress();
     const [busy, setBusy] = useState(false);
     const meta = TRANCHES[pos.trancheId];
 
     const now = Math.floor(Date.now() / 1000);
-    const matured = pos.lockedShares > 0n && now >= pos.unlockAt;
-    const waiting = pos.lockedShares > 0n && !matured;
+    const matured = pos.pendingShares > 0n && now >= pos.unlockAt;
+    const waiting = pos.pendingShares > 0n && !matured;
 
-    async function send(payload: string, ton: bigint) {
+    async function send(to: Address, payload: string, ton: bigint) {
         setBusy(true);
         try {
             await tonConnectUI.sendTransaction({
                 validUntil: Math.floor(Date.now() / 1000) + 300,
-                messages: [{ address: pos.address.toString(), amount: ton.toString(), payload }],
+                messages: [{ address: to.toString(), amount: ton.toString(), payload }],
             });
             setTimeout(onDone, 6000);
         } finally {
@@ -68,32 +70,37 @@ function PositionRow({
             <div className="position__main">
                 <span className="muted small">{meta.name}</span>
                 <div className="position__figures">
-                    {/* GRAM первым числом намеренно. Учёт ведётся в tsTON, и
-                        рост самого tsTON в наши цифры не попадает: senior
-                        видел бы уменьшающийся остаток и читал его как убыток,
-                        хотя в GRAM он в плюсе. */}
+                    {/* GRAM первым числом намеренно: учёт ведётся в tsTON, и
+                        рост самого tsTON в наши цифры не попадает. */}
                     <div className="num position__value">
                         {rate === null ? fmtAmount(pos.valueNow) : fmtAmount(toGram(pos.valueNow, rate))}
                         <span className="muted"> {rate === null ? 'tsTON' : 'GRAM'}</span>
                     </div>
                     <div className="muted small num">
                         {rate === null ? null : <>{fmtAmount(pos.valueNow, 4)} tsTON · </>}
-                        {fmtAmount(pos.shares + pos.lockedShares, 4)} shares
+                        {fmtAmount(pos.shares + pos.pendingShares, 4)} shares
                     </div>
                 </div>
             </div>
 
             {waiting && (
-                <p className="muted small">Available in {fmtDuration(pos.unlockAt - now)}</p>
+                <p className="muted small">
+                    {fmtAmount(pos.pendingShares, 4)} exiting · available in{' '}
+                    {fmtDuration(pos.unlockAt - now)}
+                </p>
             )}
 
             <div className="position__actions">
-                {pos.shares > 0n && (
+                {pos.shares > 0n && wallet && (
                     <button
                         className="btn btn--ghost"
                         disabled={busy}
                         onClick={() =>
-                            send(withdrawRequestMessage(pos.shares).toBoc().toString('base64'), WITHDRAW_REQUEST_TON)
+                            send(
+                                pos.shareWallet,
+                                burnMessage(pos.shares, Address.parse(wallet)).toBoc().toString('base64'),
+                                BURN_TON,
+                            )
                         }
                     >
                         Withdraw
@@ -103,15 +110,17 @@ function PositionRow({
                     <button
                         className="btn"
                         disabled={busy}
-                        onClick={() => send(withdrawClaimMessage().toBoc().toString('base64'), WITHDRAW_CLAIM_TON)}
+                        onClick={() => send(pos.ticket, claimMessage().toBoc().toString('base64'), CLAIM_TON)}
                     >
                         Claim
                     </button>
                 )}
             </div>
 
-            {pos.shares > 0n && pos.lockedShares === 0n && (
-                <p className="muted small">Withdrawal takes {fmtDuration(withdrawDelay)}</p>
+            {pos.shares > 0n && pos.pendingShares === 0n && (
+                <p className="muted small">
+                    Shares are transferable · withdrawal takes {fmtDuration(withdrawDelay)}
+                </p>
             )}
         </div>
     );

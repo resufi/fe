@@ -7,13 +7,29 @@
  *
  * Запуск: npm run verify-deploy
  */
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { TonClient, Address, TupleBuilder } from '@ton/ton';
 
-const d = JSON.parse(readFileSync('/Users/fivestars/resu/resu-sc-ton/resu-sc-ton/deployments/mainnet.json', 'utf8'));
-// Намеренно toncenter: ton-access ранее отдавал состояние с отставшего узла.
+const DIR = '/Users/fivestars/resu/resu-sc-ton/resu-sc-ton/deployments';
+const d = JSON.parse(readFileSync(`${DIR}/mainnet.json`, 'utf8'));
+
 const client = new TonClient({ endpoint: 'https://toncenter.com/api/v2/jsonRPC' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Публичный toncenter лимитирован; без повтора проверка обрывается на середине
+// и выглядит как поломка протокола, хотя это всего лишь отказ узла.
+async function retry(fn, tries = 5) {
+    for (let i = 0; ; i++) {
+        await sleep(1300);
+        try {
+            return await fn();
+        } catch (e) {
+            const limited = e?.response?.status === 429 || String(e?.message ?? '').includes('429');
+            if (!limited || i >= tries) throw e;
+            await sleep(1500 * 2 ** i);
+        }
+    }
+}
 
 let bad = 0;
 const check = (name, ok, extra = '') => {
@@ -21,58 +37,85 @@ const check = (name, ok, extra = '') => {
     if (!ok) bad++;
 };
 
-async function get(addr, method, args = []) {
-    await sleep(1600);
-    const b = new TupleBuilder();
-    for (const a of args) (typeof a === 'bigint' ? b.writeNumber(a) : b.writeAddress(a));
-    return client.runMethod(Address.parse(addr), method, b.build());
-}
+const get = (addr, method, args = []) =>
+    retry(() => {
+        const b = new TupleBuilder();
+        for (const a of args) (typeof a === 'bigint' ? b.writeNumber(a) : b.writeAddress(a));
+        return client.runMethod(Address.parse(addr), method, b.build());
+    });
+
+const A = (s) => Address.parse(s);
 
 console.log('состояние контрактов');
-for (const [name, a] of [['Vault', d.vault], ['Registry', d.registry]]) {
-    await sleep(1600);
-    const st = await client.getContractState(Address.parse(a));
+const all = [
+    ['Vault', d.vault],
+    ['Registry', d.registry],
+    ...(d.trancheMasters ?? []).map((m, i) => [`Мастер транша ${i}`, m]),
+];
+for (const [name, addr] of all) {
+    const st = await retry(() => client.getContractState(A(addr)));
     check(`${name} активен`, st.state === 'active', `-> ${st.state}`);
 }
 
-console.log('\nсвязки Vault -> …');
-const reg = (await get(d.vault, 'registryAddress')).stack.readAddress();
-check('Vault знает Registry', reg.equals(Address.parse(d.registry)), `-> ${reg}`);
-
+console.log('\nсвязки');
+check('Vault знает Registry', (await get(d.vault, 'registryAddress')).stack.readAddress().equals(A(d.registry)));
 const vjw = (await get(d.vault, 'jettonWalletAddress')).stack.readAddressOpt();
-check('Vault.jettonWallet установлен', vjw !== null);
-check('…и совпадает с артефактом', vjw?.equals(Address.parse(d.vaultJettonWallet)) ?? false);
+check('Vault.jettonWallet совпадает с артефактом', vjw?.equals(A(d.vaultJettonWallet)) ?? false);
 
-console.log('\nсвязки Registry -> …');
+const derived = (await get(d.jettonMaster, 'get_wallet_address', [A(d.vault)])).stack.readAddress();
+check('кошелёк Vault выдан настоящим мастером tsTON', derived.equals(A(d.vaultJettonWallet)), `-> ${derived}`);
+
+if (d.trancheMasters) {
+    console.log('\nжетоны траншей');
+    for (let i = 0; i < 3; i++) {
+        const tm = (await get(d.vault, 'trancheMaster', [BigInt(i)])).stack.readAddressOpt();
+        check(`Vault -> мастер ${i}`, tm?.equals(A(d.trancheMasters[i])) ?? false, `-> ${tm}`);
+
+        const jd = await get(d.trancheMasters[i], 'get_jetton_data');
+        jd.stack.readBigNumber();
+        jd.stack.readBoolean();
+        check(`мастер ${i} -> Vault`, jd.stack.readAddress().equals(A(d.vault)));
+        const meta = jd.stack.readCell();
+        console.log(`       метадата: ${meta.bits.length === 0 ? 'ПУСТАЯ (зальётся позже)' : 'задана'}`);
+
+        const tid = (await get(d.trancheMasters[i], 'trancheId')).stack.readNumber();
+        check(`мастер ${i} знает свой транш`, tid === i, `-> ${tid}`);
+    }
+}
+
+console.log('\nRegistry');
 const rv = (await get(d.registry, 'vaultAddress')).stack.readAddressOpt();
-check('Registry знает Vault', rv?.equals(Address.parse(d.vault)) ?? false, `-> ${rv}`);
+check('Registry смотрит на текущий Vault', rv?.equals(A(d.vault)) ?? false, `-> ${rv}`);
+if (rv && !rv.equals(A(d.vault))) {
+    console.log('       Registry разворачивается детерминированно, поэтому при');
+    console.log('       переразвёртывании встаёт на ТОТ ЖЕ адрес, а SetVault одноразовый:');
+    console.log('       он остался привязан к прошлому Vault. Страховой слой в новой');
+    console.log('       версии работать не будет, пока Registry не развернут заново.');
+}
 
-const rjw = (await get(d.registry, 'jettonWalletAddress')).stack.readAddressOpt();
-check('Registry.jettonWallet установлен', rjw !== null);
-
-console.log('\nкошельки жетона выданы настоящим мастером tsTON');
-const derivedV = (await get(d.jettonMaster, 'get_wallet_address', [Address.parse(d.vault)])).stack.readAddress();
-check('кошелёк Vault сходится с мастером', derivedV.equals(Address.parse(d.vaultJettonWallet)), `-> ${derivedV}`);
-const derivedR = (await get(d.jettonMaster, 'get_wallet_address', [Address.parse(d.registry)])).stack.readAddress();
-check('кошелёк Registry сходится с мастером', rjw ? derivedR.equals(rjw) : false, `-> ${derivedR}`);
-
-console.log('\nмандат — сверка с тем, что задумывали');
+console.log('\nмандат');
 const vs = await get(d.vault, 'vaultState');
-vs.stack.readBigNumber(); vs.stack.readBigNumber();
-const maxLoss = vs.stack.readNumber(), wd = vs.stack.readNumber();
-check('потолок потерь 30%', maxLoss === d.mandate.maxLossBps, `-> ${maxLoss}`);
-check('окно выхода 3 дня', wd === d.mandate.withdrawDelay, `-> ${wd}`);
-
-const pt = await get(d.vault, 'protectionTerms');
-const sf = pt.stack.readNumber(), stm = pt.stack.readNumber(), mf = pt.stack.readNumber();
-check('плата senior 2%', sf === d.mandate.seniorFeeBps, `-> ${sf}`);
-check('доля mezzanine 3%', stm === d.mandate.seniorFeeToMezzBps, `-> ${stm}`);
-check('mezzanine не платит', mf === d.mandate.mezzFeeBps, `-> ${mf}`);
-
+vs.stack.readBigNumber();
+vs.stack.readBigNumber();
+check('потолок потерь', vs.stack.readNumber() === d.mandate.maxLossBps);
+check('окно выхода', vs.stack.readNumber() === d.mandate.withdrawDelay);
 const cs = await get(d.vault, 'codeState');
-const pv = cs.stack.readNumber(), tl = cs.stack.readNumber();
-check('версия кода позиций = 1', pv === 1, `-> ${pv}`);
-check('таймлок = 0 (как и договаривались на тесты)', tl === 0, `-> ${tl}`);
+cs.stack.readNumber();
+check('таймлок обновления', cs.stack.readNumber() === d.upgradeTimelock);
+
+const archives = readdirSync(DIR).filter((f) => f.startsWith('mainnet.') && f !== 'mainnet.json');
+if (archives.length) {
+    console.log('\nпрошлые развёртывания');
+    for (const f of archives) {
+        const prev = JSON.parse(readFileSync(`${DIR}/${f}`, 'utf8'));
+        const t = await get(prev.vault, 'trancheState', [0n]);
+        const assets = t.stack.readBigNumber();
+        console.log(
+            `  ${f}: junior ${(Number(assets) / 1e9).toFixed(6)} tsTON` +
+                (assets > 0n ? '  <- средства ещё там, вывести: blueprint run exitV1' : ''),
+        );
+    }
+}
 
 console.log(bad === 0 ? '\nразвёрнуто корректно' : `\nпроблем: ${bad}`);
 process.exit(bad === 0 ? 0 : 1);

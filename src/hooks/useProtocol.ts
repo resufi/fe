@@ -2,24 +2,31 @@ import { useCallback, useEffect, useState } from 'react';
 import { Address } from '@ton/core';
 import { useTonAddress } from '@tonconnect/ui-react';
 import { addr, deployment, isDeployed, TRANCHES } from '../lib/config';
-import { hasApiKey } from '../lib/chain';
 import {
-    PositionState,
+    hasApiKey,
+    readAssetRate,
     readJettonBalance,
     readJettonWallet,
-    readPosition,
-    readAssetRate,
-    readPositionAddress,
+    readTicket,
+    readTicketAddress,
     readTranche,
     readVaultState,
     TrancheState,
     VaultState,
 } from '../lib/chain';
 
-export type MyPosition = PositionState & {
+export type MyPosition = {
     trancheId: number;
-    address: Address;
-    /** Сколько стоят доли прямо сейчас, в единицах базового актива. */
+    /** Доли на руках: жетон транша, его можно переводить и продавать. */
+    shares: bigint;
+    /** Доли, сожжённые и ждущие созревания заявки. */
+    pendingShares: bigint;
+    unlockAt: number;
+    /** Кошелёк жетона транша — туда шлётся сжигание. */
+    shareWallet: Address;
+    /** Контракт заявки — оттуда забираются деньги. */
+    ticket: Address;
+    /** Сколько всё это стоит сейчас, в единицах базового актива. */
     valueNow: bigint;
 };
 
@@ -107,14 +114,26 @@ export function useProtocol() {
             // публичного RPC и возвращает отказы вместо данных.
             const positions: MyPosition[] = [];
             for (const t of TRANCHES) {
-                const posAddr = await readPositionAddress(vaultAddr, owner, t.id);
-                const pos = await readPosition(posAddr);
-                if (!pos || (pos.shares === 0n && pos.lockedShares === 0n)) continue;
+                const master = addr.trancheMaster(t.id);
+                if (!master) continue;
+
+                const shareWallet = await readJettonWallet(master, owner);
+                const shares = await readJettonBalance(shareWallet);
+
+                // Заявка есть не всегда: она появляется только после сжигания.
+                const ticket = await readTicketAddress(vaultAddr, owner, t.id);
+                const pending = await readTicket(ticket);
+                const pendingShares = pending?.pendingShares ?? 0n;
+
+                if (shares === 0n && pendingShares === 0n) continue;
                 positions.push({
-                    ...pos,
                     trancheId: t.id,
-                    address: posAddr,
-                    valueNow: assetsForShares(tranches[t.id], pos.shares + pos.lockedShares),
+                    shares,
+                    pendingShares,
+                    unlockAt: pending?.unlockAt ?? 0,
+                    shareWallet,
+                    ticket,
+                    valueNow: assetsForShares(tranches[t.id], shares + pendingShares),
                 });
             }
 
