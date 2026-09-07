@@ -1,7 +1,0 @@
-{
-  "name": "Resu Junior",
-  "symbol": "rsJUNIOR",
-  "decimals": "9",
-  "description": "Junior tranche of the Resu pool. Absorbs losses first and collects the protection fee paid by the senior tranches.",
-  "image": "https://ЗАМЕНИ-НА-СВОЙ-ХОСТ/resu-junior.png"
-}
