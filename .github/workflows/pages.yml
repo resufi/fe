@@ -39,6 +39,11 @@ jobs:
 
       # Манифест — единственное, что кошелёк скачивает сам, и единственное,
       # чего не видно до попытки подключения. Проверяем до публикации.
+      # Переменных много, и пропущенная не ломает сборку — приложение просто
+      # молча уходит в запасное поведение. Ровно так мы потеряли манифест
+      # TonConnect и получили «invalid manifest» уже на живом сайте.
+      - run: npm run check-env
+
       - name: Check TonConnect manifest
         env:
           VITE_TONCONNECT_MANIFEST_URL: ${{ secrets.VITE_TONCONNECT_MANIFEST_URL }}
@@ -53,11 +58,20 @@ jobs:
           # Все VITE_* переменные обязаны быть здесь: сборка видит только то,
           # что ей передали явно. Пропущенная переменная не ошибка сборки —
           # приложение просто молча уходит в запасное поведение.
+          # --- TON ---
           VITE_NETWORK: ${{ secrets.VITE_NETWORK || 'mainnet' }}
           VITE_TONCONNECT_MANIFEST_URL: ${{ secrets.VITE_TONCONNECT_MANIFEST_URL }}
+          VITE_TON_ENDPOINT: ${{ secrets.VITE_TON_ENDPOINT }}
           # Ключ toncenter снимает лимит запросов. В статической сборке он
           # попадает в публичный бандл — см. README, раздел про Pages.
           VITE_TONCENTER_API_KEY: ${{ secrets.VITE_TONCENTER_API_KEY }}
+
+          # --- Solana ---
+          VITE_SOLANA_NETWORK: ${{ secrets.VITE_SOLANA_NETWORK || 'devnet' }}
+          VITE_SOLANA_RPC: ${{ secrets.VITE_SOLANA_RPC }}
+          # Без него подключение по WalletConnect не работает вовсе.
+          # Публичный по назначению: попадает в бандл и виден всем.
+          VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
         run: npm run build
 
       - uses: actions/configure-pages@v5
