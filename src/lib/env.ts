@@ -11,5 +11,14 @@ declare const __RESU_ENV__: Record<string, string | undefined> | undefined;
 export function env(name: string): string | undefined {
 	const fromBuild = typeof __RESU_ENV__ === "undefined" ? undefined : __RESU_ENV__;
 	// В Node значений сборки нет — берём из окружения процесса.
-	return fromBuild?.[name] ?? globalThis.process?.env?.[name];
+	const value = fromBuild?.[name] ?? globalThis.process?.env?.[name];
+
+	// Пустая строка — это НЕ значение.
+	//
+	// Незаполненный секрет в GitHub Actions приходит именно так, а оператор ??
+	// подставляет запасное значение только вместо undefined. В результате
+	// пустая строка проходит как настоящий адрес: приложение отправляло
+	// запросы само себе и получало 405, вместо того чтобы взять узел по
+	// умолчанию.
+	return value === undefined || value.trim() === "" ? undefined : value;
 }

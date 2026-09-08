@@ -124,5 +124,29 @@ console.log('\nтранзакции Solana');
     check('адреса пула подставлены', solanaDeployment.vault !== null);
 }
 
+// --- переменные сборки ---------------------------------------------------
+//
+// Незаполненный секрет в CI приходит пустой строкой, а не отсутствием.
+// Если считать её значением, приложение подставит пустой адрес и начнёт
+// слать запросы само себе — ровно это и случилось на живом сайте.
+console.log('\nпеременные сборки');
+{
+    const { env } = await import('./src/lib/env.ts');
+    const P = globalThis.process.env;
+
+    P.RESU_TEST_EMPTY = '';
+    P.RESU_TEST_SPACES = '   ';
+    P.RESU_TEST_VALUE = 'https://toncenter.com/api/v2/jsonRPC';
+    delete P.RESU_TEST_MISSING;
+
+    check('пустая строка считается незаданной', env('RESU_TEST_EMPTY') === undefined);
+    check('пробелы считаются незаданными', env('RESU_TEST_SPACES') === undefined);
+    check('отсутствующая переменная — undefined', env('RESU_TEST_MISSING') === undefined);
+    check(
+        'настоящее значение возвращается как есть',
+        env('RESU_TEST_VALUE') === 'https://toncenter.com/api/v2/jsonRPC',
+    );
+}
+
 console.log(failed === 0 ? '\nвсе проверки пройдены' : `\nпровалено: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

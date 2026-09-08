@@ -37,9 +37,10 @@ export async function connectWalletConnect(): Promise<WcSession> {
 		);
 	}
 
-	const { default: UniversalProvider } = await import(
-		"@walletconnect/universal-provider"
-	);
+	const [{ default: UniversalProvider }, { WalletConnectModal }] = await Promise.all([
+		import("@walletconnect/universal-provider"),
+		import("@walletconnect/modal"),
+	]);
 
 	const provider =
 		(cached?.provider as InstanceType<typeof UniversalProvider> | undefined) ??
@@ -55,17 +56,49 @@ export async function connectWalletConnect(): Promise<WcSession> {
 	cached = { provider };
 
 	const chain = chainId();
-	const session = await provider.connect({
-		optionalNamespaces: {
-			solana: {
-				chains: [chain],
-				// signAndSendTransaction поддерживают не все кошельки; просим оба
-				// метода, а какой применить — решаем по ответу сессии.
-				methods: ["solana_signAndSendTransaction", "solana_signTransaction"],
-				events: [],
-			},
-		},
+
+	// Провайдер отдаёт ссылку для подключения событием display_uri. Без
+	// показанного QR-кода человеку нечего сканировать, а подключение просто
+	// ждёт — снаружи это выглядит как вечная загрузка.
+	const modal = new WalletConnectModal({
+		projectId: id,
+		chains: [chain],
+		// Список сознательно короткий: те же кошельки, что и в нашей модалке.
+		explorerRecommendedWalletIds: undefined,
 	});
+
+	const onUri = (uri: string) => {
+		void modal.openModal({ uri });
+	};
+	provider.on("display_uri", onUri);
+
+	// Закрытие окна человеком — обычный отказ, а не сбой: подключение
+	// должно оборваться, а не висеть.
+	let cancelled = false;
+	const unsubscribe = modal.subscribeModal((state: { open: boolean }) => {
+		if (!state.open) cancelled = true;
+	});
+
+	let session;
+	try {
+		session = await provider.connect({
+			optionalNamespaces: {
+				solana: {
+					chains: [chain],
+					// signAndSendTransaction поддерживают не все кошельки; просим
+					// оба метода, а какой применить — решаем по ответу сессии.
+					methods: ["solana_signAndSendTransaction", "solana_signTransaction"],
+					events: [],
+				},
+			},
+		});
+	} finally {
+		provider.removeListener("display_uri", onUri);
+		unsubscribe();
+		modal.closeModal();
+	}
+
+	if (cancelled && !session) throw new Error("Подключение отменено");
 
 	const accounts = session?.namespaces?.solana?.accounts ?? [];
     if (accounts.length === 0) throw new Error("Кошелёк не вернул ни одного счёта");
