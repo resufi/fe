@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react";
 import { Address } from "@ton/core";
-import testnet from "../deployments/testnet.json";
-import mainnet from "../deployments/mainnet.json";
+import testnet from "../deployments/testnet.json" with { type: "json" };
+import mainnet from "../deployments/mainnet.json" with { type: "json" };
+import { env } from "./env.ts";
 
 export type Mandate = {
 	maxLossBps: number;
@@ -22,7 +23,7 @@ export type Deployment = {
 	mandate: Mandate;
 };
 
-const NETWORK = (import.meta.env.VITE_NETWORK ?? "testnet") as
+const NETWORK = (env("VITE_NETWORK") ?? "testnet") as
 	| "testnet"
 	| "mainnet";
 

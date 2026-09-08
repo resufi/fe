@@ -1,20 +1,35 @@
 import { useState } from "react";
 import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
-import { deployment, isDeployed } from "./lib/config";
-import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format";
-import { useProtocol } from "./hooks/useProtocol";
-import { hasApiKey } from "./lib/chain";
-import { Waterfall } from "./components/Waterfall";
-import { DepositPanel } from "./components/DepositPanel";
-import { PositionsPanel } from "./components/PositionsPanel";
-import { Logo } from "./components/Logo";
-import { Loader } from "./components/Loader";
+import { deployment, isDeployed } from "./lib/config.ts";
+import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
+import { useProtocol } from "./hooks/useProtocol.ts";
+import { hasApiKey } from "./lib/chain.ts";
+import { Waterfall } from "./components/Waterfall.tsx";
+import { DepositPanel } from "./components/DepositPanel.tsx";
+import { PositionsPanel } from "./components/PositionsPanel.tsx";
+import { Logo } from "./components/Logo.tsx";
+import { ChainSwitch } from "./components/ChainSwitch.tsx";
+import { ChainNotReady } from "./components/ChainNotReady.tsx";
+import { SolanaConnect } from "./components/SolanaConnect.tsx";
+import { SolanaPanel } from "./components/SolanaPanel.tsx";
+import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
+import { CHAINS, loadChain, saveChain, type ChainId } from "./lib/chains.ts";
+import { Loader } from "./components/Loader.tsx";
 import css from "./App.module.css";
 
 export default function App() {
-	const { data, error, loading, refresh, network } = useProtocol();
+	const [chain, setChainState] = useState<ChainId>(loadChain);
+	const solana = useSolanaWallet();
+	const { data, error, loading, refresh, network } = useProtocol(
+		chain,
+		chain === "solana" ? solana.address : null,
+	);
 	const wallet = useTonAddress();
 	const [selected, setSelected] = useState(0);
+	function switchChain(id: ChainId) {
+		setChainState(id);
+		saveChain(id);
+	}
 
 	if (isDeployed && !data && !error) {
 		return <Loader />;
@@ -28,7 +43,16 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<TonConnectButton />
+				<span className={css.topbarRight}>
+					<ChainSwitch value={chain} onChange={switchChain} />
+					{/* Кнопка кошелька своя у каждой сети. Пока живёт только TON,
+					    в остальных подключать нечего. */}
+					{chain === "ton" ? (
+						<TonConnectButton />
+					) : (
+						<SolanaConnect wallet={solana} />
+					)}
+				</span>
 			</header>
 
 			<h1 className={css.lede} data-lede>
@@ -37,7 +61,9 @@ export default function App() {
 				your place in the loss queue.
 			</h1>
 
-			{!isDeployed ? (
+			{!CHAINS[chain].deployed ? (
+				<ChainNotReady chain={chain} />
+			) : !isDeployed ? (
 				<NotDeployed />
 			) : !data ? (
 				<p className={css.state}>
@@ -66,12 +92,28 @@ export default function App() {
 							headroom={data.headroom}
 							mandate={deployment.mandate}
 							rate={data.rate}
+							asset={CHAINS[chain].asset}
 							selected={selected}
 							onSelect={setSelected}
 						/>
 
 						<div className={css.side}>
-							{wallet ? (
+							{chain === "solana" ? (
+								solana.address ? (
+									<SolanaPanel
+										data={data}
+										trancheId={selected}
+										asset={CHAINS[chain].asset}
+										wallet={solana}
+										onDone={() => void refresh()}
+									/>
+								) : (
+									<p className="muted state">
+										Connect a Solana wallet to deposit. Pool state above is live
+										from {network}.
+									</p>
+								)
+							) : wallet ? (
 								<>
 									<DepositPanel
 										data={data}
@@ -81,6 +123,8 @@ export default function App() {
 									<PositionsPanel
 										data={data}
 										withdrawDelay={data.vault.withdrawDelay}
+										asset={CHAINS[chain].asset}
+										unit={CHAINS[chain].unit}
 										onDone={() => void refresh()}
 									/>
 								</>

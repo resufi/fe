@@ -1,0 +1,22 @@
+{
+  "network": "devnet",
+  "deployedAt": "2026-09-07T23:34:23.093Z",
+  "programId": "AEnnBX9nWccRXXjzpSYxFoG8ZqdHmfv4vy8Bszqd8Kk5",
+  "admin": "7mn1vG8eVM7F6sVUhMNkS4Qm1oLAm2nK7b4SDaq7ZmqK",
+  "vault": "CCiPh1JXbun8jyujGbmr1XHRK1SMMU6X83M9WubKJZr5",
+  "registry": "9iU8EPs49EM4ApcNNitRhkJmGqD6bQeXPLkmC5fL2xUC",
+  "assetMint": "kjkCjtjxpL5UNTHT6ZZRF2QZR6touYGYgw7To45CXGj",
+  "assetVault": "3oyXPb3JzYsceXGeUBsJqZkyd4EkxFB8MW9xJzA9Fszh",
+  "trancheMints": [
+    "2ATP7wN8HVNpnQedYYi34UVgpdA8pDMraBcgJ4FhYWBr",
+    "7dLnuziKRk64fKcqFXNM69bDVDR1uV3Q4U4CVmGMjhpt",
+    "HXbtpLuWorCs6gcgm53aouoYRBL9jMkBnuh1SoTxuFYd"
+  ],
+  "mandate": {
+    "maxLossBps": 3000,
+    "withdrawDelay": 259200,
+    "seniorFeeBps": 200,
+    "seniorFeeToMezzBps": 300,
+    "mezzFeeBps": 0
+  }
+}

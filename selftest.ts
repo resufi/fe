@@ -85,5 +85,44 @@ check('у получения нет параметров', claim.remainingBits =
 console.log('\nсериализация');
 check('BOC разбирается обратно', Cell.fromBase64(body.toBoc().toString('base64')).equals(body));
 
+// --- сборка транзакций Solana ------------------------------------------
+//
+// Порядок аккаунтов обязан совпадать с #[derive(Accounts)] в программе.
+// Перепутанный порядок даёт отказ на симуляции — но лучше поймать здесь.
+console.log('\nтранзакции Solana');
+{
+    const { PublicKey } = await import('@solana/web3.js');
+    const { buildDeposit, ticketAddress, shareAccount } = await import('./src/lib/solanaTx.ts');
+    const { solanaDeployment } = await import('./src/lib/solana.ts');
+
+    const owner = new PublicKey('7mn1vG8eVM7F6sVUhMNkS4Qm1oLAm2nK7b4SDaq7ZmqK');
+
+    // PDA заявки выводится детерминированно — значит воспроизводимо.
+    const t1 = ticketAddress(owner, 0).toBase58();
+    const t2 = ticketAddress(owner, 0).toBase58();
+    check('адрес заявки детерминирован', t1 === t2);
+    check(
+        'заявки разных траншей различаются',
+        ticketAddress(owner, 0).toBase58() !== ticketAddress(owner, 1).toBase58(),
+    );
+    check(
+        'счета долей разных траншей различаются',
+        shareAccount(owner, 0).toBase58() !== shareAccount(owner, 2).toBase58(),
+    );
+
+    // Дискриминатор Anchor: первые 8 байт sha256("global:deposit").
+    const expected = new Uint8Array(
+        await crypto.subtle.digest('SHA-256', new TextEncoder().encode('global:deposit')),
+    ).slice(0, 8);
+
+    const tx = await buildDeposit(owner, 1, 5_000_000_000n);
+    check('транзакция собрана', tx.length > 0);
+    check(
+        'дискриминатор deposit на месте',
+        [...tx].join(',').includes([...expected].join(',')),
+    );
+    check('адреса пула подставлены', solanaDeployment.vault !== null);
+}
+
 console.log(failed === 0 ? '\nвсе проверки пройдены' : `\nпровалено: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

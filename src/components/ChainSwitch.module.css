@@ -1,0 +1,41 @@
+.switch {
+	display: inline-flex;
+	gap: 1px;
+	background: var(--line);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	font: inherit;
+	font-size: 13px;
+	background: var(--bg);
+	color: var(--muted);
+	border: 0;
+	cursor: pointer;
+	transition: color 120ms ease, background 120ms ease;
+}
+
+.tab:hover {
+	color: var(--fg);
+}
+
+.on {
+	background: var(--raise);
+	color: var(--fg);
+}
+
+.soon {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+	border: 1px solid var(--line);
+	border-radius: 3px;
+	padding: 0 4px;
+}

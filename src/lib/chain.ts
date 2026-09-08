@@ -1,5 +1,6 @@
 import { Address, TonClient, TupleBuilder } from '@ton/ton';
 import { deployment } from './config';
+import { env } from "./env.ts";
 
 /**
  * RPC-эндпоинт.
@@ -20,8 +21,8 @@ const TONCENTER = {
     testnet: 'https://testnet.toncenter.com/api/v2/jsonRPC',
 };
 
-const OVERRIDE = import.meta.env.VITE_TON_ENDPOINT as string | undefined;
-const API_KEY = import.meta.env.VITE_TONCENTER_API_KEY as string | undefined;
+const OVERRIDE = env("VITE_TON_ENDPOINT");
+const API_KEY = env("VITE_TONCENTER_API_KEY");
 
 let client: TonClient | null = null;
 

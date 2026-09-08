@@ -6,6 +6,7 @@ import ReactDOM from 'react-dom/client';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import App from './App';
 import './styles/tokens.css';
+import { env } from "./lib/env.ts";
 
 /**
  * Манифест TonConnect.
@@ -21,7 +22,7 @@ import './styles/tokens.css';
  * публичный, и путь по умолчанию сработает сам.
  */
 const manifestUrl =
-	import.meta.env.VITE_TONCONNECT_MANIFEST_URL ??
+	env("VITE_TONCONNECT_MANIFEST_URL") ??
 	new URL(
 		// BASE_URL, а не корень сайта: на GitHub Pages приложение живёт по
 		// пути /<репозиторий>/, и ссылка от origin вела бы мимо — кошелёк

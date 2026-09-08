@@ -1,0 +1,17 @@
+{
+  "network": "mainnet",
+  "deployedAt": null,
+  "programId": null,
+  "vault": null,
+  "registry": null,
+  "assetMint": null,
+  "assetVault": null,
+  "trancheMints": [],
+  "mandate": {
+    "maxLossBps": 3000,
+    "withdrawDelay": 259200,
+    "seniorFeeBps": 200,
+    "seniorFeeToMezzBps": 300,
+    "mezzFeeBps": 0
+  }
+}

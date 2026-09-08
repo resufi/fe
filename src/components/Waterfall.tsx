@@ -1,6 +1,6 @@
-import { TrancheState } from "../lib/chain";
-import { hueStyle, Mandate, TRANCHES } from "../lib/config";
-import { fmtAmount, fmtBps, toGram } from "../lib/format";
+import { TrancheState } from "../lib/chain.ts";
+import { hueStyle, Mandate, TRANCHES } from "../lib/config.ts";
+import { fmtAmount, fmtBps, toGram } from "../lib/format.ts";
 import s from "./Waterfall.module.css";
 
 type Props = {
@@ -8,6 +8,8 @@ type Props = {
 	headroom: bigint;
 	mandate: Mandate;
 	rate: number | null;
+	/** Тикер базового актива: у каждой сети свой. */
+	asset: string;
 	selected: number;
 	onSelect: (id: number) => void;
 };
@@ -26,6 +28,7 @@ export function Waterfall({
 	headroom,
 	mandate,
 	rate,
+	asset,
 	selected,
 	onSelect,
 }: Props) {
@@ -46,7 +49,9 @@ export function Waterfall({
 					<span className="muted"> — losses fill from the bottom</span>
 				</h2>
 				{!empty && (
-					<span className="muted small">{fmtAmount(total)} tsTON pooled</span>
+					<span className="muted small">
+						{fmtAmount(total)} {asset} pooled
+					</span>
 				)}
 			</header>
 
@@ -78,7 +83,7 @@ export function Waterfall({
 								<span className={`${s.rate} num`}>{feeLabel(id, mandate)}</span>
 								<span className={`${s.pool} num`}>
 									{rate === null
-										? `${fmtAmount(state.totalAssets)} tsTON`
+										? `${fmtAmount(state.totalAssets)} ${asset}`
 										: `${fmtAmount(toGram(state.totalAssets, rate))} GRAM`}
 									{!empty && ` · ${pct.toFixed(1)}%`}
 								</span>

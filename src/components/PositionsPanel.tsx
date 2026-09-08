@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
 import { Address } from "@ton/core";
-import { hueStyle, TRANCHES } from "../lib/config";
-import { fmtAmount, fmtDuration, toGram } from "../lib/format";
-import { burnMessage, claimMessage, BURN_TON, CLAIM_TON } from "../lib/payloads";
-import { MyPosition, ProtocolData } from "../hooks/useProtocol";
+import { hueStyle, TRANCHES } from "../lib/config.ts";
+import { fmtAmount, fmtDuration, toGram } from "../lib/format.ts";
+import { burnMessage, claimMessage, BURN_TON, CLAIM_TON } from "../lib/payloads.ts";
+import { MyPosition, ProtocolData } from "../hooks/useProtocol.ts";
 import css from "./PositionsPanel.module.css";
 
-type Props = { data: ProtocolData; withdrawDelay: number; onDone: () => void };
+type Props = {
+	data: ProtocolData;
+	withdrawDelay: number;
+	/** Тикеры базового актива и монеты: у каждой сети свои. */
+	asset: string;
+	unit: string;
+	onDone: () => void;
+};
 
-export function PositionsPanel({ data, withdrawDelay, onDone }: Props) {
+export function PositionsPanel({ data, withdrawDelay, asset, unit, onDone }: Props) {
 	// Пустой блок «позиций нет» — это шум. Просто не показываем ничего.
 	if (!data.wallet || data.wallet.positions.length === 0) {
 		return null;
@@ -24,6 +31,8 @@ export function PositionsPanel({ data, withdrawDelay, onDone }: Props) {
 						key={p.trancheId}
 						pos={p}
 						rate={data.rate}
+						asset={asset}
+						unit={unit}
 						withdrawDelay={withdrawDelay}
 						onDone={onDone}
 					/>
@@ -36,11 +45,15 @@ export function PositionsPanel({ data, withdrawDelay, onDone }: Props) {
 function PositionRow({
 	pos,
 	rate,
+	asset,
+	unit,
 	withdrawDelay,
 	onDone,
 }: {
 	pos: MyPosition;
 	rate: number | null;
+	asset: string;
+	unit: string;
 	withdrawDelay: number;
 	onDone: () => void;
 }) {
@@ -49,6 +62,9 @@ function PositionRow({
 	const [busy, setBusy] = useState(false);
 	const meta = TRANCHES[pos.trancheId];
 
+	// Адреса есть только у TON-позиций; на Solana они выводятся при сборке
+	// транзакции, и эти кнопки там не показываются.
+	const { shareWallet, ticket } = pos;
 	const now = Math.floor(Date.now() / 1000);
 	const matured = pos.pendingShares > 0n && now >= pos.unlockAt;
 	const waiting = pos.pendingShares > 0n && !matured;
@@ -81,10 +97,10 @@ function PositionRow({
 						{rate === null
 							? fmtAmount(pos.valueNow)
 							: fmtAmount(toGram(pos.valueNow, rate))}
-						<span className="muted"> {rate === null ? "tsTON" : "GRAM"}</span>
+						<span className="muted"> {rate === null ? asset : unit}</span>
 					</div>
 					<div className="muted small num">
-						{rate === null ? null : <>{fmtAmount(pos.valueNow, 4)} tsTON · </>}
+						{rate === null ? null : <>{fmtAmount(pos.valueNow, 4)} {asset} · </>}
 						{fmtAmount(pos.shares + pos.pendingShares, 4)} shares
 					</div>
 				</div>
@@ -98,13 +114,13 @@ function PositionRow({
 			)}
 
 			<div className={css.actions}>
-				{pos.shares > 0n && wallet && (
+				{pos.shares > 0n && wallet && shareWallet && (
 					<button
 						className={`${css.btn} ${css.ghost}`}
 						disabled={busy}
 						onClick={() =>
 							send(
-								pos.shareWallet,
+								shareWallet,
 								burnMessage(pos.shares, Address.parse(wallet))
 									.toBoc()
 									.toString("base64"),
@@ -115,13 +131,13 @@ function PositionRow({
 						Withdraw
 					</button>
 				)}
-				{matured && (
+				{matured && ticket && (
 					<button
 						className={css.btn}
 						disabled={busy}
 						onClick={() =>
 							send(
-								pos.ticket,
+								ticket,
 								claimMessage().toBoc().toString("base64"),
 								CLAIM_TON,
 							)

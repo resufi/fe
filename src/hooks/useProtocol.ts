@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Address } from '@ton/core';
 import { useTonAddress } from '@tonconnect/ui-react';
 import { addr, deployment, isDeployed, TRANCHES } from '../lib/config';
+import type { ChainId } from '../lib/chains';
+import { readSolanaVault, readSolanaWallet, solanaDeployed, solanaDeployment } from '../lib/solana';
 import {
     hasApiKey,
     readAssetRate,
@@ -17,17 +19,19 @@ import {
 
 export type MyPosition = {
     trancheId: number;
-    /** Доли на руках: жетон транша, его можно переводить и продавать. */
+    /** Доли на руках: токен транша, его можно переводить и продавать. */
     shares: bigint;
     /** Доли, сожжённые и ждущие созревания заявки. */
     pendingShares: bigint;
     unlockAt: number;
-    /** Кошелёк жетона транша — туда шлётся сжигание. */
-    shareWallet: Address;
-    /** Контракт заявки — оттуда забираются деньги. */
-    ticket: Address;
     /** Сколько всё это стоит сейчас, в единицах базового актива. */
     valueNow: bigint;
+
+    // Адреса нужны только TON: там сжигание и получение идут в разные
+    // контракты, и оба адреса надо знать заранее. На Solana они выводятся
+    // из владельца прямо при сборке транзакции.
+    shareWallet?: Address;
+    ticket?: Address;
 };
 
 /**
@@ -41,8 +45,9 @@ export type MyPosition = {
  */
 export type WalletData = {
     balance: bigint;
-    jettonWallet: Address;
     positions: MyPosition[];
+    /** Только TON: кошелёк базового жетона, куда уходит перевод при депозите. */
+    jettonWallet?: Address;
 };
 
 export type ProtocolData = {
@@ -77,17 +82,54 @@ function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
 /** Пауза между обновлениями, отсчитывается от окончания предыдущего. */
 const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
 
-export function useProtocol() {
+export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null = null) {
     const wallet = useTonAddress();
     const [data, setData] = useState<ProtocolData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const refresh = useCallback(async () => {
-        if (!isDeployed) return;
         setLoading(true);
         setError(null);
         try {
+            // На Solana состояние читается одним аккаунтом: там нет
+            // асинхронных сообщений, и весь пул лежит в одной структуре.
+            if (chain === "solana") {
+                if (!solanaDeployed) return;
+                const v = await readSolanaVault();
+                const tranches = v.tranches.map((t) => ({
+                    totalAssets: t.totalAssets,
+                    totalShares: t.totalShares,
+                }));
+                const vault: VaultState = {
+                    principalDeposited: v.principalDeposited,
+                    cumulativeLoss: v.cumulativeLoss,
+                    maxLossBps: v.mandate.maxLossBps,
+                    withdrawDelay: v.mandate.withdrawDelay,
+                };
+                // Курса к SOL пока нет: на девнете базовый актив тестовый,
+                // а выдумывать курс хуже, чем показать суммы как есть.
+                const base = {
+                    tranches,
+                    vault,
+                    headroom: lossHeadroom(tranches, vault),
+                    rate: null,
+                };
+
+                if (!solanaAddress) {
+                    setData({ ...base, wallet: null });
+                    return;
+                }
+
+                // Пул показываем сразу, кошелёк догружаем: это ещё несколько
+                // запросов, и держать экран пустым всё это время незачем.
+                setData({ ...base, wallet: null });
+                const w = await readSolanaWallet(solanaAddress, tranches);
+                setData({ ...base, wallet: w });
+                return;
+            }
+
+            if (!isDeployed) return;
             const vaultAddr = addr.vault();
             const tranches: TrancheState[] = [];
             for (const t of TRANCHES) {
@@ -145,7 +187,13 @@ export function useProtocol() {
         } finally {
             setLoading(false);
         }
-    }, [wallet]);
+    }, [wallet, chain, solanaAddress]);
+
+    // Данные прошлой сети должны исчезнуть сразу, а не висеть до первого
+    // ответа новой: цифры чужого пула под чужой вкладкой хуже пустоты.
+    useEffect(() => {
+        setData(null);
+    }, [chain]);
 
     useEffect(() => {
         let stopped = false;
@@ -167,5 +215,11 @@ export function useProtocol() {
         };
     }, [refresh]);
 
-    return { data, error, loading, refresh, network: deployment.network };
+    return {
+        data,
+        error,
+        loading,
+        refresh,
+        network: chain === "solana" ? solanaDeployment.network : deployment.network,
+    };
 }

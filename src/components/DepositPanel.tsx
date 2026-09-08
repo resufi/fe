@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Address } from "@ton/core";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
-import { addr, TRANCHES } from "../lib/config";
-import { fmtAmount, parseAmount } from "../lib/format";
-import { depositMessage, DEPOSIT_TOTAL_TON } from "../lib/payloads";
-import { ProtocolData } from "../hooks/useProtocol";
+import { addr, TRANCHES } from "../lib/config.ts";
+import { fmtAmount, parseAmount } from "../lib/format.ts";
+import { depositMessage, DEPOSIT_TOTAL_TON } from "../lib/payloads.ts";
+import { ProtocolData } from "../hooks/useProtocol.ts";
 import css from "./DepositPanel.module.css";
 
 type Props = {
@@ -39,7 +39,9 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 						: null;
 
 	async function send() {
-		if (!wallet || amount === null || !w) return;
+		// jettonWallet есть только на TON; эта панель и работает только там.
+		const jettonWallet = w?.jettonWallet;
+		if (!wallet || amount === null || !jettonWallet) return;
 		setBusy(true);
 		setNote(null);
 		try {
@@ -53,7 +55,7 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 				validUntil: Math.floor(Date.now() / 1000) + 300,
 				messages: [
 					{
-						address: w.jettonWallet.toString(),
+						address: jettonWallet.toString(),
 						amount: DEPOSIT_TOTAL_TON.toString(),
 						payload: body.toBoc().toString("base64"),
 					},
