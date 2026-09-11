@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
+import { useEffect, useRef, useState } from "react";
+import { useTonAddress } from "@tonconnect/ui-react";
 import { deployment, isDeployed } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
@@ -8,13 +8,13 @@ import { Waterfall } from "./components/Waterfall.tsx";
 import { DepositPanel } from "./components/DepositPanel.tsx";
 import { PositionsPanel } from "./components/PositionsPanel.tsx";
 import { Logo } from "./components/Logo.tsx";
-import { ChainSwitch } from "./components/ChainSwitch.tsx";
 import { ChainNotReady } from "./components/ChainNotReady.tsx";
-import { SolanaConnect } from "./components/SolanaConnect.tsx";
+import { NetworkControls } from "./components/NetworkControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
 import { CHAINS, loadChain, saveChain, type ChainId } from "./lib/chains.ts";
 import { Loader } from "./components/Loader.tsx";
+import { HeroSkeleton } from "./components/HeroSkeleton.tsx";
 import css from "./App.module.css";
 
 export default function App() {
@@ -31,7 +31,12 @@ export default function App() {
 		saveChain(id);
 	}
 
-	if (isDeployed && !data && !error) {
+	const booted = useRef(false);
+	useEffect(() => {
+		if (data) booted.current = true;
+	}, [data]);
+
+	if (!booted.current && isDeployed && !data && !error) {
 		return <Loader />;
 	}
 
@@ -43,16 +48,7 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<span className={css.topbarRight}>
-					<ChainSwitch value={chain} onChange={switchChain} />
-					{/* Кнопка кошелька своя у каждой сети. Пока живёт только TON,
-					    в остальных подключать нечего. */}
-					{chain === "ton" ? (
-						<TonConnectButton />
-					) : (
-						<SolanaConnect wallet={solana} />
-					)}
-				</span>
+				<NetworkControls chain={chain} onChange={switchChain} solana={solana} />
 			</header>
 
 			<h1 className={css.lede} data-lede>
@@ -66,12 +62,16 @@ export default function App() {
 			) : !isDeployed ? (
 				<NotDeployed />
 			) : !data ? (
-				<p className={css.state}>
-					{error}{" "}
-					<button className={css.linkish} onClick={() => void refresh()}>
-						Retry
-					</button>
-				</p>
+				error ? (
+					<p className={css.state}>
+						{error}{" "}
+						<button className={css.linkish} onClick={() => void refresh()}>
+							Retry
+						</button>
+					</p>
+				) : (
+					<HeroSkeleton />
+				)
 			) : (
 				<>
 					{(error || !hasApiKey) && (

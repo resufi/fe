@@ -1,0 +1,47 @@
+.controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+}
+
+/* Кнопки подключения приходят из разных мест: TonConnect рисует свою сам,
+   Solana — наша. Поэтому размер задаётся здесь, снаружи, и обе растягиваются
+   на одну ширину и высоту. Иначе переключатель сети прыгал бы при каждой
+   смене сети и при каждом подключении: подпись меняется на адрес.
+
+   !important — вынужденно: TonConnect ставит свои размеры инлайновым стилем,
+   и перебить их обычной специфичностью нельзя. */
+.wallet {
+	display: flex;
+	width: 168px;
+}
+
+.wallet > * {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* Шрифт задаётся и кнопке, и всему, что внутри неё: TonConnect держит
+   подпись во вложенном элементе со своим размером, и правило, поставленное
+   только на кнопку, до текста не доходило — отсюда разный кегль у двух
+   кнопок. Звёздочка здесь безобидна: внутри только текст и знак-маска. */
+.wallet button,
+.wallet button *,
+.wallet :global([data-tc-connect-button]),
+.wallet :global([data-tc-connect-button]) * {
+	font-family: var(--sans) !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	line-height: 1 !important;
+	letter-spacing: normal !important;
+}
+
+.wallet button,
+.wallet :global([data-tc-connect-button]) {
+	width: 100% !important;
+	height: 36px !important;
+	min-height: 36px !important;
+	padding: 0 14px !important;
+	justify-content: center !important;
+	border-radius: 999px !important;
+}

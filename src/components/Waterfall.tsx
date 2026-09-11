@@ -35,6 +35,7 @@ export function Waterfall({
 	const total = tranches.reduce((sum, t) => sum + t.totalAssets, 0n);
 	const empty = total === 0n;
 
+	// пропорций нет вовсе. Доля осталась числом на самой полосе.
 	const order = [2, 1, 0];
 	const share = (v: bigint) => Number((v * 10000n) / total) / 100;
 	const headroomPct = empty
@@ -55,7 +56,7 @@ export function Waterfall({
 				)}
 			</header>
 
-			<div className={`${s.stack} ${empty ? s.empty : ""}`}>
+			<div className={s.stack}>
 				{order.map((id) => {
 					const meta = TRANCHES[id];
 					const state = tranches[id];
@@ -66,9 +67,8 @@ export function Waterfall({
 							key={id}
 							type="button"
 							className={`${s.band} ${selected === id ? s.on : ""}`}
-							style={{ ...hueStyle(id), flexGrow: pct }}
+							style={hueStyle(id)}
 							onClick={() => onSelect(id)}
-							disabled={empty}
 							aria-pressed={selected === id}
 						>
 							<span>

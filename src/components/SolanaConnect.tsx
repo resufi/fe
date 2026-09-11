@@ -32,6 +32,7 @@ export function SolanaConnect({ wallet }: Props) {
 				onClick={() => void wallet.disconnect()}
 				title={`${wallet.address} · click to disconnect`}
 			>
+				<span className={css.mark} aria-hidden="true" />
 				{short(wallet.address)}
 			</button>
 		);
@@ -40,6 +41,7 @@ export function SolanaConnect({ wallet }: Props) {
 	return (
 		<>
 			<button type="button" className={css.button} onClick={() => setOpen(true)}>
+				<span className={css.mark} aria-hidden="true" />
 				Connect Wallet
 			</button>
 

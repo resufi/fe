@@ -1,41 +1,79 @@
+/* Переключатель сети — «таблетка» с катающимся внутри активным табом.
+   Колонки равной ширины (grid-auto-columns: 1fr) — именно поэтому бегунок
+   можно двигать простым translateX на 100% своей ширины, без измерений в JS. */
+
 .switch {
-	display: inline-flex;
-	gap: 1px;
-	background: var(--line);
+	position: relative;
+	display: inline-grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
+	padding: 3px;
+	background: transparent;
 	border: 1px solid var(--line);
-	border-radius: 8px;
-	overflow: hidden;
+	border-radius: 999px;
+}
+
+/* Бегунок лежит под подписями и переезжает между ними. Кривая с лёгким
+   перелётом (1.45 в третьей точке) даёт ощущение переката, а не сдвига:
+   таблетка чуть проскакивает цель и возвращается. */
+.thumb {
+	position: absolute;
+	top: 3px;
+	bottom: 3px;
+	left: 3px;
+	width: calc((100% - 6px) / var(--n));
+	background: var(--brand);
+	border-radius: 999px;
+	transform: translateX(calc(var(--i) * 100%));
+	transition: transform 420ms cubic-bezier(0.34, 1.45, 0.5, 1);
 }
 
 .tab {
+	position: relative;
+	z-index: 1;
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 	gap: 6px;
-	padding: 6px 12px;
+	padding: 6px 14px;
 	font: inherit;
 	font-size: 13px;
-	background: var(--bg);
+	white-space: nowrap;
+	background: transparent;
 	color: var(--muted);
 	border: 0;
+	border-radius: 999px;
 	cursor: pointer;
-	transition: color 120ms ease, background 120ms ease;
+	transition: color 200ms ease;
 }
 
 .tab:hover {
 	color: var(--fg);
 }
 
-.on {
-	background: var(--raise);
-	color: var(--fg);
+/* Белый, а не --brand-fg: на сиреневом бегунке нужен светлый текст, тогда
+   как на кнопке депозита того же цвета надпись тёмная. Это разные роли, и
+   один токен для них был бы натяжкой. */
+.on,
+.on:hover {
+	color: #ffffff;
 }
 
+/* Метка «soon» набрана тем же кеглем и тем же начертанием, что и название
+   сети: мелкие капсы рядом с обычным текстом делали вкладки разными по
+   плотности, хотя они равны по смыслу. Отличает её только приглушённый цвет. */
 .soon {
-	font-size: 10px;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
+	font-size: 13px;
 	color: var(--muted);
-	border: 1px solid var(--line);
-	border-radius: 3px;
-	padding: 0 4px;
+	transition: color 200ms ease;
 }
+
+
+/* Метка «soon» набрана тем же кеглем и начертанием, что и название сети:
+   мелкие капсы рядом с обычным текстом делали вкладки разными по плотности,
+   хотя по смыслу они равны. Отличает её только приглушённый цвет — на
+   сиреневом бегунке это белый вполсилы. */
+.on .soon {
+	color: rgb(255 255 255 / 65%);
+}
+

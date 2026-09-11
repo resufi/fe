@@ -1,0 +1,102 @@
+.wrap {
+	animation: pulse 1.4s ease-in-out infinite;
+}
+
+.hero {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: var(--s7);
+	align-items: start;
+}
+
+@media (max-width: 900px) {
+	.hero {
+		grid-template-columns: 1fr;
+		gap: var(--s6);
+	}
+}
+
+.wf {
+	display: grid;
+	gap: var(--s5);
+}
+
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-height: 360px;
+}
+
+@media (max-width: 780px) {
+	.stack {
+		min-height: 300px;
+	}
+}
+
+.band {
+	flex: 1 1 0;
+	min-height: 76px;
+	background: var(--raise);
+}
+
+.bar {
+	height: 2px;
+	background: var(--line);
+}
+
+.side {
+	display: grid;
+	gap: var(--s6);
+}
+
+.panel {
+	display: grid;
+	gap: var(--s3);
+}
+
+/* Размеры заглушек равны высоте того, что они замещают, а не высоте видимой
+   полоски. Строка текста в 13px занимает 19.5px из-за интерлиньяжа 1.5,
+   поэтому у заглушки бокс 20px, а серая полоска внутри — 13px, нарисованная
+   градиентом по центру. Раньше бокс был 13px, и на каждой строке страница
+   теряла 6.5px: три строки — заголовок, подпись под полосой запаса и
+   свёрнутый «Rules» — давали заметный скачок при появлении данных. */
+.line {
+	height: 20px;
+	background: linear-gradient(var(--raise), var(--raise)) center / 100% 13px
+		no-repeat;
+}
+
+/* 26px шрифта + 12px паддинга сверху и снизу + нижняя рамка. */
+.input {
+	height: 55px;
+	background: linear-gradient(var(--raise), var(--raise)) center / 100% 38px
+		no-repeat;
+}
+
+/* 14px шрифта с интерлиньяжем 1.5 + 12px паддинга + рамка. */
+.button {
+	height: 47px;
+	background: var(--raise);
+	border-radius: var(--radius);
+}
+
+
+/* Заглушка свёрнутого блока «Rules and addresses». Он тоже приходит из
+   данных и на время чтения исчезает, а без места под него страница
+   укорачивалась и весь лендинг под ней подпрыгивал. */
+.details {
+	margin-top: var(--s8);
+	padding-top: var(--s5);
+	border-top: 1px solid var(--line);
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.55;
+	}
+}
