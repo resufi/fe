@@ -19,8 +19,6 @@ export function ChainSwitch({ value, onChange }: Props) {
 				["--i" as string]: active,
 			}}
 		>
-			{/* Бегунок — оформление, а не содержание: скринридер читает вкладки
-			    и их aria-selected, а эту плашку не должен видеть вовсе. */}
 			<span className={css.thumb} aria-hidden="true" />
 
 			{CHAIN_LIST.map((c) => (
@@ -33,8 +31,6 @@ export function ChainSwitch({ value, onChange }: Props) {
 					onClick={() => onChange(c.id)}
 				>
 					{c.name}
-					{/* Помечаем неразвёрнутую сеть сразу, а не после клика:
-					    выбрать её можно, но ожидания честнее задать заранее. */}
 					{!c.deployed && <span className={css.soon}>soon</span>}
 				</button>
 			))}

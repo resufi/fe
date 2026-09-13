@@ -39,7 +39,6 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 						: null;
 
 	async function send() {
-		// jettonWallet есть только на TON; эта панель и работает только там.
 		const jettonWallet = w?.jettonWallet;
 		if (!wallet || amount === null || !jettonWallet) return;
 		setBusy(true);

@@ -2,24 +2,16 @@ import { getWallets } from "@wallet-standard/app";
 import type { Wallet, WalletAccount } from "@wallet-standard/base";
 import { solanaDeployment } from "./solana.ts";
 
-/**
- * Список кошельков — фиксированный, а не «что нашлось».
- *
- * Показывать только установленные — плохо: человек, у которого ничего нет,
- * видит пустоту и не понимает, что делать. Здесь всегда три варианта, а
- * состояние каждого («готов», «не установлен») подписано рядом.
- */
-
 export type WalletId = "walletconnect" | "phantom" | "trust";
 
 export type WalletDef = {
 	id: WalletId;
 	name: string;
-	/** Как называется в реестре Wallet Standard, если установлен. */
+
 	standardName?: string;
-	/** Куда отправить, если не установлен: расширение или приложение. */
+
 	installUrl?: string;
-	/** Ссылка для перехода в приложение на телефоне. */
+
 	deepLink?: (url: string) => string;
 };
 
@@ -27,8 +19,6 @@ export const WALLETS: WalletDef[] = [
 	{
 		id: "walletconnect",
 		name: "WalletConnect",
-		// Ставить нечего: это протокол, а не расширение. Подключение идёт
-		// по QR-коду или переходом в приложение.
 	},
 	{
 		id: "phantom",
@@ -57,7 +47,6 @@ function usable(w: Wallet): boolean {
 	return CONNECT in w.features && SIGN_AND_SEND in w.features;
 }
 
-/** Установленный кошелёк под этим именем, если он есть. */
 export function findInstalled(def: WalletDef): Wallet | null {
 	if (!def.standardName) return null;
 	return (
@@ -68,10 +57,6 @@ export function findInstalled(def: WalletDef): Wallet | null {
 	);
 }
 
-/**
- * Подписка на появление кошельков: расширения регистрируются асинхронно,
- * иногда уже после загрузки страницы, поэтому снимок ненадёжен.
- */
 export function watchInstalled(onChange: () => void): () => void {
 	const api = getWallets();
 	const offRegister = api.on("register", onChange);
@@ -97,7 +82,7 @@ export async function connectStandard(w: Wallet): Promise<WalletAccount> {
 
 export async function disconnectStandard(w: Wallet): Promise<void> {
 	const feature = w.features[DISCONNECT] as { disconnect: () => Promise<void> } | undefined;
-	// Отключение поддерживают не все — забыть аккаунт можно и без них.
+
 	await feature?.disconnect();
 }
 

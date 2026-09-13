@@ -17,6 +17,8 @@ import { Loader } from "./components/Loader.tsx";
 import { HeroSkeleton } from "./components/HeroSkeleton.tsx";
 import css from "./App.module.css";
 
+const LOADER_MIN_MS = 3800;
+
 export default function App() {
 	const [chain, setChainState] = useState<ChainId>(loadChain);
 	const solana = useSolanaWallet();
@@ -36,9 +38,16 @@ export default function App() {
 		if (data) booted.current = true;
 	}, [data]);
 
-	if (!booted.current && isDeployed && !data && !error) {
+	const [minShown, setMinShown] = useState(false);
+	useEffect(() => {
+		const t = setTimeout(() => setMinShown(true), LOADER_MIN_MS);
+		return () => clearTimeout(t);
+	}, []);
+
+	if (!booted.current && (!minShown || (isDeployed && !data && !error))) {
 		return <Loader />;
 	}
+
 
 	return (
 		<div className={css.page}>

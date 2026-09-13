@@ -1,12 +1,4 @@
-/**
- * Сверяет развёрнутый протокол с тем, что задумывали.
- *
- * Живёт рядом с фронтендом намеренно: проверяет ровно тот артефакт деплоя,
- * на который фронтенд смотрит. Подключать интерфейс к наполовину развёрнутому
- * протоколу — худший из возможных способов узнать об ошибке.
- *
- * Запуск: npm run verify-deploy
- */
+
 import { readFileSync, readdirSync } from 'fs';
 import { TonClient, Address, TupleBuilder } from '@ton/ton';
 
@@ -16,8 +8,6 @@ const d = JSON.parse(readFileSync(`${DIR}/mainnet.json`, 'utf8'));
 const client = new TonClient({ endpoint: 'https://toncenter.com/api/v2/jsonRPC' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Публичный toncenter лимитирован; без повтора проверка обрывается на середине
-// и выглядит как поломка протокола, хотя это всего лишь отказ узла.
 async function retry(fn, tries = 5) {
     for (let i = 0; ; i++) {
         await sleep(1300);

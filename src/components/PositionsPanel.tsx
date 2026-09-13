@@ -10,14 +10,13 @@ import css from "./PositionsPanel.module.css";
 type Props = {
 	data: ProtocolData;
 	withdrawDelay: number;
-	/** Тикеры базового актива и монеты: у каждой сети свои. */
+
 	asset: string;
 	unit: string;
 	onDone: () => void;
 };
 
 export function PositionsPanel({ data, withdrawDelay, asset, unit, onDone }: Props) {
-	// Пустой блок «позиций нет» — это шум. Просто не показываем ничего.
 	if (!data.wallet || data.wallet.positions.length === 0) {
 		return null;
 	}
@@ -62,15 +61,11 @@ function PositionRow({
 	const [busy, setBusy] = useState(false);
 	const meta = TRANCHES[pos.trancheId];
 
-	// Адреса есть только у TON-позиций; на Solana они выводятся при сборке
-	// транзакции, и эти кнопки там не показываются.
 	const { shareWallet, ticket } = pos;
 	const now = Math.floor(Date.now() / 1000);
 	const matured = pos.pendingShares > 0n && now >= pos.unlockAt;
 	const waiting = pos.pendingShares > 0n && !matured;
 
-	// Адресат зависит от действия: сжигание идёт в кошелёк жетона транша,
-	// получение денег — в контракт заявки. Это разные контракты.
 	async function send(to: Address, payload: string, ton: bigint) {
 		setBusy(true);
 		try {
@@ -89,10 +84,6 @@ function PositionRow({
 			<div className={css.main}>
 				<span className="muted small">{meta.name}</span>
 				<div className={css.figures}>
-					{/* GRAM первым числом намеренно. Учёт ведётся в tsTON, и
-                        рост самого tsTON в наши цифры не попадает: senior
-                        видел бы уменьшающийся остаток и читал его как убыток,
-                        хотя в GRAM он в плюсе. */}
 					<div className={`${css.value} num`}>
 						{rate === null
 							? fmtAmount(pos.valueNow)

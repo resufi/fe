@@ -11,12 +11,10 @@ const short = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
 export function SolanaConnect({ wallet }: Props) {
 	const [open, setOpen] = useState(false);
 
-	// Модалка закрывается сама, как только подключение состоялось.
 	useEffect(() => {
 		if (wallet.address) setOpen(false);
 	}, [wallet.address]);
 
-	// Escape — привычный способ закрыть, и его ждут.
 	useEffect(() => {
 		if (!open) return;
 		const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -66,8 +64,7 @@ export function SolanaConnect({ wallet }: Props) {
 						<div className={css.list}>
 							{wallet.entries.map((w) => {
 								const busy = wallet.connecting === w.id;
-								// Состояние подписано у каждого варианта: иначе
-								// непонятно, что произойдёт по нажатию.
+
 								const state = busy
 									? "connecting…"
 									: w.id === "walletconnect"

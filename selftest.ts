@@ -1,10 +1,4 @@
-/**
- * Проверка чистой логики фронтенда без браузера.
- *
- * Главное здесь — не форматирование, а то, что сообщение, которое собирает
- * интерфейс, побитово совпадает с тем, что принимают контракты. Ошибка в одном
- * бите Either-флага или в порядке полей означает потерянный депозит.
- */
+
 import { Address, Cell } from '@ton/core';
 import { burnMessage, claimMessage, depositMessage, DEPOSIT_FORWARD_TON } from './src/lib/payloads.ts';
 import { fmtAmount, parseAmount, sharePrice } from './src/lib/format.ts';
@@ -26,7 +20,6 @@ check('мусор отвергается', parseAmount('abc') === null && parseA
 check('ноль не депозит', parseAmount('0') === null);
 check('лишние знаки отвергаются', parseAmount('1.0000000001') === null);
 
-// Разделители разрядов: то, что показали, должно читаться обратно.
 check('запятые как разделители разрядов принимаются', parseAmount('1,234.5') === 1234_500000000n);
 check('и дают то же, что без них', parseAmount('1,234.5') === parseAmount('1234.5'));
 check(
@@ -52,7 +45,7 @@ const body = depositMessage(vault, owner, 1, 500_000000000n);
 
 const s = body.beginParse();
 check('опкод jetton transfer', s.loadUint(32) === 0x0f8a7ea5);
-s.loadUint(64); // queryId
+s.loadUint(64);
 check('сумма на месте', s.loadCoins() === 500_000000000n);
 check('получатель — vault', s.loadAddress().equals(vault));
 check('излишек газа возвращается владельцу', s.loadAddress().equals(owner));
@@ -60,8 +53,6 @@ check('customPayload отсутствует', s.loadMaybeRef() === null);
 const fwdTon = s.loadCoins();
 check('forwardTonAmount положителен', fwdTon === DEPOSIT_FORWARD_TON && fwdTon > 0n);
 
-// Именно здесь ломается тихо: если Either-бит 0, контракт читает нагрузку
-// из остатка слайса, а не из ссылки.
 check('Either-бит указывает на ссылку', s.loadBit() === true);
 const fwd = s.loadRef().beginParse();
 check('вид нагрузки = депозит', fwd.loadUint(8) === 0);
@@ -69,11 +60,10 @@ check('номер транша', fwd.loadUint(8) === 1);
 check('в нагрузке больше ничего нет', fwd.remainingBits === 0 && fwd.remainingRefs === 0);
 
 console.log('\nсообщения выхода');
-// Выход теперь начинается со СЖИГАНИЯ доли в кошельке жетона транша,
-// а не с заявки в контракт позиции: доли стали переводимым жетоном.
+
 const burn = burnMessage(40_000000000n, owner).beginParse();
 check('опкод сжигания (TEP-74)', burn.loadUint(32) === 0x595f07bc);
-burn.loadUint(64); // queryId
+burn.loadUint(64);
 check('доли в сжигании', burn.loadCoins() === 40_000000000n);
 check('излишек газа возвращается владельцу', burn.loadAddress().equals(owner));
 check('customPayload при сжигании отсутствует', burn.loadMaybeRef() === null);
@@ -85,10 +75,6 @@ check('у получения нет параметров', claim.remainingBits =
 console.log('\nсериализация');
 check('BOC разбирается обратно', Cell.fromBase64(body.toBoc().toString('base64')).equals(body));
 
-// --- сборка транзакций Solana ------------------------------------------
-//
-// Порядок аккаунтов обязан совпадать с #[derive(Accounts)] в программе.
-// Перепутанный порядок даёт отказ на симуляции — но лучше поймать здесь.
 console.log('\nтранзакции Solana');
 {
     const { PublicKey } = await import('@solana/web3.js');
@@ -97,7 +83,6 @@ console.log('\nтранзакции Solana');
 
     const owner = new PublicKey('7mn1vG8eVM7F6sVUhMNkS4Qm1oLAm2nK7b4SDaq7ZmqK');
 
-    // PDA заявки выводится детерминированно — значит воспроизводимо.
     const t1 = ticketAddress(owner, 0).toBase58();
     const t2 = ticketAddress(owner, 0).toBase58();
     check('адрес заявки детерминирован', t1 === t2);
@@ -110,7 +95,6 @@ console.log('\nтранзакции Solana');
         shareAccount(owner, 0).toBase58() !== shareAccount(owner, 2).toBase58(),
     );
 
-    // Дискриминатор Anchor: первые 8 байт sha256("global:deposit").
     const expected = new Uint8Array(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode('global:deposit')),
     ).slice(0, 8);
@@ -124,11 +108,6 @@ console.log('\nтранзакции Solana');
     check('адреса пула подставлены', solanaDeployment.vault !== null);
 }
 
-// --- переменные сборки ---------------------------------------------------
-//
-// Незаполненный секрет в CI приходит пустой строкой, а не отсутствием.
-// Если считать её значением, приложение подставит пустой адрес и начнёт
-// слать запросы само себе — ровно это и случилось на живом сайте.
 console.log('\nпеременные сборки');
 {
     const { env } = await import('./src/lib/env.ts');

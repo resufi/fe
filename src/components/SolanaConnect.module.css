@@ -15,9 +15,6 @@
 	cursor: pointer;
 }
 
-/* Знак Solana — маска по одноцветному SVG, залитая чистым белым. Именно
-   маской, а не картинкой: логотип у Solana градиентный, а на тёмной кнопке
-   нужен ровно белый, и маска даёт его независимо от содержимого файла. */
 .mark {
 	flex: none;
 	width: 14px;
@@ -41,8 +38,9 @@
 	width: 100%;
 	max-width: 380px;
 	padding: 20px;
-	background: var(--bg);
-	border: 1px solid var(--line);
+	background: #ffffff;
+	color: var(--fg);
+	border: 1px solid var(--fg);
 	border-radius: 14px;
 	box-shadow: 0 20px 50px rgb(0 0 0 / 25%);
 }

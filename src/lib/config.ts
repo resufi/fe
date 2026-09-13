@@ -18,7 +18,7 @@ export type Deployment = {
 	registry: string | null;
 	jettonMaster: string | null;
 	vaultJettonWallet: string | null;
-	/** Мастера жетонов траншей — по одному на транш, в порядке junior→senior. */
+
 	trancheMasters?: string[];
 	mandate: Mandate;
 };
@@ -37,9 +37,9 @@ export const addr = {
 	vault: () => Address.parse(deployment.vault!),
 	registry: () => Address.parse(deployment.registry!),
 	jettonMaster: () => Address.parse(deployment.jettonMaster!),
-	/** Пул Tonstakers — единственный источник курса tsTON к GRAM. */
+
 	assetPool: () => (ASSET_POOL ? Address.parse(ASSET_POOL) : null),
-	/** Мастер жетона транша: там же живут доли пользователя. */
+
 	trancheMaster: (trancheId: number) => {
 		const m = deployment.trancheMasters?.[trancheId];
 		return m ? Address.parse(m) : null;
@@ -48,12 +48,6 @@ export const addr = {
 
 const ASSET_POOL = "EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR";
 
-/**
- * Единственный источник правды о траншах, включая их цвет: раньше он был
- * размазан по CSS-классам `.t0/.t1/.t2` и `.position--0/1/2`, и добавление
- * транша требовало правок в трёх местах. Здесь `hue` — имя токена из
- * `styles/tokens.css`, компонент подставляет его в свою `--hue`.
- */
 export const TRANCHES = [
 	{
 		id: 0,
@@ -78,7 +72,6 @@ export const TRANCHES = [
 	},
 ] as const;
 
-/** Инлайновый стиль, задающий компоненту цвет его транша. */
 export function hueStyle(trancheId: number): CSSProperties {
 	return { ["--hue" as string]: `var(${TRANCHES[trancheId].hue})` };
 }

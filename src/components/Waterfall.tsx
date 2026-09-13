@@ -8,7 +8,7 @@ type Props = {
 	headroom: bigint;
 	mandate: Mandate;
 	rate: number | null;
-	/** Тикер базового актива: у каждой сети свой. */
+
 	asset: string;
 	selected: number;
 	onSelect: (id: number) => void;
@@ -35,7 +35,6 @@ export function Waterfall({
 	const total = tranches.reduce((sum, t) => sum + t.totalAssets, 0n);
 	const empty = total === 0n;
 
-	// пропорций нет вовсе. Доля осталась числом на самой полосе.
 	const order = [2, 1, 0];
 	const share = (v: bigint) => Number((v * 10000n) / total) / 100;
 	const headroomPct = empty

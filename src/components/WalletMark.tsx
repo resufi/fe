@@ -1,11 +1,5 @@
 import type { WalletId } from "../lib/wallets.ts";
 
-/**
- * Значки кошельков — свои, а не с их сайтов.
- *
- * Внешние картинки грузятся с чужих доменов: это лишний запрос, зависимость
- * от чужой доступности и утечка того, что человек открыл наш сайт.
- */
 export function WalletMark({ id }: { id: WalletId }) {
 	const common = { width: 20, height: 20, viewBox: "0 0 20 20", "aria-hidden": true } as const;
 

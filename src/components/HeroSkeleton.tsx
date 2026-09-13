@@ -22,8 +22,6 @@ export const HeroSkeleton = () => {
 					</div>
 				</div>
 
-				{/* Панель позиций сюда не входит: она есть только у того, кто уже
-			    вложился, и заглушка обещала бы блок, который часто не придёт. */}
 			<div className={css.side}>
 					<div className={css.panel}>
 						<div className={css.line} style={{ width: "55%" }} />

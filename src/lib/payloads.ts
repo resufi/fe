@@ -6,18 +6,9 @@ const OP_TICKET_CLAIM = 0x52455553;
 
 const PAYLOAD_DEPOSIT = 0;
 
-/**
- * Газ, прикладываемый к депозиту.
- *
- * forwardTonAmount критичен: без него кошелёк жетона НЕ пришлёт vault'у
- * уведомление, жетоны просто лягут на его баланс, и долей не будет.
- * Это свойство TEP-74, а не нашего контракта, — поэтому ноль здесь
- * недопустим ни при каких условиях.
- */
 export const DEPOSIT_FORWARD_TON = toNano("0.12");
 export const DEPOSIT_TOTAL_TON = toNano("0.25");
 
-/** Сжигание идёт через кошелёк жетона и мастера — цепочка длиннее заявки. */
 export const BURN_TON = toNano("0.2");
 export const CLAIM_TON = toNano("0.15");
 
@@ -47,12 +38,6 @@ export function depositMessage(
 	return body;
 }
 
-/**
- * Выход: сжечь доли в своём кошельке жетона транша.
- *
- * Сжигание не уничтожает деньги, а превращается в заявку на выход — мастер
- * сообщает об этом vault'у, и тот заводит заявку с окном созревания.
- */
 export function burnMessage(shares: bigint, responseTo: Address) {
 	return beginCell()
 		.storeUint(OP_JETTON_BURN, 32)
@@ -63,7 +48,6 @@ export function burnMessage(shares: bigint, responseTo: Address) {
 		.endCell();
 }
 
-/** Забрать после созревания. Шлётся на контракт заявки. */
 export function claimMessage() {
 	return beginCell().storeUint(OP_TICKET_CLAIM, 32).endCell();
 }
