@@ -10,6 +10,8 @@ type Props = {
 	rate: number | null;
 	/** Тикер базового актива: у каждой сети свой. */
 	asset: string;
+	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
+	decimals: number;
 	selected: number;
 	onSelect: (id: number) => void;
 };
@@ -29,6 +31,7 @@ export function Waterfall({
 	mandate,
 	rate,
 	asset,
+	decimals,
 	selected,
 	onSelect,
 }: Props) {
@@ -50,7 +53,7 @@ export function Waterfall({
 				</h2>
 				{!empty && (
 					<span className="muted small">
-						{fmtAmount(total)} {asset} pooled
+						{fmtAmount(total, 2, BigInt(decimals))} {asset} pooled
 					</span>
 				)}
 			</header>
@@ -83,7 +86,7 @@ export function Waterfall({
 								<span className={`${s.rate} num`}>{feeLabel(id, mandate)}</span>
 								<span className={`${s.pool} num`}>
 									{rate === null
-										? `${fmtAmount(state.totalAssets)} ${asset}`
+										? `${fmtAmount(state.totalAssets, 2, BigInt(decimals))} ${asset}`
 										: `${fmtAmount(toGram(state.totalAssets, rate))} GRAM`}
 									{!empty && ` · ${pct.toFixed(1)}%`}
 								</span>
@@ -104,7 +107,7 @@ export function Waterfall({
 					</div>
 					<p className={s.capNote}>
 						Maximum writedown:{" "}
-						<span className="num">{fmtAmount(headroom)}</span>. Above that the
+						<span className="num">{fmtAmount(headroom, 2, BigInt(decimals))}</span>. Above that the
 						contract rejects the loss outright.
 					</p>
 				</div>

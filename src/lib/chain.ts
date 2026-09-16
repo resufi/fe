@@ -1,5 +1,5 @@
 import { Address, TonClient, TupleBuilder } from '@ton/ton';
-import { deployment } from './config';
+
 import { env } from "./env.ts";
 
 /**
@@ -21,6 +21,10 @@ const TONCENTER = {
     testnet: 'https://testnet.toncenter.com/api/v2/jsonRPC',
 };
 
+// Сеть берётся из окружения, а не из артефакта пула: пулов на TON теперь
+// несколько, а узел у них общий.
+const NETWORK = (env("VITE_NETWORK") ?? "testnet") as "testnet" | "mainnet";
+
 const OVERRIDE = env("VITE_TON_ENDPOINT");
 const API_KEY = env("VITE_TONCENTER_API_KEY");
 
@@ -29,7 +33,7 @@ let client: TonClient | null = null;
 export function getClient(): TonClient {
     if (!client) {
         client = new TonClient({
-            endpoint: OVERRIDE ?? TONCENTER[deployment.network],
+            endpoint: OVERRIDE ?? TONCENTER[NETWORK],
             apiKey: API_KEY,
         });
     }

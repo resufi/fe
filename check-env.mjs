@@ -72,5 +72,24 @@ try {
     check(".env.example на месте", false);
 }
 
+// Публичный узел Solana отдаёт 403 на запросы из браузера: он не рассчитан
+// на приложения. На девнете это терпимо, на мейннете означает, что не
+// прочитается ничего — а выглядит как бесконечная загрузка, не как отказ.
+// Поэтому мейннет без своего RPC — ошибка сборки, а не сюрприз на проде.
+try {
+    const env = readFileSync(".env", "utf8");
+    const val = (name) => env.match(new RegExp(`^\\s*${name}\\s*=\\s*(\\S*)`, "m"))?.[1] ?? "";
+    if (val("VITE_SOLANA_NETWORK") === "mainnet") {
+        check(
+            "на мейннете Solana задан свой RPC",
+            val("VITE_SOLANA_RPC").length > 0,
+            "\n         VITE_SOLANA_RPC пуст, а api.mainnet-beta.solana.com" +
+                "\n         отвечает браузеру 403 — нужен свой узел (Helius, QuickNode, Triton)",
+        );
+    }
+} catch {
+    // .env может не быть — в CI переменные приходят из секретов.
+}
+
 console.log(failed === 0 ? "\nпеременные сходятся" : `\nпроблем: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Address } from "@ton/core";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
-import { addr, TRANCHES } from "../lib/config.ts";
+import { addrOf, TRANCHES } from "../lib/config.ts";
+import type { Pool } from "../lib/pools.ts";
 import { fmtAmount, parseAmount } from "../lib/format.ts";
 import { depositMessage, DEPOSIT_TOTAL_TON } from "../lib/payloads.ts";
 import { ProtocolData } from "../hooks/useProtocol.ts";
@@ -10,19 +11,21 @@ import css from "./DepositPanel.module.css";
 type Props = {
 	data: ProtocolData;
 	trancheId: number;
+	pool: Pool;
 	onDone: () => void;
 };
 
-const MIN_DEPOSIT = 1_000_000_000n;
 
-export function DepositPanel({ data, trancheId, onDone }: Props) {
+
+export function DepositPanel({ data, trancheId, pool, onDone }: Props) {
+	const decimals = BigInt(pool.decimals);
 	const [tonConnectUI] = useTonConnectUI();
 	const wallet = useTonAddress();
 	const [raw, setRaw] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [note, setNote] = useState<string | null>(null);
 
-	const amount = parseAmount(raw);
+	const amount = parseAmount(raw, decimals);
 	const meta = TRANCHES[trancheId];
 	const w = data.wallet;
 
@@ -32,8 +35,8 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 			? "Loading balance…"
 			: raw && amount === null
 				? "Invalid amount"
-				: amount !== null && amount < MIN_DEPOSIT
-					? "Minimum is 1"
+				: amount !== null && amount < pool.minDeposit
+					? `Minimum is ${fmtAmount(pool.minDeposit, 6, decimals)}`
 					: amount !== null && amount > w.balance
 						? "Exceeds your balance"
 						: null;
@@ -46,7 +49,7 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 		setNote(null);
 		try {
 			const body = depositMessage(
-				addr.vault(),
+				addrOf(pool).vault(),
 				Address.parse(wallet),
 				trancheId,
 				amount,
@@ -81,11 +84,11 @@ export function DepositPanel({ data, trancheId, onDone }: Props) {
 					type="button"
 					className={`${css.balance} num`}
 					onClick={() =>
-						w && setRaw(fmtAmount(w.balance, 9).replace(/[\s,]/g, ""))
+						w && setRaw(fmtAmount(w.balance, pool.decimals, decimals).replace(/[\s,]/g, ""))
 					}
 					disabled={!w || w.balance === 0n}
 				>
-					{w ? fmtAmount(w.balance) : "\u2026"}
+					{w ? fmtAmount(w.balance, 2, decimals) : "\u2026"}
 				</button>
 			</header>
 

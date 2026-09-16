@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
-import { deployment, isDeployed } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
 import { hasApiKey } from "./lib/chain.ts";
@@ -13,25 +12,38 @@ import { ChainNotReady } from "./components/ChainNotReady.tsx";
 import { SolanaConnect } from "./components/SolanaConnect.tsx";
 import { SolanaPanel } from "./components/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
-import { CHAINS, loadChain, saveChain, type ChainId } from "./lib/chains.ts";
+import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
+import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
+import { PoolSwitch } from "./components/PoolSwitch.tsx";
 import { Loader } from "./components/Loader.tsx";
 import css from "./App.module.css";
 
 export default function App() {
-	const [chain, setChainState] = useState<ChainId>(loadChain);
+	const [pool, setPoolState] = useState<Pool>(loadPool);
 	const solana = useSolanaWallet();
 	const { data, error, loading, refresh, network } = useProtocol(
-		chain,
-		chain === "solana" ? solana.address : null,
+		pool,
+		pool.chain === "solana" ? solana.address : null,
 	);
 	const wallet = useTonAddress();
 	const [selected, setSelected] = useState(0);
-	function switchChain(id: ChainId) {
-		setChainState(id);
-		saveChain(id);
+	const chain = pool.chain;
+	const siblings = poolsOfChain(chain);
+
+	function switchPool(p: Pool) {
+		setPoolState(p);
+		savePool(p.id);
+		saveChain(p.chain);
 	}
 
-	if (isDeployed && !data && !error) {
+	// Смена сети выбирает её первый пул: адреса, разрядность и мандат у сетей
+	// свои, и держать выбор прошлой сети было бы просто неверно.
+	function switchChain(id: ChainId) {
+		const next = poolsOfChain(id)[0];
+		if (next) switchPool(next);
+	}
+
+	if (pool.deployed && !data && !error) {
 		return <Loader />;
 	}
 
@@ -45,6 +57,7 @@ export default function App() {
 				</span>
 				<span className={css.topbarRight}>
 					<ChainSwitch value={chain} onChange={switchChain} />
+					<PoolSwitch pools={siblings} value={pool} onChange={switchPool} />
 					{/* Кнопка кошелька своя у каждой сети. Пока живёт только TON,
 					    в остальных подключать нечего. */}
 					{chain === "ton" ? (
@@ -63,8 +76,8 @@ export default function App() {
 
 			{!CHAINS[chain].deployed ? (
 				<ChainNotReady chain={chain} />
-			) : !isDeployed ? (
-				<NotDeployed />
+			) : !pool.deployed ? (
+				<NotDeployed pool={pool} />
 			) : !data ? (
 				<p className={css.state}>
 					{error}{" "}
@@ -90,9 +103,10 @@ export default function App() {
 						<Waterfall
 							tranches={data.tranches}
 							headroom={data.headroom}
-							mandate={deployment.mandate}
+							mandate={pool.mandate}
 							rate={data.rate}
-							asset={CHAINS[chain].asset}
+							asset={pool.asset}
+							decimals={pool.decimals}
 							selected={selected}
 							onSelect={setSelected}
 						/>
@@ -118,13 +132,15 @@ export default function App() {
 									<DepositPanel
 										data={data}
 										trancheId={selected}
+										pool={pool}
 										onDone={() => void refresh()}
 									/>
 									<PositionsPanel
 										data={data}
 										withdrawDelay={data.vault.withdrawDelay}
-										asset={CHAINS[chain].asset}
-										unit={CHAINS[chain].unit}
+										asset={pool.asset}
+										unit={pool.unit}
+										decimals={pool.decimals}
 										onDone={() => void refresh()}
 									/>
 								</>
@@ -136,7 +152,7 @@ export default function App() {
 						</div>
 					</div>
 
-					<Details vault={data.vault} loading={loading} />
+					<Details vault={data.vault} pool={pool} loading={loading} />
 				</>
 			)}
 		</div>
@@ -145,8 +161,10 @@ export default function App() {
 
 function Details({
 	vault,
+	pool,
 	loading,
 }: {
+	pool: Pool;
 	vault: {
 		maxLossBps: number;
 		withdrawDelay: number;
@@ -155,7 +173,7 @@ function Details({
 	};
 	loading: boolean;
 }) {
-	const m = deployment.mandate;
+	const m = pool.mandate;
 	return (
 		<details className={css.details}>
 			<summary>Rules and addresses{loading ? " · refreshing" : ""}</summary>
@@ -190,32 +208,30 @@ function Details({
 
 			<ul className={css.addrs}>
 				<li>
-					Vault <code>{shortAddress(deployment.vault!)}</code>
+					Vault <code>{shortAddress(pool.vault!)}</code>
 				</li>
 				<li>
-					Registry <code>{shortAddress(deployment.registry!)}</code>
+					Registry <code>{shortAddress(pool.registry!)}</code>
 				</li>
 				<li>
-					Asset <code>{shortAddress(deployment.jettonMaster!)}</code>
+					Asset ({pool.asset}) <code>{shortAddress(pool.jettonMaster!)}</code>
 				</li>
 			</ul>
 		</details>
 	);
 }
 
-function NotDeployed() {
+function NotDeployed({ pool }: { pool: Pool }) {
 	return (
 		<section>
-			<h2 className={css.title}>Protocol not deployed</h2>
+			<h2 className={css.title}>{pool.label} pool is not deployed yet</h2>
 			<p className="muted small">
-				No addresses in <code>src/deployments/{deployment.network}.json</code>.
+				The contracts are ready; this pool has no addresses on {pool.network}{" "}
+				yet. The {pool.asset === "tsTON" ? "other" : "tsTON"} pool is live —
+				switch above.
 			</p>
 			<pre className={css.code}>
-				<code>
-					npx blueprint run deployAll --{deployment.network}
-					{"\n"}cp deployments/{deployment.network}.json
-					../../frontend/src/deployments/
-				</code>
+				<code>npx blueprint run deployAll --{pool.network}</code>
 			</pre>
 		</section>
 	);

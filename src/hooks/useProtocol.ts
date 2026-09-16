@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Address } from '@ton/core';
 import { useTonAddress } from '@tonconnect/ui-react';
-import { addr, deployment, isDeployed, TRANCHES } from '../lib/config';
-import type { ChainId } from '../lib/chains';
-import { readSolanaVault, readSolanaWallet, solanaDeployed, solanaDeployment } from '../lib/solana';
+import { addrOf, TRANCHES } from '../lib/config';
+import type { Pool } from '../lib/pools';
+import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana';
 import {
     hasApiKey,
     readAssetRate,
@@ -82,7 +82,9 @@ function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
 /** Пауза между обновлениями, отсчитывается от окончания предыдущего. */
 const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
 
-export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null = null) {
+export function useProtocol(pool: Pool, solanaAddress: string | null = null) {
+    const chain = pool.chain;
+    const addr = addrOf(pool);
     const wallet = useTonAddress();
     const [data, setData] = useState<ProtocolData | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -129,7 +131,7 @@ export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null
                 return;
             }
 
-            if (!isDeployed) return;
+            if (!pool.deployed) return;
             const vaultAddr = addr.vault();
             const tranches: TrancheState[] = [];
             for (const t of TRANCHES) {
@@ -140,8 +142,10 @@ export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null
 
             // Пул показываем сразу, не дожидаясь кошелька: это ещё несколько
             // секунд запросов, и держать экран пустым всё это время незачем.
-            const pool = addr.assetPool();
-            const rate = pool ? await readAssetRate(pool, addr.jettonMaster()) : null;
+            // Курс базового актива к GRAM. У стейбла его нет — и выдумывать
+            // нельзя: доллары в GRAM пересчитываются только через рынок.
+            const ratePool = addr.assetPool();
+            const rate = ratePool ? await readAssetRate(ratePool, addr.jettonMaster()) : null;
 
             setData({ tranches, vault, headroom, rate, wallet: null });
             if (!wallet) {
@@ -187,13 +191,13 @@ export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null
         } finally {
             setLoading(false);
         }
-    }, [wallet, chain, solanaAddress]);
+    }, [wallet, pool, solanaAddress]);
 
     // Данные прошлой сети должны исчезнуть сразу, а не висеть до первого
     // ответа новой: цифры чужого пула под чужой вкладкой хуже пустоты.
     useEffect(() => {
         setData(null);
-    }, [chain]);
+    }, [pool]);
 
     useEffect(() => {
         let stopped = false;
@@ -220,6 +224,6 @@ export function useProtocol(chain: ChainId = "ton", solanaAddress: string | null
         error,
         loading,
         refresh,
-        network: chain === "solana" ? solanaDeployment.network : deployment.network,
+        network: pool.network,
     };
 }

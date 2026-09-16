@@ -4,3 +4,4 @@ dist-smoke
 
 package-lock.json
 
+tsconfig.tsbuildinfo

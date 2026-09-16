@@ -13,10 +13,19 @@ type Props = {
 	/** Тикеры базового актива и монеты: у каждой сети свои. */
 	asset: string;
 	unit: string;
+	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
+	decimals: number;
 	onDone: () => void;
 };
 
-export function PositionsPanel({ data, withdrawDelay, asset, unit, onDone }: Props) {
+export function PositionsPanel({
+	data,
+	withdrawDelay,
+	asset,
+	unit,
+	decimals,
+	onDone,
+}: Props) {
 	// Пустой блок «позиций нет» — это шум. Просто не показываем ничего.
 	if (!data.wallet || data.wallet.positions.length === 0) {
 		return null;
@@ -33,6 +42,7 @@ export function PositionsPanel({ data, withdrawDelay, asset, unit, onDone }: Pro
 						rate={data.rate}
 						asset={asset}
 						unit={unit}
+						decimals={decimals}
 						withdrawDelay={withdrawDelay}
 						onDone={onDone}
 					/>
@@ -47,6 +57,7 @@ function PositionRow({
 	rate,
 	asset,
 	unit,
+	decimals,
 	withdrawDelay,
 	onDone,
 }: {
@@ -54,6 +65,7 @@ function PositionRow({
 	rate: number | null;
 	asset: string;
 	unit: string;
+	decimals: number;
 	withdrawDelay: number;
 	onDone: () => void;
 }) {
@@ -95,20 +107,20 @@ function PositionRow({
                         хотя в GRAM он в плюсе. */}
 					<div className={`${css.value} num`}>
 						{rate === null
-							? fmtAmount(pos.valueNow)
+							? fmtAmount(pos.valueNow, 2, BigInt(decimals))
 							: fmtAmount(toGram(pos.valueNow, rate))}
 						<span className="muted"> {rate === null ? asset : unit}</span>
 					</div>
 					<div className="muted small num">
-						{rate === null ? null : <>{fmtAmount(pos.valueNow, 4)} {asset} · </>}
-						{fmtAmount(pos.shares + pos.pendingShares, 4)} shares
+						{rate === null ? null : <>{fmtAmount(pos.valueNow, 4, BigInt(decimals))} {asset} · </>}
+						{fmtAmount(pos.shares + pos.pendingShares, 4, BigInt(decimals))} shares
 					</div>
 				</div>
 			</div>
 
 			{waiting && (
 				<p className={css.hint}>
-					{fmtAmount(pos.pendingShares, 4)} exiting · available in{" "}
+					{fmtAmount(pos.pendingShares, 4, BigInt(decimals))} exiting · available in{" "}
 					{fmtDuration(pos.unlockAt - now)}
 				</p>
 			)}

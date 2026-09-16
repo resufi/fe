@@ -37,10 +37,23 @@ const RPC: Record<string, string> = {
 	mainnet: "https://api.mainnet-beta.solana.com",
 };
 
-const endpoint = () =>
-	env("VITE_SOLANA_RPC") ??
-	RPC[solanaDeployment.network] ??
-	RPC.devnet;
+/**
+ * Узел, через который читается состояние.
+ *
+ * Публичный api.mainnet-beta.solana.com отвечает браузеру 403: он намеренно
+ * не рассчитан на приложения. Молчать об этом нельзя — без объяснения отказ
+ * выглядит как поломка протокола, а не как незаданная настройка.
+ */
+const endpoint = () => {
+	const custom = env("VITE_SOLANA_RPC");
+	if (custom) return custom;
+	if (solanaDeployment.network === "mainnet") {
+		throw new Error(
+			"Set VITE_SOLANA_RPC: the public Solana endpoint rejects browser requests.",
+		);
+	}
+	return RPC[solanaDeployment.network] ?? RPC.devnet;
+};
 
 async function rpc<T>(method: string, params: unknown[]): Promise<T> {
 	const res = await fetch(endpoint(), {

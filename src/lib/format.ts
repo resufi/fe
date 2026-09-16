@@ -7,13 +7,18 @@ const ONE = 10n ** DECIMALS;
  * thousands, period marks the decimal. All arithmetic stays in bigint —
  * money never touches floating point.
  */
-export function fmtAmount(units: bigint, maxFractionDigits = 2): string {
+export function fmtAmount(
+    units: bigint,
+    maxFractionDigits = 2,
+    decimals: bigint = DECIMALS,
+): string {
+    const one = decimals === DECIMALS ? ONE : 10n ** decimals;
     const negative = units < 0n;
     const abs = negative ? -units : units;
-    const whole = abs / ONE;
-    const frac = abs % ONE;
+    const whole = abs / one;
+    const frac = abs % one;
 
-    let fracStr = frac.toString().padStart(Number(DECIMALS), '0').slice(0, maxFractionDigits);
+    let fracStr = frac.toString().padStart(Number(decimals), '0').slice(0, maxFractionDigits);
     fracStr = fracStr.replace(/0+$/, '');
 
     const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -28,8 +33,17 @@ export function fmtAmount(units: bigint, maxFractionDigits = 2): string {
  * Commas are stripped only when they sit in valid thousands positions.
  * Guessing would be dangerous: "1,5" means 1.5 to a European reader and
  * 15 to anyone stripping separators blindly, so it is rejected instead.
+ *
+ * Разрядность обязана прийти от пула. Это самое опасное место во всём
+ * интерфейсе: здесь введённое человеком превращается в сумму перевода, и
+ * девятка, применённая к шестизначному активу, отправила бы тысячу токенов
+ * вместо одного — без ошибки, без предупреждения, деньгами пользователя.
  */
-export function parseAmount(input: string): bigint | null {
+export function parseAmount(
+    input: string,
+    decimals: bigint = DECIMALS,
+): bigint | null {
+    const one = decimals === DECIMALS ? ONE : 10n ** decimals;
     const cleaned = input.trim().replace(/\s/g, '');
     if (!cleaned) return null;
 
@@ -43,9 +57,9 @@ export function parseAmount(input: string): bigint | null {
     }
 
     const [whole = '0', frac = ''] = normalised.split('.');
-    if (frac.length > Number(DECIMALS)) return null;
+    if (frac.length > Number(decimals)) return null;
 
-    const units = BigInt(whole || '0') * ONE + BigInt((frac || '0').padEnd(Number(DECIMALS), '0'));
+    const units = BigInt(whole || '0') * one + BigInt((frac || '0').padEnd(Number(decimals), '0'));
     return units > 0n ? units : null;
 }
 
