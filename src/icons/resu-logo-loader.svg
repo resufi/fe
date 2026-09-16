@@ -21,10 +21,6 @@
 <animate attributeName="stroke-dashoffset" begin="loop.begin+1.04s" dur="0.88s" values="100;0" fill="freeze"/>
 <animate attributeName="fill-opacity" begin="loop.begin+1.84s" dur="0.56s" values="0;1" fill="freeze"/></path>
 </g>
-<!-- Тычинка рисуется последней и потому лежит поверх всего. Её заливка
-     появляется вместе с обводкой, а не через полсекунды после: пока
-     круг был прозрачным, сквозь него просвечивали лепестки, и центр
-     знака выглядел грязным. -->
 <circle cx="118.53" cy="149.14" r="28" fill="#fff" fill-opacity="0" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100">
 <animate attributeName="stroke-dashoffset" begin="loop.begin+0.832s" dur="0.72s" values="100;0" fill="freeze"/>
 <animate attributeName="fill-opacity" begin="loop.begin+0.832s" dur="0.3s" values="0;1" fill="freeze"/></circle>

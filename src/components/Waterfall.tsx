@@ -8,7 +8,7 @@ type Props = {
 	headroom: bigint;
 	mandate: Mandate;
 	rate: number | null;
-	/** Тикер базового актива: у каждой сети свой. */
+
 	asset: string;
 	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
 	decimals: number;
@@ -58,7 +58,7 @@ export function Waterfall({
 				)}
 			</header>
 
-			<div className={`${s.stack} ${empty ? s.empty : ""}`}>
+			<div className={s.stack}>
 				{order.map((id) => {
 					const meta = TRANCHES[id];
 					const state = tranches[id];
@@ -69,9 +69,8 @@ export function Waterfall({
 							key={id}
 							type="button"
 							className={`${s.band} ${selected === id ? s.on : ""}`}
-							style={{ ...hueStyle(id), flexGrow: pct }}
+							style={hueStyle(id)}
 							onClick={() => onSelect(id)}
-							disabled={empty}
 							aria-pressed={selected === id}
 						>
 							<span>

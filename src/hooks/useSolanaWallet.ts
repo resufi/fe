@@ -15,16 +15,8 @@ import { connectWalletConnect, type WcSession } from "../lib/walletconnect.ts";
 
 const STORAGE_KEY = "resu:solana-wallet";
 
-/** Состояние варианта в списке: подключаться, ставить или сканировать QR. */
 export type WalletEntry = WalletDef & { installed: boolean };
 
-/**
- * Подключение кошелька Solana.
- *
- * Два разных механизма под одним интерфейсом: расширение в браузере
- * (Wallet Standard) и удалённый кошелёк по WalletConnect. Наружу они
- * выглядят одинаково — адрес и способ подписать транзакцию.
- */
 export function useSolanaWallet() {
 	const [tick, setTick] = useState(0);
 	const [standard, setStandard] = useState<{ wallet: Wallet; account: WalletAccount } | null>(null);
@@ -32,7 +24,6 @@ export function useSolanaWallet() {
 	const [connecting, setConnecting] = useState<WalletId | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
-	// Расширения регистрируются асинхронно — пересчитываем список по событию.
 	useEffect(() => watchInstalled(() => setTick((t) => t + 1)), []);
 
 	const entries: WalletEntry[] = WALLETS.map((def) => ({
@@ -53,9 +44,6 @@ export function useSolanaWallet() {
 			} else {
 				const installed = findInstalled(def);
 				if (!installed) {
-					// Не установлен: на телефоне открываем приложение, на
-					// десктопе — страницу установки. Молча ничего не делать
-					// хуже всего.
 					const url = isMobile() && def.deepLink
 						? def.deepLink(window.location.href)
 						: def.installUrl;
@@ -67,11 +55,10 @@ export function useSolanaWallet() {
 			try {
 				localStorage.setItem(STORAGE_KEY, id);
 			} catch {
-				// приватный режим — не повод падать
 			}
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Не удалось подключиться";
-			// Отказ в кошельке — обычное действие пользователя, а не сбой.
+
 			setError(/reject|denied|cancel|closed/i.test(msg) ? null : msg);
 		} finally {
 			setConnecting(null);
@@ -86,11 +73,9 @@ export function useSolanaWallet() {
 		try {
 			localStorage.removeItem(STORAGE_KEY);
 		} catch {
-			// см. выше
 		}
 	}, [standard, wc]);
 
-	/** Подписать и отправить. Путь зависит от того, чем подключились. */
 	const signAndSend = useCallback(
 		async (transaction: Uint8Array): Promise<string> => {
 			if (wc) return wc.signAndSend(transaction);
@@ -118,7 +103,6 @@ export function useSolanaWallet() {
 	return { entries, address, connecting, error, remembered, connect, disconnect, signAndSend };
 }
 
-/** Подпись приходит байтами, а ищут её в обозревателях в base58. */
 function bs58(bytes: Uint8Array): string {
 	const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	let n = 0n;

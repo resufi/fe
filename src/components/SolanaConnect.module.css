@@ -1,14 +1,27 @@
 .button {
 	display: inline-flex;
 	align-items: center;
-	padding: 7px 14px;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	height: 36px;
+	padding: 0 14px;
 	font: inherit;
 	font-size: 13px;
 	background: var(--accent);
 	color: var(--accent-fg);
 	border: 1px solid var(--accent);
-	border-radius: 8px;
+	border-radius: 999px;
 	cursor: pointer;
+}
+
+.mark {
+	flex: none;
+	width: 14px;
+	height: 11px;
+	background-color: #ffffff;
+	mask: url("../icons/solana.svg") center / contain no-repeat;
+	-webkit-mask: url("../icons/solana.svg") center / contain no-repeat;
 }
 
 .backdrop {
@@ -25,8 +38,9 @@
 	width: 100%;
 	max-width: 380px;
 	padding: 20px;
-	background: var(--bg);
-	border: 1px solid var(--line);
+	background: #ffffff;
+	color: var(--fg);
+	border: 1px solid var(--fg);
 	border-radius: 14px;
 	box-shadow: 0 20px 50px rgb(0 0 0 / 25%);
 }

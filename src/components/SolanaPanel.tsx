@@ -16,7 +16,7 @@ type Props = {
 	onDone: () => void;
 };
 
-const MIN_DEPOSIT = 1_000_000n; // 0.001 при девяти знаках
+const MIN_DEPOSIT = 1_000_000n;
 
 export function SolanaPanel({ data, trancheId, asset, wallet, onDone }: Props) {
 	const [raw, setRaw] = useState("");
@@ -39,23 +39,21 @@ export function SolanaPanel({ data, trancheId, asset, wallet, onDone }: Props) {
 						? "Exceeds your balance"
 						: null;
 
-	/** Общий путь для всех действий: собрать, подписать, дождаться. */
 	async function submit(build: (owner: PublicKey) => Promise<Uint8Array>, done: string) {
 		if (!wallet.address) return;
 		setBusy(true);
 		setNote(null);
 		try {
 			const tx = await build(new PublicKey(wallet.address));
-			// Как именно подписать — знает сам хук: расширение и WalletConnect
-			// подписывают по-разному, но снаружи это одно действие.
+
 			const sig = await wallet.signAndSend(tx);
 			setNote(`${done} · ${sig.slice(0, 8)}…`);
 			setRaw("");
-			// Состояние обновляем не сразу: узлу нужно время увидеть транзакцию.
+
 			setTimeout(onDone, 3000);
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : "Transaction failed";
-			// Отказ в кошельке — обычное действие, а не сбой.
+
 			setNote(/reject|denied|cancel/i.test(msg) ? null : msg);
 		} finally {
 			setBusy(false);

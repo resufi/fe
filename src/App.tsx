@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { TonConnectButton, useTonAddress } from "@tonconnect/ui-react";
+import { useEffect, useRef, useState } from "react";
+import { useTonAddress } from "@tonconnect/ui-react";
+
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
 import { hasApiKey } from "./lib/chain.ts";
@@ -7,16 +8,17 @@ import { Waterfall } from "./components/Waterfall.tsx";
 import { DepositPanel } from "./components/DepositPanel.tsx";
 import { PositionsPanel } from "./components/PositionsPanel.tsx";
 import { Logo } from "./components/Logo.tsx";
-import { ChainSwitch } from "./components/ChainSwitch.tsx";
 import { ChainNotReady } from "./components/ChainNotReady.tsx";
-import { SolanaConnect } from "./components/SolanaConnect.tsx";
+import { NetworkControls } from "./components/NetworkControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
-import { PoolSwitch } from "./components/PoolSwitch.tsx";
 import { Loader } from "./components/Loader.tsx";
+import { HeroSkeleton } from "./components/HeroSkeleton.tsx";
 import css from "./App.module.css";
+
+const LOADER_MIN_MS = 3800;
 
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
@@ -28,7 +30,6 @@ export default function App() {
 	const wallet = useTonAddress();
 	const [selected, setSelected] = useState(0);
 	const chain = pool.chain;
-	const siblings = poolsOfChain(chain);
 
 	function switchPool(p: Pool) {
 		setPoolState(p);
@@ -43,9 +44,21 @@ export default function App() {
 		if (next) switchPool(next);
 	}
 
-	if (pool.deployed && !data && !error) {
+	const booted = useRef(false);
+	useEffect(() => {
+		if (data) booted.current = true;
+	}, [data]);
+
+	const [minShown, setMinShown] = useState(false);
+	useEffect(() => {
+		const t = setTimeout(() => setMinShown(true), LOADER_MIN_MS);
+		return () => clearTimeout(t);
+	}, []);
+
+	if (!booted.current && (!minShown || (pool.deployed && !data && !error))) {
 		return <Loader />;
 	}
+
 
 	return (
 		<div className={css.page}>
@@ -55,17 +68,14 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<span className={css.topbarRight}>
-					<ChainSwitch value={chain} onChange={switchChain} />
-					<PoolSwitch pools={siblings} value={pool} onChange={switchPool} />
-					{/* Кнопка кошелька своя у каждой сети. Пока живёт только TON,
-					    в остальных подключать нечего. */}
-					{chain === "ton" ? (
-						<TonConnectButton />
-					) : (
-						<SolanaConnect wallet={solana} />
-					)}
-				</span>
+				<NetworkControls
+					chain={chain}
+					onChange={switchChain}
+					pools={poolsOfChain(chain)}
+					pool={pool}
+					onPoolChange={switchPool}
+					solana={solana}
+				/>
 			</header>
 
 			<h1 className={css.lede} data-lede>
@@ -79,12 +89,16 @@ export default function App() {
 			) : !pool.deployed ? (
 				<NotDeployed pool={pool} />
 			) : !data ? (
-				<p className={css.state}>
-					{error}{" "}
-					<button className={css.linkish} onClick={() => void refresh()}>
-						Retry
-					</button>
-				</p>
+				error ? (
+					<p className={css.state}>
+						{error}{" "}
+						<button className={css.linkish} onClick={() => void refresh()}>
+							Retry
+						</button>
+					</p>
+				) : (
+					<HeroSkeleton />
+				)
 			) : (
 				<>
 					{(error || !hasApiKey) && (
@@ -117,7 +131,7 @@ export default function App() {
 									<SolanaPanel
 										data={data}
 										trancheId={selected}
-										asset={CHAINS[chain].asset}
+										asset={pool.asset}
 										wallet={solana}
 										onDone={() => void refresh()}
 									/>
@@ -193,11 +207,15 @@ function Details({
 				</div>
 				<div>
 					<dt>Total deposited</dt>
-					<dd className="num">{fmtAmount(vault.principalDeposited)}</dd>
+					<dd className="num">
+							{fmtAmount(vault.principalDeposited, 2, BigInt(pool.decimals))}
+						</dd>
 				</div>
 				<div>
 					<dt>Losses applied</dt>
-					<dd className="num">{fmtAmount(vault.cumulativeLoss)}</dd>
+					<dd className="num">
+							{fmtAmount(vault.cumulativeLoss, 2, BigInt(pool.decimals))}
+						</dd>
 				</div>
 			</dl>
 
@@ -227,8 +245,7 @@ function NotDeployed({ pool }: { pool: Pool }) {
 			<h2 className={css.title}>{pool.label} pool is not deployed yet</h2>
 			<p className="muted small">
 				The contracts are ready; this pool has no addresses on {pool.network}{" "}
-				yet. The {pool.asset === "tsTON" ? "other" : "tsTON"} pool is live —
-				switch above.
+				yet. Switch pools above to use one that is live.
 			</p>
 			<pre className={css.code}>
 				<code>npx blueprint run deployAll --{pool.network}</code>

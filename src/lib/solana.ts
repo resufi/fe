@@ -3,14 +3,6 @@ import devnet from "../deployments/solana-devnet.json" with { type: "json" };
 import mainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import { env } from "./env.ts";
 
-/**
- * Чтение состояния пула на Solana.
- *
- * Аккаунт разбирается вручную, без @coral-xyz/anchor: клиент Anchor тянет
- * за собой около мегабайта зависимостей, а нам нужно прочитать одну
- * структуру фиксированной раскладки. Раскладка задана в programs/resu-vault/
- * src/state.rs — при её изменении править здесь.
- */
 export type SolanaDeployment = {
 	network: string;
 	programId: string | null;
@@ -76,16 +68,9 @@ export type SolanaVaultState = {
 	lastAccrualAt: number;
 };
 
-/**
- * Курсор по буферу аккаунта.
- *
- * Порядок чтения обязан совпадать с порядком полей в структуре Vault:
- * Borsh пишет их подряд, без имён, и перепутанный порядок даст не ошибку,
- * а правдоподобные неверные числа.
- */
 function reader(buf: Uint8Array) {
 	const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-	let o = 8; // дискриминатор аккаунта
+	let o = 8;
 	return {
 		skipPubkey: (n = 1) => {
 			o += 32 * n;
@@ -121,8 +106,8 @@ export async function readSolanaVault(): Promise<SolanaVaultState> {
 	const raw = Uint8Array.from(atob(res.value.data[0]), (c) => c.charCodeAt(0));
 	const r = reader(raw);
 
-	r.skipPubkey(3); // asset_mint, asset_vault, registry
-	r.skipPubkey(3); // tranche_mints
+	r.skipPubkey(3);
+	r.skipPubkey(3);
 
 	const mandate: Mandate = {
 		maxLossBps: r.u16(),
@@ -146,13 +131,6 @@ export async function readSolanaVault(): Promise<SolanaVaultState> {
 	};
 }
 
-/**
- * Данные кошелька: баланс базового актива, доли по траншам и незакрытые
- * заявки на выход.
- *
- * Адреса счетов выводятся из владельца, поэтому запрашиваются пачкой одним
- * вызовом: на публичном RPC каждый лишний запрос — это лишняя задержка.
- */
 export async function readSolanaWallet(
     owner: string,
     tranches: SolanaTranche[],
@@ -210,21 +188,19 @@ export type WalletData = { balance: bigint; positions: SolanaPosition[] };
 const decode = (info: AccountInfo | null): Uint8Array | null =>
     info ? Uint8Array.from(atob(info.data[0]), (c) => c.charCodeAt(0)) : null;
 
-/** Баланс SPL-счёта лежит по фиксированному смещению 64. */
 function tokenAmount(info: AccountInfo | null): bigint {
     const raw = decode(info);
     if (!raw || raw.length < 72) return 0n;
     return new DataView(raw.buffer, raw.byteOffset, raw.byteLength).getBigUint64(64, true);
 }
 
-/** Заявки может не быть вовсе — она появляется только после сжигания долей. */
 function parseTicket(
     info: AccountInfo | null,
 ): { pendingShares: bigint; unlockAt: number } | null {
     const raw = decode(info);
     if (!raw) return null;
     const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
-    // 8 дискриминатор + vault(32) + owner(32) + tranche_id(1)
+
     let o = 8 + 32 + 32 + 1;
     const pendingShares = view.getBigUint64(o, true);
     o += 8;
@@ -232,7 +208,6 @@ function parseTicket(
     return { pendingShares, unlockAt };
 }
 
-/** Баланс токен-аккаунта. Возвращает 0, если аккаунта нет — это норма. */
 export async function readTokenBalance(address: string): Promise<bigint> {
 	try {
 		const res = await rpc<{ value: { amount: string } }>(

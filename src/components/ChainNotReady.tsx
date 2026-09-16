@@ -1,12 +1,6 @@
 import { CHAINS, type ChainId } from "../lib/chains.ts";
 import css from "./ChainNotReady.module.css";
 
-/**
- * Сеть выбрана, но протокол в ней не развёрнут.
- *
- * Показываем это прямо, вместо нулей и пустых карточек: выдуманные данные
- * на месте отсутствующих — худший способ сообщить, что чего-то нет.
- */
 export function ChainNotReady({ chain }: { chain: ChainId }) {
 	const c = CHAINS[chain];
 	return (

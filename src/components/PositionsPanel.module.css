@@ -14,7 +14,6 @@
 	gap: var(--s5);
 }
 
-/* Цвет транша приходит из --hue, которую ставит компонент по config.ts. */
 .position {
 	display: grid;
 	gap: var(--s3);

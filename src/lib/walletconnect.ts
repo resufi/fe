@@ -1,15 +1,6 @@
 import { env } from "./env.ts";
 import { solanaDeployment } from "./solana.ts";
 
-/**
- * Подключение по WalletConnect: QR-код на десктопе, переход в приложение
- * на телефоне.
- *
- * Модуль тяжёлый (несколько сотен килобайт), поэтому загружается только при
- * выборе этого способа — динамическим импортом, а не в общем бандле.
- */
-
-/** CAIP-2 идентификаторы сетей Solana. */
 const CHAIN = {
 	mainnet: "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
 	devnet: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
@@ -57,13 +48,10 @@ export async function connectWalletConnect(): Promise<WcSession> {
 
 	const chain = chainId();
 
-	// Провайдер отдаёт ссылку для подключения событием display_uri. Без
-	// показанного QR-кода человеку нечего сканировать, а подключение просто
-	// ждёт — снаружи это выглядит как вечная загрузка.
 	const modal = new WalletConnectModal({
 		projectId: id,
 		chains: [chain],
-		// Список сознательно короткий: те же кошельки, что и в нашей модалке.
+
 		explorerRecommendedWalletIds: undefined,
 	});
 
@@ -72,8 +60,6 @@ export async function connectWalletConnect(): Promise<WcSession> {
 	};
 	provider.on("display_uri", onUri);
 
-	// Закрытие окна человеком — обычный отказ, а не сбой: подключение
-	// должно оборваться, а не висеть.
 	let cancelled = false;
 	const unsubscribe = modal.subscribeModal((state: { open: boolean }) => {
 		if (!state.open) cancelled = true;
@@ -85,8 +71,7 @@ export async function connectWalletConnect(): Promise<WcSession> {
 			optionalNamespaces: {
 				solana: {
 					chains: [chain],
-					// signAndSendTransaction поддерживают не все кошельки; просим
-					// оба метода, а какой применить — решаем по ответу сессии.
+
 					methods: ["solana_signAndSendTransaction", "solana_signTransaction"],
 					events: [],
 				},
@@ -102,7 +87,7 @@ export async function connectWalletConnect(): Promise<WcSession> {
 
 	const accounts = session?.namespaces?.solana?.accounts ?? [];
     if (accounts.length === 0) throw new Error("Кошелёк не вернул ни одного счёта");
-	// Формат: "solana:<chain>:<address>"
+
 	const address = accounts[0].split(":").pop()!;
 
 	const methods = session?.namespaces?.solana?.methods ?? [];
@@ -118,7 +103,7 @@ export async function connectWalletConnect(): Promise<WcSession> {
 				)) as { signature: string };
 				return res.signature;
 			}
-			// Запасной путь: кошелёк только подписывает, отправляем сами.
+
 			const res = (await provider.request(
 				{ method: "solana_signTransaction", params: { transaction: encoded } },
 				chain,

@@ -1,0 +1,60 @@
+.controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.wallet {
+	display: flex;
+	width: 168px;
+}
+
+.wallet > * {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.wallet button,
+.wallet button *,
+.wallet :global([data-tc-connect-button]),
+.wallet :global([data-tc-connect-button]) *,
+.wallet :global([data-tc-dropdown-button]),
+.wallet :global([data-tc-dropdown-button]) * {
+	font-family: var(--sans) !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	line-height: 1 !important;
+	letter-spacing: normal !important;
+}
+
+.wallet button,
+.wallet :global([data-tc-connect-button]),
+.wallet :global([data-tc-dropdown-button]) {
+	width: 100% !important;
+	height: 36px !important;
+	min-height: 36px !important;
+	padding: 0 14px !important;
+	justify-content: center !important;
+	border-radius: 999px !important;
+}
+
+.wallet :global([data-tc-dropdown-button]) {
+	background: #0098ea !important;
+	border-color: #0098ea !important;
+}
+
+.wallet :global([data-tc-dropdown-button]),
+.wallet :global([data-tc-dropdown-button]) * {
+	color: #ffffff !important;
+}
+
+.wallet :global([data-tc-dropdown-button]) svg path {
+	fill: #ffffff !important;
+}
+
+:global([data-tc-wallets-modal-container]),
+:global([data-tc-modal]) {
+	background: #ffffff !important;
+	color: var(--fg) !important;
+	border: 1px solid var(--fg) !important;
+}

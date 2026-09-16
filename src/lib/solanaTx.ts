@@ -13,17 +13,6 @@ import {
 import { solanaDeployment } from "./solana.ts";
 import { env } from "./env.ts";
 
-/**
- * Сборка транзакций для программы пула.
- *
- * Инструкции собираются вручную, без клиента Anchor: он тянет за собой
- * заметный объём ради вещей, которые здесь сводятся к одному дискриминатору
- * и нескольким аккаунтам в фиксированном порядке.
- *
- * Порядок аккаунтов обязан совпадать с #[derive(Accounts)] в программе —
- * перепутанный даст отказ на симуляции, а не тихую ошибку.
- */
-
 const RPC: Record<string, string> = {
 	devnet: "https://api.devnet.solana.com",
 	mainnet: "https://api.mainnet-beta.solana.com",
@@ -37,10 +26,6 @@ export const connection = () =>
 		"confirmed",
 	);
 
-/**
- * Дискриминатор инструкции Anchor: первые 8 байт от sha256("global:<имя>").
- * Считается один раз при сборке транзакции.
- */
 async function discriminator(name: string): Promise<Uint8Array> {
 	const data = new TextEncoder().encode(`global:${name}`);
 	const hash = await crypto.subtle.digest("SHA-256", data);
@@ -60,7 +45,6 @@ const pda = (seeds: (Buffer | Uint8Array)[]) =>
 
 export const trancheMint = (id: number) => key(solanaDeployment.trancheMints[id]);
 
-/** Адрес заявки на выход: выводится из владельца и транша. */
 export const ticketAddress = (owner: PublicKey, trancheId: number) =>
 	pda([
 		Buffer.from("ticket"),
@@ -75,7 +59,6 @@ export const assetAccount = (owner: PublicKey) =>
 export const shareAccount = (owner: PublicKey, trancheId: number) =>
 	getAssociatedTokenAddressSync(trancheMint(trancheId), owner);
 
-/** Создаёт связанный счёт, если его ещё нет. Иначе депозит некуда зачислить. */
 async function ensureAccount(
 	conn: Connection,
 	tx: Transaction,
@@ -96,7 +79,7 @@ async function finalize(
 ): Promise<Uint8Array> {
 	tx.feePayer = payer;
 	tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
-	// Подписи ещё нет — её поставит кошелёк.
+
 	return tx.serialize({ requireAllSignatures: false, verifySignatures: false });
 }
 
