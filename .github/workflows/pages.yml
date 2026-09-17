@@ -69,6 +69,7 @@ jobs:
           # --- Solana ---
           VITE_SOLANA_NETWORK: ${{ secrets.VITE_SOLANA_NETWORK || 'devnet' }}
           VITE_SOLANA_RPC: ${{ secrets.VITE_SOLANA_RPC }}
+          VITE_HYPEREVM_RPC: ${{ secrets.VITE_HYPEREVM_RPC }}
           # Без него подключение по WalletConnect не работает вовсе.
           # Публичный по назначению: попадает в бандл и виден всем.
           VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}

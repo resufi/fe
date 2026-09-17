@@ -1,5 +1,6 @@
 import { TrancheState } from "../lib/chain.ts";
 import { hueStyle, Mandate, TRANCHES } from "../lib/config.ts";
+import type { PoolKind } from "../lib/pools.ts";
 import { fmtAmount, fmtBps, toGram } from "../lib/format.ts";
 import s from "./Waterfall.module.css";
 
@@ -12,11 +13,25 @@ type Props = {
 	asset: string;
 	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
 	decimals: number;
+	/** Экономика пула: плата за защиту или фиксированные купоны. */
+	kind: PoolKind;
 	selected: number;
 	onSelect: (id: number) => void;
 };
 
-function feeLabel(id: number, m: Mandate): string {
+/**
+ * Что транш получает или отдаёт за год, сверх базовой доходности актива.
+ *
+ * У пулов вида "coupon" знак противоположный: там senior не платит за
+ * защиту, а получает фиксированную ставку, и junior забирает не надбавку,
+ * а весь остаток сверх этих ставок.
+ */
+function rateLabel(id: number, m: Mandate, kind: PoolKind): string {
+	if (kind === "coupon") {
+		if (id === 2) return `+${fmtBps(m.seniorRateBps ?? 0)}`;
+		if (id === 1) return `+${fmtBps(m.mezzRateBps ?? 0)}`;
+		return "all the rest";
+	}
 	if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
 	if (id === 1) {
 		const net = (m.seniorFeeBps * m.seniorFeeToMezzBps) / 10000 - m.mezzFeeBps;
@@ -32,6 +47,7 @@ export function Waterfall({
 	rate,
 	asset,
 	decimals,
+	kind,
 	selected,
 	onSelect,
 }: Props) {
@@ -82,7 +98,7 @@ export function Waterfall({
 							</span>
 
 							<span className={s.figures}>
-								<span className={`${s.rate} num`}>{feeLabel(id, mandate)}</span>
+								<span className={`${s.rate} num`}>{rateLabel(id, mandate, kind)}</span>
 								<span className={`${s.pool} num`}>
 									{rate === null
 										? `${fmtAmount(state.totalAssets, 2, BigInt(decimals))} ${asset}`
@@ -99,7 +115,18 @@ export function Waterfall({
 				<p className="muted small">
 					Pool is empty. The first deposit sets the proportions.
 				</p>
+			) : kind === "coupon" ? (
+				/* У этого пула потолка убытка нет: доли выводятся из стоимости
+				   пула заново на каждое чтение, а не списываются событиями,
+				   поэтому ограничивать нечего. Рисовать здесь шкалу значило бы
+				   обещать предел, которого не существует. */
+				<p className={s.capNote}>
+					No write-off ceiling here: the split is recomputed from the pool
+					value on every read. Junior absorbs the drawdown until it is gone,
+					then middle, then senior.
+				</p>
 			) : (
+
 				<div className={s.cap}>
 					<div className={s.bar}>
 						<div className={s.fill} style={{ width: `${headroomPct}%` }} />

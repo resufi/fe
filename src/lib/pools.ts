@@ -6,6 +6,7 @@ import tonStable from "../deployments/mainnet-stable.json" with { type: "json" }
 import solanaDevnet from "../deployments/solana-devnet.json" with { type: "json" };
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import { env } from "./env.ts";
+import { CONTRACTS, MANDATE as HYPEREVM_MANDATE } from "./hyperevm.ts";
 
 /**
  * Реестр пулов.
@@ -20,9 +21,25 @@ import { env } from "./env.ts";
  * пулу и передаются вниз явно. Угаданное значение не вызвало бы ошибки —
  * суммы просто оказались бы в тысячу раз не теми.
  */
+/**
+ * Как устроена экономика пула.
+ *
+ * "fee" — TON и Solana: все транши получают базовую доходность актива, а
+ * senior сверх того платит за защиту, и плата течёт вниз по водопаду.
+ *
+ * "coupon" — HyperEVM: senior и mezzanine имеют фиксированные купоны, junior
+ * получает весь остаток NAV. Потолка убытка нет: доли выводятся из NAV
+ * заново на каждое чтение, а не списываются событиями.
+ *
+ * Разница не косметическая, и показывать одну как другую нельзя: у "fee"
+ * senior теряет 2% годовых, у "coupon" — получает 6%. Знак противоположный.
+ */
+export type PoolKind = "fee" | "coupon";
+
 export type Pool = {
 	id: string;
 	chain: ChainId;
+	kind: PoolKind;
 	/** Короткое имя для вкладки: символ базового актива. */
 	label: string;
 	/** Базовый доходный актив. */
@@ -87,6 +104,7 @@ function tonPool(
 	return {
 		id,
 		chain: "ton",
+		kind: "fee",
 		label,
 		asset,
 		// Стоимость долей показывается в GRAM только там, где есть курс
@@ -134,8 +152,27 @@ export const POOLS: Pool[] = [
 		? [tonPool("ton-tsusde", "tsUSDe", "tsUSDe", tonStable, 6)]
 		: []),
 	{
+		id: "hyperevm",
+		chain: "hyperevm",
+		kind: "coupon",
+		label: "HLP",
+		asset: "USDC",
+		unit: "USD",
+		decimals: 6,
+		network: "mainnet",
+		deployed: true,
+		mandate: HYPEREVM_MANDATE,
+		minDeposit: 1_000_000n,
+		vault: CONTRACTS.vault,
+		registry: null,
+		jettonMaster: CONTRACTS.asset,
+		// Токены долей — такие же мастера, как жетоны на TON и минты на Solana.
+		trancheMasters: [...CONTRACTS.trancheTokens],
+	},
+	{
 		id: "solana",
 		chain: "solana",
+		kind: "fee",
 		label: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
 		asset: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
 		unit: "SOL",

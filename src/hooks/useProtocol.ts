@@ -4,6 +4,7 @@ import { useTonAddress } from '@tonconnect/ui-react';
 import { addrOf, TRANCHES } from '../lib/config';
 import type { Pool } from '../lib/pools';
 import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana';
+import { readVault as readEvmVault, readWallet as readEvmWallet } from '../lib/hyperevm';
 import {
     hasApiKey,
     readAssetRate,
@@ -48,6 +49,13 @@ export type WalletData = {
     positions: MyPosition[];
     /** Только TON: кошелёк базового жетона, куда уходит перевод при депозите. */
     jettonWallet?: Address;
+    /**
+     * Только EVM: сколько владелец разрешил пулу списать.
+     *
+     * У ERC20 разрешение — отдельная транзакция, и без него депозит
+     * откатится. Интерфейс обязан знать это ДО нажатия, а не после.
+     */
+    allowance?: bigint;
 };
 
 export type ProtocolData = {
@@ -82,7 +90,11 @@ function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
 /** Пауза между обновлениями, отсчитывается от окончания предыдущего. */
 const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
 
-export function useProtocol(pool: Pool, solanaAddress: string | null = null) {
+export function useProtocol(
+    pool: Pool,
+    solanaAddress: string | null = null,
+    evmAddress: string | null = null,
+) {
     const chain = pool.chain;
     const addr = addrOf(pool);
     const wallet = useTonAddress();
@@ -128,6 +140,49 @@ export function useProtocol(pool: Pool, solanaAddress: string | null = null) {
                 setData({ ...base, wallet: null });
                 const w = await readSolanaWallet(solanaAddress, tranches);
                 setData({ ...base, wallet: w });
+                return;
+            }
+
+            // HyperEVM: состояние читается одним контрактом, потерь по
+            // мандату там нет — доли выводятся из стоимости пула заново.
+            if (chain === "hyperevm") {
+                const v = await readEvmVault();
+                const tranches = [0, 1, 2].map((i) => ({
+                    totalAssets: v.values[i],
+                    totalShares: v.totalShares[i],
+                }));
+                const vault: VaultState = {
+                    principalDeposited: v.nav,
+                    cumulativeLoss: 0n,
+                    maxLossBps: 0,
+                    withdrawDelay: pool.mandate.withdrawDelay,
+                };
+                // Потолка убытка нет, поэтому и ёмкости нет: показывать её
+                // нулём честнее, чем выдумывать.
+                const base = { tranches, vault, headroom: 0n, rate: null };
+
+                if (!evmAddress) {
+                    setData({ ...base, wallet: null });
+                    return;
+                }
+                setData({ ...base, wallet: null });
+                const w = await readEvmWallet(evmAddress);
+                setData({
+                    ...base,
+                    wallet: {
+                        balance: w.balance,
+                        allowance: w.allowance,
+                        positions: [0, 1, 2]
+                            .filter((i) => w.shares[i] > 0n || w.tickets[i].shares > 0n)
+                            .map((i) => ({
+                                trancheId: i,
+                                shares: w.shares[i],
+                                pendingShares: w.tickets[i].shares,
+                                unlockAt: w.tickets[i].unlockAt,
+                                valueNow: assetsForShares(tranches[i], w.shares[i] + w.tickets[i].shares),
+                            })),
+                    },
+                });
                 return;
             }
 
@@ -191,7 +246,7 @@ export function useProtocol(pool: Pool, solanaAddress: string | null = null) {
         } finally {
             setLoading(false);
         }
-    }, [wallet, pool, solanaAddress]);
+    }, [wallet, pool, solanaAddress, evmAddress]);
 
     // Данные прошлой сети должны исчезнуть сразу, а не висеть до первого
     // ответа новой: цифры чужого пула под чужой вкладкой хуже пустоты.

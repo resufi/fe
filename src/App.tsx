@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTonAddress } from "@tonconnect/ui-react";
 
+import { TRANCHES } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
 import { hasApiKey } from "./lib/chain.ts";
@@ -12,6 +13,8 @@ import { ChainNotReady } from "./components/ChainNotReady.tsx";
 import { NetworkControls } from "./components/NetworkControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
+import { useEvmWallet } from "./hooks/useEvmWallet.ts";
+import { EvmPanel } from "./components/EvmPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
 import { Loader } from "./components/Loader.tsx";
@@ -23,9 +26,11 @@ const LOADER_MIN_MS = 3800;
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
 	const solana = useSolanaWallet();
+	const evm = useEvmWallet();
 	const { data, error, loading, refresh, network } = useProtocol(
 		pool,
 		pool.chain === "solana" ? solana.address : null,
+		pool.chain === "hyperevm" ? evm.address : null,
 	);
 	const wallet = useTonAddress();
 	const [selected, setSelected] = useState(0);
@@ -75,6 +80,7 @@ export default function App() {
 					pool={pool}
 					onPoolChange={switchPool}
 					solana={solana}
+					evm={evm}
 				/>
 			</header>
 
@@ -121,12 +127,28 @@ export default function App() {
 							rate={data.rate}
 							asset={pool.asset}
 							decimals={pool.decimals}
+							kind={pool.kind}
 							selected={selected}
 							onSelect={setSelected}
 						/>
 
 						<div className={css.side}>
-							{chain === "solana" ? (
+							{chain === "hyperevm" ? (
+								evm.address ? (
+									<EvmPanel
+										data={data}
+										trancheId={selected}
+										pool={pool}
+										wallet={evm}
+										onDone={() => void refresh()}
+									/>
+								) : (
+									<p className="muted state">
+										Connect an EVM wallet to deposit. Pool state above is live
+										from HyperEVM.
+									</p>
+								)
+							) : chain === "solana" ? (
 								solana.address ? (
 									<SolanaPanel
 										data={data}
@@ -226,14 +248,25 @@ function Details({
 
 			<ul className={css.addrs}>
 				<li>
-					Vault <code>{shortAddress(pool.vault!)}</code>
+					Vault <code>{shortAddress(pool.vault ?? "—")}</code>
 				</li>
+				{/* Registry есть не у всех сетей: на HyperEVM убыток не
+				    объявляется, а наблюдается, и объявлять его некому. */}
+				{pool.registry && (
+					<li>
+						Registry <code>{shortAddress(pool.registry)}</code>
+					</li>
+				)}
 				<li>
-					Registry <code>{shortAddress(pool.registry!)}</code>
+					Asset ({pool.asset}) <code>{shortAddress(pool.jettonMaster ?? "—")}</code>
 				</li>
-				<li>
-					Asset ({pool.asset}) <code>{shortAddress(pool.jettonMaster!)}</code>
-				</li>
+				{/* Адреса токенов долей: кошельки не находят их сами, и без
+				    этих строк человек не увидит свою позицию у себя. */}
+				{pool.trancheMasters.map((addr, i) => (
+					<li key={addr}>
+						{TRANCHES[i].name} shares <code>{shortAddress(addr)}</code>
+					</li>
+				))}
 			</ul>
 		</details>
 	);

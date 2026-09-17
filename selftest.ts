@@ -188,6 +188,56 @@ console.log('\nреестр пулов');
     );
     check('у каждой сети есть хотя бы один пул', poolsOfChain('ton').length > 0 && poolsOfChain('solana').length > 0);
     check('забытый выбор пула не роняет приложение', findPool('нет-такого') === undefined);
+
+    // Экономика у сетей разная, и это не косметика: у "fee" senior ПЛАТИТ
+    // за защиту, у "coupon" — ПОЛУЧАЕТ фиксированную ставку. Знак
+    // противоположный, и подмена одной формы другой показала бы расход как
+    // доход.
+    const coupon = POOLS.filter((p) => p.kind === 'coupon');
+    const fee = POOLS.filter((p) => p.kind === 'fee');
+    check('купонные пулы объявляют свои ставки', coupon.every(
+        (p) => (p.mandate.seniorRateBps ?? 0) > 0 && (p.mandate.mezzRateBps ?? 0) > 0,
+    ));
+    check('и не объявляют платы за защиту', coupon.every(
+        (p) => p.mandate.seniorFeeBps === 0 && p.mandate.mezzFeeBps === 0,
+    ));
+    check('пулы с платой не объявляют купонов', fee.every(
+        (p) => p.mandate.seniorRateBps === undefined && p.mandate.mezzRateBps === undefined,
+    ));
+    // У купонного пула потолка убытка нет: доли выводятся из стоимости пула
+    // заново. Ненулевой потолок означал бы обещание предела, которого нет.
+    check('у купонных пулов нет потолка убытка', coupon.every(
+        (p) => p.mandate.maxLossBps === 0,
+    ));
+    check('у пулов с платой потолок задан', fee.every((p) => p.mandate.maxLossBps > 0));
+
+    // Токены долей: без них позиция остаётся записью, а её нельзя ни
+    // продать, ни увидеть в кошельке. Адреса обязаны быть разными — один
+    // и тот же токен на двух траншах смешал бы риски молча.
+    const tokenised = POOLS.filter((p) => p.trancheMasters.length > 0);
+    check('у токенизированных пулов ровно три токена', tokenised.every(
+        (p) => p.trancheMasters.length === 3,
+    ));
+    check('адреса токенов не повторяются', tokenised.every(
+        (p) => new Set(p.trancheMasters.map((a) => a.toLowerCase())).size === 3,
+    ));
+    // Registry есть не везде: на HyperEVM убыток наблюдается, а не
+    // объявляется, и объявлять его некому. Интерфейс обязан это пережить.
+    check('пул без registry — законное состояние', POOLS.every(
+        (p) => p.registry === null || p.registry.length > 0,
+    ));
+
+    // Список кошельков EVM не должен оказываться пустым: раньше человек без
+    // расширения видел строку «No EVM wallet found» и упирался в тупик.
+    // Теперь даже при нулевом обнаружении остаются предложения поставить.
+    const { SUGGESTED } = await import('./src/lib/evmWallets.ts');
+    check('есть что предложить, если ничего не установлено', SUGGESTED.length >= 3);
+    check('у каждого предложения есть ссылка', SUGGESTED.every(
+        (w) => w.url.startsWith('https://'),
+    ));
+    check('Phantom не предлагается для HyperEVM', !SUGGESTED.some(
+        (w) => w.name.toLowerCase().includes('phantom'),
+    ));
 }
 
 // --- переменные сборки ---------------------------------------------------

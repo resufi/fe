@@ -1,7 +1,7 @@
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import type { Mandate } from "./config.ts";
 
-export type ChainId = "ton" | "solana";
+export type ChainId = "ton" | "solana" | "hyperevm";
 
 export type ChainInfo = {
 	id: ChainId;
@@ -40,6 +40,22 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 		mandate: {
 			maxLossBps: 0,
 			withdrawDelay: 0,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	hyperevm: {
+		id: "hyperevm",
+		name: "Hyperliquid",
+		// Базовый актив — доля в HLP, вейлте маркетмейкера биржи. Доходность
+		// там своя, не стейкинговая, и просадки настоящие.
+		asset: "USDC",
+		unit: "USD",
+		deployed: true,
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 86400,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,

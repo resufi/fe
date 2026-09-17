@@ -129,3 +129,23 @@
 	font-size: 12.5px;
 	color: var(--junior);
 }
+
+/* Значок кошелька в списке.
+   На EVM иконку присылает сам кошелёк по EIP-6963, поэтому это <img>, а не
+   нарисованный нами svg. Запасной вид — первая буква имени: строка не
+   должна разъезжаться из-за кошелька без иконки. */
+.icon {
+	width: 20px;
+	height: 20px;
+	flex: none;
+	border-radius: 5px;
+	object-fit: cover;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--line);
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--muted);
+	text-transform: uppercase;
+}

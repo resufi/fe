@@ -12,6 +12,15 @@ export type Mandate = {
 	seniorFeeToMezzBps: number;
 	mezzFeeBps: number;
 	/**
+	 * Купоны senior и mezzanine, годовых, у пулов вида "coupon".
+	 *
+	 * Это не плата, а доход: на HyperEVM senior получает фиксированную
+	 * ставку, а не платит за защиту. Поля отдельные намеренно — сложить их
+	 * с seniorFeeBps значило бы показать доход как расход.
+	 */
+	seniorRateBps?: number;
+	mezzRateBps?: number;
+	/**
 	 * Минимальный взнос в минимальных единицах актива, строкой.
 	 *
 	 * Строкой, потому что JSON не знает bigint. Появилось не везде: артефакты
