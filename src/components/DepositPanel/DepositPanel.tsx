@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Address } from "@ton/core";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
-import { addrOf, TRANCHES } from "../lib/config.ts";
-import type { Pool } from "../lib/pools.ts";
-import { fmtAmount, parseAmount } from "../lib/format.ts";
-import { depositMessage, DEPOSIT_TOTAL_TON } from "../lib/payloads.ts";
-import { ProtocolData } from "../hooks/useProtocol.ts";
+import { addrOf, TRANCHES } from "../../lib/config.ts";
+import type { Pool } from "../../lib/pools.ts";
+import { fmtAmount, parseAmount } from "../../lib/format.ts";
+import { depositMessage, DEPOSIT_TOTAL_TON } from "../../lib/payloads.ts";
+import { ProtocolData } from "../../hooks/useProtocol.ts";
 import css from "./DepositPanel.module.css";
 
 type Props = {

@@ -1,4 +1,4 @@
-import { CHAINS, type ChainId } from "../lib/chains.ts";
+import { CHAINS, type ChainId } from "../../lib/chains.ts";
 import css from "./ChainNotReady.module.css";
 
 export function ChainNotReady({ chain }: { chain: ChainId }) {

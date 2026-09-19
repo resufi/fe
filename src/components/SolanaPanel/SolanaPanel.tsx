@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { PublicKey } from "@solana/web3.js";
-import { TRANCHES, hueStyle } from "../lib/config.ts";
-import { fmtAmount, fmtDuration, parseAmount } from "../lib/format.ts";
-import { buildClaim, buildDeposit, buildRequestWithdrawal } from "../lib/solanaTx.ts";
-import type { useSolanaWallet } from "../hooks/useSolanaWallet.ts";
-import type { ProtocolData } from "../hooks/useProtocol.ts";
-import css from "./DepositPanel.module.css";
-import pos from "./PositionsPanel.module.css";
+import { TRANCHES, hueStyle } from "../../lib/config.ts";
+import { fmtAmount, fmtDuration, parseAmount } from "../../lib/format.ts";
+import { buildClaim, buildDeposit, buildRequestWithdrawal } from "../../lib/solanaTx.ts";
+import type { useSolanaWallet } from "../../hooks/useSolanaWallet.ts";
+import type { ProtocolData } from "../../hooks/useProtocol.ts";
+import css from "../DepositPanel/DepositPanel.module.css";
+import pos from "../PositionsPanel/PositionsPanel.module.css";
 
 type Props = {
 	data: ProtocolData;

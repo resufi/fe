@@ -1,4 +1,4 @@
-import type { WalletId } from "../lib/wallets.ts";
+import type { WalletId } from "../../lib/wallets.ts";
 
 export function WalletMark({ id }: { id: WalletId }) {
 	const common = { width: 20, height: 20, viewBox: "0 0 20 20", "aria-hidden": true } as const;

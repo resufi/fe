@@ -39,6 +39,12 @@
 	max-width: 16em;
 }
 
+/* Переключатели над сообщением там, где водопада нет. */
+.stateBlock {
+	display: grid;
+	gap: var(--s5);
+}
+
 .hero {
 	display: grid;
 	grid-template-columns: 1fr 320px;
@@ -54,7 +60,13 @@
 }
 
 @media (max-width: 900px) {
-	.hero {
+	/* Переключатели над сообщением там, где водопада нет. */
+.stateBlock {
+	display: grid;
+	gap: var(--s5);
+}
+
+.hero {
 		grid-template-columns: 1fr;
 		gap: var(--s6);
 	}
@@ -160,4 +172,3 @@
 	font-size: 13px;
 	color: var(--muted);
 }
-

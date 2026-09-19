@@ -5,20 +5,21 @@ import { TRANCHES } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
 import { hasApiKey } from "./lib/chain.ts";
-import { Waterfall } from "./components/Waterfall.tsx";
-import { DepositPanel } from "./components/DepositPanel.tsx";
-import { PositionsPanel } from "./components/PositionsPanel.tsx";
-import { Logo } from "./components/Logo.tsx";
-import { ChainNotReady } from "./components/ChainNotReady.tsx";
-import { NetworkControls } from "./components/NetworkControls.tsx";
-import { SolanaPanel } from "./components/SolanaPanel.tsx";
+import { Waterfall } from "./components/Waterfall/Waterfall.tsx";
+import { DepositPanel } from "./components/DepositPanel/DepositPanel.tsx";
+import { PositionsPanel } from "./components/PositionsPanel/PositionsPanel.tsx";
+import { Logo } from "./components/Logo/Logo.tsx";
+import { ChainNotReady } from "./components/ChainNotReady/ChainNotReady.tsx";
+import { NetworkControls } from "./components/NetworkControls/NetworkControls.tsx";
+import { PoolControls } from "./components/PoolControls/PoolControls.tsx";
+import { SolanaPanel } from "./components/SolanaPanel/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
 import { useEvmWallet } from "./hooks/useEvmWallet.ts";
-import { EvmPanel } from "./components/EvmPanel.tsx";
+import { EvmPanel } from "./components/EvmPanel/EvmPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
-import { Loader } from "./components/Loader.tsx";
-import { HeroSkeleton } from "./components/HeroSkeleton.tsx";
+import { Loader } from "./components/Loader/Loader.tsx";
+import { HeroSkeleton } from "./components/HeroSkeleton/HeroSkeleton.tsx";
 import css from "./App.module.css";
 
 const LOADER_MIN_MS = 3800;
@@ -49,6 +50,19 @@ export default function App() {
 		if (next) switchPool(next);
 	}
 
+	// Один и тот же выбор в двух местах: в шапке водопада, когда данные есть,
+	// и над сообщением, когда их нет. Уйти с неразвёрнутого пула надо именно
+	// оттуда, где водопада не существует.
+	const controls = (
+		<PoolControls
+			chain={chain}
+			onChainChange={switchChain}
+			pools={poolsOfChain(chain)}
+			pool={pool}
+			onPoolChange={switchPool}
+		/>
+	);
+
 	const booted = useRef(false);
 	useEffect(() => {
 		if (data) booted.current = true;
@@ -73,15 +87,7 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<NetworkControls
-					chain={chain}
-					onChange={switchChain}
-					pools={poolsOfChain(chain)}
-					pool={pool}
-					onPoolChange={switchPool}
-					solana={solana}
-					evm={evm}
-				/>
+				<NetworkControls chain={chain} solana={solana} evm={evm} />
 			</header>
 
 			<h1 className={css.lede} data-lede>
@@ -91,20 +97,36 @@ export default function App() {
 			</h1>
 
 			{!CHAINS[chain].deployed ? (
-				<ChainNotReady chain={chain} />
+				<div className={css.stateBlock}>
+					{controls}
+					<ChainNotReady chain={chain} />
+				</div>
 			) : !pool.deployed ? (
-				<NotDeployed pool={pool} />
+				<div className={css.stateBlock}>
+					{controls}
+					<NotDeployed pool={pool} />
+				</div>
 			) : !data ? (
-				error ? (
-					<p className={css.state}>
-						{error}{" "}
-						<button className={css.linkish} onClick={() => void refresh()}>
-							Retry
-						</button>
-					</p>
-				) : (
-					<HeroSkeleton />
-				)
+				<div className={css.stateBlock}>
+					{/*
+					 * Блоки живые во всех состояниях. Смена пула сбрасывает
+					 * data в null, и экран уходит сюда при каждом переключении —
+					 * если подменять блоки скелетом, они исчезают прямо под
+					 * курсором. Ждать им нечего: списки сетей и пулов
+					 * статические.
+					 */}
+					{controls}
+					{error ? (
+						<p className={css.state}>
+							{error}{" "}
+							<button className={css.linkish} onClick={() => void refresh()}>
+								Retry
+							</button>
+						</p>
+					) : (
+						<HeroSkeleton />
+					)}
+				</div>
 			) : (
 				<>
 					{(error || !hasApiKey) && (
@@ -128,6 +150,7 @@ export default function App() {
 							asset={pool.asset}
 							decimals={pool.decimals}
 							kind={pool.kind}
+							controls={controls}
 							selected={selected}
 							onSelect={setSelected}
 						/>

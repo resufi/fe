@@ -4,6 +4,15 @@
 }
 
 .head {
+	display: grid;
+	gap: var(--s4);
+	justify-items: start;
+}
+
+.headline {
+	/* Шапка выровнена по левому краю ради переключателей, но строка
+	   заголовка тянется на всю ширину: объём пула стоит справа. */
+	justify-self: stretch;
 	display: flex;
 	align-items: baseline;
 	justify-content: space-between;
@@ -62,26 +71,18 @@
 	box-shadow: inset 3px 0 0 var(--brand);
 }
 
-.band.on .dot {
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--hue) 25%, transparent);
-}
-
 .name {
-	display: flex;
-	align-items: center;
-	gap: var(--s2);
+	/*
+	 * Блоком явно. Раньше строку держал `display: flex`, стоявший здесь ради
+	 * цветной точки; без него строчный span съезжал к описанию, а его
+	 * вертикальный отступ не применялся.
+	 */
+	display: block;
 	font-size: 15px;
 }
 
-.dot {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: var(--hue);
-	flex: none;
-}
-
 .order {
+	display: block;
 	margin: var(--s1) 0 0;
 	font-size: 13px;
 	color: var(--muted);

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useTonConnectUI, useTonAddress } from "@tonconnect/ui-react";
 import { Address } from "@ton/core";
-import { hueStyle, TRANCHES } from "../lib/config.ts";
-import { fmtAmount, fmtDuration, toGram } from "../lib/format.ts";
-import { burnMessage, claimMessage, BURN_TON, CLAIM_TON } from "../lib/payloads.ts";
-import { MyPosition, ProtocolData } from "../hooks/useProtocol.ts";
+import { hueStyle, TRANCHES } from "../../lib/config.ts";
+import { fmtAmount, fmtDuration, toGram } from "../../lib/format.ts";
+import { burnMessage, claimMessage, BURN_TON, CLAIM_TON } from "../../lib/payloads.ts";
+import { MyPosition, ProtocolData } from "../../hooks/useProtocol.ts";
 import css from "./PositionsPanel.module.css";
 
 type Props = {

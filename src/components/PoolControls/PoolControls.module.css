@@ -1,0 +1,101 @@
+.rows {
+	display: grid;
+	justify-items: start;
+	gap: var(--s2);
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--s2);
+}
+
+.block {
+	/*
+	 * Ширина задаётся блоку, а не колонке сетки: шапка водопада выровнена по
+	 * левому краю, её ширина неопределённа, и `auto-fill` свернул бы ряд в
+	 * одну колонку. Доли (`1fr`) тоже не подходят — ряды разной длины, и
+	 * одинокий пул растянулся бы на всю строку.
+	 */
+	flex: 0 0 116px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 6px 10px;
+	/* Подпись не должна распирать блок: ширину задаёт колонка. */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font: inherit;
+	font-size: 13px;
+	white-space: nowrap;
+	background: transparent;
+	color: var(--muted);
+	/*
+	 * Рамка есть всегда, меняется только её цвет: иначе выбранный блок
+	 * прибавлял бы в размере и ряд дёргался бы при каждом переключении.
+	 */
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	cursor: pointer;
+	transition:
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.block:hover {
+	color: var(--brand);
+	border-color: var(--brand);
+}
+
+.on,
+.on:hover {
+	color: var(--fg);
+	border-color: var(--brand);
+	/*
+	 * Тень фиолетовая, а не серая: серая читалась бы как подъём над
+	 * плоскостью, а здесь она лишь усиливает рамку выбранного.
+	 */
+	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.soon {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--muted);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	padding: 1px 5px;
+}
+
+/*
+ * Скелет рядов.
+ *
+ * Списки сетей и пулов статические, грузить их неоткуда — скелет нужен не
+ * ради ожидания данных, а чтобы на первом кадре блоки не выпрыгивали поверх
+ * скелета водопада готовыми.
+ */
+.skeleton {
+	animation: pulse 1.4s ease-in-out infinite;
+}
+
+.ghost {
+	flex: 0 0 116px;
+	height: 30px;
+	background: var(--raise);
+	border: 1px solid var(--line);
+	border-radius: 999px;
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.55;
+	}
+}

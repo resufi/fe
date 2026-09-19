@@ -20,8 +20,8 @@
 	width: 14px;
 	height: 11px;
 	background-color: #ffffff;
-	mask: url("../icons/solana.svg") center / contain no-repeat;
-	-webkit-mask: url("../icons/solana.svg") center / contain no-repeat;
+	mask: url("../../icons/solana.svg") center / contain no-repeat;
+	-webkit-mask: url("../../icons/solana.svg") center / contain no-repeat;
 }
 
 .backdrop {

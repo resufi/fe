@@ -1,4 +1,4 @@
-import mark from "../icons/resu-logo-loader.svg";
+import mark from "../../icons/resu-logo-loader.svg";
 import css from "./Loader.module.css";
 
 const SIGN = "Resu — results first, everything else later.";

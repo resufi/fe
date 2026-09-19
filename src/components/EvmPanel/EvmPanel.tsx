@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { TRANCHES } from "../lib/config.ts";
-import { fmtAmount, parseAmount } from "../lib/format.ts";
-import { CONTRACTS, SIG, encode } from "../lib/hyperevm.ts";
-import type { EvmWallet } from "../hooks/useEvmWallet.ts";
-import type { ProtocolData } from "../hooks/useProtocol.ts";
-import type { Pool } from "../lib/pools.ts";
-import css from "./DepositPanel.module.css";
+import { TRANCHES } from "../../lib/config.ts";
+import { fmtAmount, parseAmount } from "../../lib/format.ts";
+import { CONTRACTS, SIG, encode } from "../../lib/hyperevm.ts";
+import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
+import type { ProtocolData } from "../../hooks/useProtocol.ts";
+import type { Pool } from "../../lib/pools.ts";
+import css from "../DepositPanel/DepositPanel.module.css";
 
 type Props = {
 	data: ProtocolData;

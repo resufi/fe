@@ -1,7 +1,9 @@
-import { TrancheState } from "../lib/chain.ts";
-import { hueStyle, Mandate, TRANCHES } from "../lib/config.ts";
-import type { PoolKind } from "../lib/pools.ts";
-import { fmtAmount, fmtBps, toGram } from "../lib/format.ts";
+import type { ReactNode } from "react";
+
+import { TrancheState } from "../../lib/chain.ts";
+import { Mandate, TRANCHES } from "../../lib/config.ts";
+import type { PoolKind } from "../../lib/pools.ts";
+import { fmtAmount, fmtBps, toGram } from "../../lib/format.ts";
 import s from "./Waterfall.module.css";
 
 type Props = {
@@ -15,6 +17,8 @@ type Props = {
 	decimals: number;
 	/** Экономика пула: плата за защиту или фиксированные купоны. */
 	kind: PoolKind;
+	/** Выбор сети и пула. Живёт в шапке водопада — это шаг того же выбора. */
+	controls?: ReactNode;
 	selected: number;
 	onSelect: (id: number) => void;
 };
@@ -48,6 +52,7 @@ export function Waterfall({
 	asset,
 	decimals,
 	kind,
+	controls,
 	selected,
 	onSelect,
 }: Props) {
@@ -63,15 +68,18 @@ export function Waterfall({
 	return (
 		<section className={s.wf} data-waterfall>
 			<header className={s.head}>
-				<h2 className={s.title}>
-					Loss waterfall
-					<span className="muted"> — losses fill from the bottom</span>
-				</h2>
-				{!empty && (
-					<span className="muted small">
-						{fmtAmount(total, 2, BigInt(decimals))} {asset} pooled
-					</span>
-				)}
+				{controls}
+				<div className={s.headline}>
+					<h2 className={s.title}>
+						Loss waterfall
+						<span className="muted"> — losses fill from the bottom</span>
+					</h2>
+					{!empty && (
+						<span className="muted small">
+							{fmtAmount(total, 2, BigInt(decimals))} {asset} pooled
+						</span>
+					)}
+				</div>
 			</header>
 
 			<div className={s.stack}>
@@ -85,15 +93,11 @@ export function Waterfall({
 							key={id}
 							type="button"
 							className={`${s.band} ${selected === id ? s.on : ""}`}
-							style={hueStyle(id)}
 							onClick={() => onSelect(id)}
 							aria-pressed={selected === id}
 						>
 							<span>
-								<span className={s.name}>
-									<i className={s.dot} aria-hidden="true" />
-									{meta.name}
-								</span>
+								<span className={s.name}>{meta.name}</span>
 								<span className={s.order}>{meta.order}</span>
 							</span>
 
