@@ -15,9 +15,9 @@ export function PoolControlsSkeleton() {
 			aria-label="Loading pools"
 		>
 			<div className={css.row}>
-				<span className={css.ghost} />
-				<span className={css.ghost} />
-				<span className={css.ghost} />
+				<span className={css.chainGhost} />
+				<span className={css.chainGhost} />
+				<span className={css.chainGhost} />
 			</div>
 			<div className={css.row}>
 				<span className={css.ghost} />

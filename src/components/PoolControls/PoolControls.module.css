@@ -10,6 +10,80 @@
 	gap: var(--s2);
 }
 
+/*
+ * Сети — не пилюли.
+ *
+ * Оба ряда выглядели одинаково, и выбор сети читался как ещё один пул.
+ * Поэтому у сетей нет рамки и нет фиксированной ширины: это подписи, а
+ * выбранную помечает подчёркивание снизу. Скруглены только подложка ховера
+ * и само подчёркивание — форма остаётся «круглой», но веса ряду не добавляет.
+ */
+.chain {
+	flex: 0 0 auto;
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px 8px;
+	font: inherit;
+	font-size: 13px;
+	white-space: nowrap;
+	background: transparent;
+	color: var(--muted);
+	border: 0;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * Подчёркивание есть у всех, невыбранные держат его в нуле: так строка не
+ * меняет высоту при переключении, а линия выезжает, а не появляется.
+ */
+.chain::after {
+	content: "";
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	bottom: 0;
+	height: 2px;
+	border-radius: 999px;
+	background: var(--brand);
+	transform: scaleX(0);
+	opacity: 0;
+	/*
+	 * Кривая упирается в единицу — без отскока, см. правку бегунка вкладок.
+	 * Длительность заметно больше, чем у цвета текста: линия — главное
+	 * движение, и она должна дочитываться уже после того, как подпись
+	 * доехала до своего цвета. Прозрачность гасится быстрее роста, иначе
+	 * уходящая линия сжимается в яркую точку.
+	 */
+	transition:
+		transform 340ms cubic-bezier(0.2, 0, 0, 1),
+		opacity 200ms ease;
+}
+
+.chain:hover {
+	color: var(--brand);
+}
+
+.chainOn,
+.chainOn:hover {
+	color: var(--fg);
+}
+
+.chainOn::after {
+	transform: scaleX(1);
+	opacity: 1;
+}
+
+.chainGhost {
+	flex: 0 0 72px;
+	height: 30px;
+	border-radius: 999px;
+	background: var(--raise);
+}
+
 .block {
 	/*
 	 * Ширина задаётся блоку, а не колонке сетки: шапка водопада выровнена по
