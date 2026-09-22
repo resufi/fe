@@ -126,8 +126,8 @@ export function Waterfall({
 				   обещать предел, которого не существует. */
 				<p className={s.capNote}>
 					No write-off ceiling here: the split is recomputed from the pool
-					value on every read. Junior absorbs the drawdown until it is gone,
-					then middle, then senior.
+					value on every read. Buffer absorbs the drawdown until it is gone,
+					then Balance, then Shield.
 				</p>
 			) : (
 

@@ -82,25 +82,30 @@ export function addrOf(pool: Pool) {
  * транша требовало правок в трёх местах. Здесь `hue` — имя токена из
  * `styles/tokens.css`, компонент подставляет его в свою `--hue`.
  */
+/*
+ * Названия говорят о роли, а не о старшинстве: Junior/Middle/Senior
+ * читались как грейд в найме. Ключи остались прежними — они завязаны на
+ * контракты и на порядок траншей, меняются только подписи.
+ */
 export const TRANCHES = [
 	{
 		id: 0,
 		key: "junior",
-		name: "Junior",
+		name: "Buffer",
 		order: "Absorbs losses first",
 		hue: "--junior",
 	},
 	{
 		id: 1,
 		key: "mezzanine",
-		name: "Middle",
+		name: "Balance",
 		order: "Absorbs losses second",
 		hue: "--mezz",
 	},
 	{
 		id: 2,
 		key: "senior",
-		name: "Senior",
+		name: "Shield",
 		order: "Absorbs losses last",
 		hue: "--senior",
 	},

@@ -24,7 +24,7 @@ export function ChainNotReady({ chain }: { chain: ChainId }) {
 					<dd className="num">{Math.round(c.mandate.withdrawDelay / 86400)} days</dd>
 				</div>
 				<div>
-					<dt>Senior fee</dt>
+					<dt>Shield fee</dt>
 					<dd className="num">{c.mandate.seniorFeeBps / 100}%</dd>
 				</div>
 			</dl>
