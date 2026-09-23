@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TRANCHES } from "../../lib/config.ts";
 import { fmtAmount, parseAmount } from "../../lib/format.ts";
-import { CONTRACTS, SIG, encode } from "../../lib/hyperevm.ts";
+import { SIG, encode, evmChain } from "../../lib/evm.ts";
 import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
 import type { ProtocolData } from "../../hooks/useProtocol.ts";
 import type { Pool } from "../../lib/pools.ts";
@@ -23,6 +23,11 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 	const [note, setNote] = useState<string | null>(null);
 
 	const decimals = BigInt(pool.decimals);
+	// Адреса берём из пула, а не из зашитого HLP: тот же контракт живёт на
+	// разных EVM-сетях с разными адресами.
+	const assetAddr = pool.jettonMaster!;
+	const vaultAddr = pool.vault!;
+	const gasSymbol = evmChain(pool.chain).nativeCurrency.symbol;
 	const amount = parseAmount(raw, decimals);
 	const meta = TRANCHES[trancheId];
 	const w = data.wallet;
@@ -65,8 +70,8 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 		// Бесконечное разрешение, чтобы не платить за него при каждом взносе.
 		// Отозвать можно тем же вызовом с нулём.
 		await run(
-			CONTRACTS.asset,
-			encode(SIG.approve, CONTRACTS.vault, MAX_UINT),
+			assetAddr,
+			encode(SIG.approve, vaultAddr, MAX_UINT),
 			"Approved.",
 		);
 	}
@@ -74,7 +79,7 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 	async function deposit() {
 		if (amount === null) return;
 		await run(
-			CONTRACTS.vault,
+			vaultAddr,
 			encode(SIG.deposit, trancheId, amount),
 			"Sent.",
 		);
@@ -119,7 +124,7 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 
 			{problem && <p className={css.problem}>{problem}</p>}
 			{note && <p className={css.note}>{note}</p>}
-			<p className={css.gas}>Gas is paid in HYPE</p>
+			<p className={css.gas}>Gas is paid in {gasSymbol}</p>
 		</section>
 	);
 }

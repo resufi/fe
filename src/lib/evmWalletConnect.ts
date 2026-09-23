@@ -1,5 +1,4 @@
 import { env } from "./env.ts";
-import { HYPEREVM } from "./hyperevm.ts";
 import type { Eip1193 } from "./evmWallets.ts";
 
 /**
@@ -18,7 +17,7 @@ export type EvmWcSession = {
 	disconnect: () => Promise<void>;
 };
 
-export async function connectEvmWalletConnect(): Promise<EvmWcSession> {
+export async function connectEvmWalletConnect(chainId: number): Promise<EvmWcSession> {
 	const id = projectId();
 	if (!id) {
 		throw new Error(
@@ -41,7 +40,7 @@ export async function connectEvmWalletConnect(): Promise<EvmWcSession> {
 		},
 	});
 
-	const chain = `eip155:${HYPEREVM.chainId}`;
+	const chain = `eip155:${chainId}`;
 
 	// Провайдер отдаёт ссылку событием display_uri. Без показанного QR-кода
 	// человеку нечего сканировать, а подключение просто ждёт — снаружи это

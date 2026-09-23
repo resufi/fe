@@ -7,6 +7,7 @@ import solanaDevnet from "../deployments/solana-devnet.json" with { type: "json"
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import { env } from "./env.ts";
 import { CONTRACTS, MANDATE as HYPEREVM_MANDATE } from "./hyperevm.ts";
+import { CONTRACTS as ROBINHOOD, MANDATE as ROBINHOOD_MANDATE } from "./robinhood.ts";
 
 /**
  * Реестр пулов.
@@ -168,6 +169,27 @@ export const POOLS: Pool[] = [
 		jettonMaster: CONTRACTS.asset,
 		// Токены долей — такие же мастера, как жетоны на TON и минты на Solana.
 		trancheMasters: [...CONTRACTS.trancheTokens],
+	},
+	{
+		id: "robinhood-spy",
+		chain: "robinhood",
+		kind: "coupon",
+		label: "SPY",
+		// Вносят SPY-токен, а стоимость доли показывается в долларах: цена
+		// приходит из Chainlink, все суммы пула в wad USD (1e18).
+		asset: "SPY",
+		unit: "USD",
+		decimals: 18,
+		network: "mainnet",
+		deployed: true,
+		mandate: ROBINHOOD_MANDATE,
+		// Порог панели в единицах SPY. Контракт держит настоящий минимум $10
+		// (usd = amount x price); это мягкая подсказка выше него.
+		minDeposit: 20_000_000_000_000_000n, // 0.02 SPY (~$15)
+		vault: ROBINHOOD.vault,
+		registry: null,
+		jettonMaster: ROBINHOOD.asset,
+		trancheMasters: [...ROBINHOOD.trancheTokens],
 	},
 	{
 		id: "solana",

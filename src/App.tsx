@@ -17,6 +17,7 @@ import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
 import { useEvmWallet } from "./hooks/useEvmWallet.ts";
 import { EvmPanel } from "./components/EvmPanel/EvmPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
+import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
 import { Loader } from "./components/Loader/Loader.tsx";
 import { HeroSkeleton } from "./components/HeroSkeleton/HeroSkeleton.tsx";
@@ -27,11 +28,13 @@ const LOADER_MIN_MS = 3800;
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
 	const solana = useSolanaWallet();
-	const evm = useEvmWallet();
+	// Кошелёк EVM целится в сеть активного пула; для не-EVM пула берём
+	// любую EVM-сеть как заглушку — он там всё равно не используется.
+	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
 	const { data, error, loading, refresh, network } = useProtocol(
 		pool,
 		pool.chain === "solana" ? solana.address : null,
-		pool.chain === "hyperevm" ? evm.address : null,
+		pool.chain in EVM_CHAINS ? evm.address : null,
 	);
 	const wallet = useTonAddress();
 	const [selected, setSelected] = useState(0);
@@ -147,7 +150,7 @@ export default function App() {
 							headroom={data.headroom}
 							mandate={pool.mandate}
 							rate={data.rate}
-							asset={pool.asset}
+							asset={pool.kind === "coupon" ? pool.unit : pool.asset}
 							decimals={pool.decimals}
 							kind={pool.kind}
 							controls={controls}
@@ -156,7 +159,7 @@ export default function App() {
 						/>
 
 						<div className={css.side}>
-							{chain === "hyperevm" ? (
+							{chain in EVM_CHAINS ? (
 								evm.address ? (
 									<EvmPanel
 										data={data}
@@ -168,7 +171,7 @@ export default function App() {
 								) : (
 									<p className="muted state">
 										Connect an EVM wallet to deposit. Pool state above is live
-										from HyperEVM.
+										on-chain.
 									</p>
 								)
 							) : chain === "solana" ? (

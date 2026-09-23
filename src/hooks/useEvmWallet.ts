@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { HYPEREVM } from "../lib/hyperevm.ts";
+import type { EvmChainParams } from "../lib/evm.ts";
 import {
 	discover,
 	legacyProvider,
@@ -32,12 +32,14 @@ export type EvmWallet = {
 	connect: (id: string) => Promise<void>;
 	disconnect: () => Promise<void>;
 	switchChain: () => Promise<void>;
+	/** Имя целевой сети — для кнопки «Switch to …». */
+	chainName: string;
 	send: (to: string, data: string) => Promise<string>;
 };
 
 const WC = "walletconnect";
 
-export function useEvmWallet(): EvmWallet {
+export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	const [found, setFound] = useState<DiscoveredWallet[]>([]);
 	const [active, setActive] = useState<{ id: string; provider: Eip1193 } | null>(null);
 	const [wcDisconnect, setWcDisconnect] = useState<(() => Promise<void>) | null>(null);
@@ -118,7 +120,7 @@ export function useEvmWallet(): EvmWallet {
 			setError(null);
 			try {
 				if (id === WC) {
-					const s = await connectEvmWalletConnect();
+					const s = await connectEvmWalletConnect(target.chainId);
 					setActive({ id, provider: s.provider });
 					setWcDisconnect(() => s.disconnect);
 					setAddress(s.address);
@@ -160,7 +162,7 @@ export function useEvmWallet(): EvmWallet {
 		try {
 			await p.request({
 				method: "wallet_switchEthereumChain",
-				params: [{ chainId: HYPEREVM.chainIdHex }],
+				params: [{ chainId: target.chainIdHex }],
 			});
 		} catch (e) {
 			// 4902 — сети нет в кошельке, сначала её надо добавить.
@@ -169,37 +171,38 @@ export function useEvmWallet(): EvmWallet {
 				method: "wallet_addEthereumChain",
 				params: [
 					{
-						chainId: HYPEREVM.chainIdHex,
-						chainName: HYPEREVM.name,
-						rpcUrls: [HYPEREVM.rpc],
-						nativeCurrency: HYPEREVM.nativeCurrency,
-						blockExplorerUrls: [HYPEREVM.explorer],
+						chainId: target.chainIdHex,
+						chainName: target.name,
+						rpcUrls: [target.rpc],
+						nativeCurrency: target.nativeCurrency,
+						blockExplorerUrls: [target.explorer],
 					},
 				],
 			});
 		}
 		await readChain(p);
-	}, [active, readChain]);
+	}, [active, readChain, target]);
 
 	const send = useCallback(
 		async (to: string, data: string): Promise<string> => {
 			const p = active?.provider;
 			if (!p || !address) throw new Error("Wallet is not connected");
-			if (chainId !== HYPEREVM.chainId) {
-				throw new Error(`Switch the wallet to ${HYPEREVM.name} first`);
+			if (chainId !== target.chainId) {
+				throw new Error(`Switch the wallet to ${target.name} first`);
 			}
 			return (await p.request({
 				method: "eth_sendTransaction",
 				params: [{ from: address, to, data }],
 			})) as string;
 		},
-		[active, address, chainId],
+		[active, address, chainId, target],
 	);
 
 	return {
 		address,
 		chainId,
-		wrongChain: address !== null && chainId !== null && chainId !== HYPEREVM.chainId,
+		wrongChain: address !== null && chainId !== null && chainId !== target.chainId,
+		chainName: target.name,
 		entries,
 		connecting,
 		remembered,

@@ -4,7 +4,7 @@ import { useTonAddress } from '@tonconnect/ui-react';
 import { addrOf, TRANCHES } from '../lib/config';
 import type { Pool } from '../lib/pools';
 import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana';
-import { readVault as readEvmVault, readWallet as readEvmWallet } from '../lib/hyperevm';
+import { readVault as readEvmVault, readWallet as readEvmWallet, EVM_CHAINS, type EvmPoolContracts } from '../lib/evm';
 import {
     hasApiKey,
     readAssetRate,
@@ -145,8 +145,15 @@ export function useProtocol(
 
             // HyperEVM: состояние читается одним контрактом, потерь по
             // мандату там нет — доли выводятся из стоимости пула заново.
-            if (chain === "hyperevm") {
-                const v = await readEvmVault();
+            if (chain in EVM_CHAINS) {
+                // Адреса пула на EVM-сети. Токены долей у нас в trancheMasters.
+                const evmPool: EvmPoolContracts = {
+                    chain,
+                    vault: pool.vault!,
+                    asset: pool.jettonMaster!,
+                    trancheTokens: pool.trancheMasters,
+                };
+                const v = await readEvmVault(evmPool);
                 const tranches = [0, 1, 2].map((i) => ({
                     totalAssets: v.values[i],
                     totalShares: v.totalShares[i],
@@ -166,7 +173,7 @@ export function useProtocol(
                     return;
                 }
                 setData({ ...base, wallet: null });
-                const w = await readEvmWallet(evmAddress);
+                const w = await readEvmWallet(evmPool, evmAddress);
                 setData({
                     ...base,
                     wallet: {

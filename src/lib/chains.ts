@@ -1,7 +1,7 @@
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import type { Mandate } from "./config.ts";
 
-export type ChainId = "ton" | "solana" | "hyperevm";
+export type ChainId = "ton" | "solana" | "hyperevm" | "robinhood";
 
 export type ChainInfo = {
 	id: ChainId;
@@ -51,6 +51,22 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 		// Базовый актив — доля в HLP, вейлте маркетмейкера биржи. Доходность
 		// там своя, не стейкинговая, и просадки настоящие.
 		asset: "USDC",
+		unit: "USD",
+		deployed: true,
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 86400,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	robinhood: {
+		id: "robinhood",
+		name: "Robinhood",
+		// Базовый актив — токенизированный SPY (S&P 500). Стоимость доли
+		// считается в долларах через Chainlink; senior получает купон.
+		asset: "SPY",
 		unit: "USD",
 		deployed: true,
 		mandate: {

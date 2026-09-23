@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
 import { isMobile } from "../../lib/evmWallets.ts";
-import { HYPEREVM } from "../../lib/hyperevm.ts";
 import css from "../SolanaConnect/SolanaConnect.module.css";
 
 type Props = { wallet: EvmWallet };
@@ -51,7 +50,7 @@ export function EvmConnect({ wallet }: Props) {
 					className={css.button}
 					onClick={() => void wallet.switchChain()}
 				>
-					Switch to {HYPEREVM.name}
+					Switch to {wallet.chainName}
 				</button>
 			);
 		}
