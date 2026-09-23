@@ -3,6 +3,7 @@ import { useTonAddress } from "@tonconnect/ui-react";
 
 import { TRANCHES } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
+import { explorerAddressUrl } from "./lib/explorer.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
 import { hasApiKey } from "./lib/chain.ts";
 import { Waterfall } from "./components/Waterfall/Waterfall.tsx";
@@ -274,27 +275,46 @@ function Details({
 
 			<ul className={css.addrs}>
 				<li>
-					Vault <code>{shortAddress(pool.vault ?? "—")}</code>
+					Vault <Addr pool={pool} addr={pool.vault} />
 				</li>
 				{/* Registry есть не у всех сетей: на HyperEVM убыток не
 				    объявляется, а наблюдается, и объявлять его некому. */}
 				{pool.registry && (
 					<li>
-						Registry <code>{shortAddress(pool.registry)}</code>
+						Registry <Addr pool={pool} addr={pool.registry} />
 					</li>
 				)}
 				<li>
-					Asset ({pool.asset}) <code>{shortAddress(pool.jettonMaster ?? "—")}</code>
+					Asset ({pool.asset}) <Addr pool={pool} addr={pool.jettonMaster} />
 				</li>
 				{/* Адреса токенов долей: кошельки не находят их сами, и без
 				    этих строк человек не увидит свою позицию у себя. */}
 				{pool.trancheMasters.map((addr, i) => (
 					<li key={addr}>
-						{TRANCHES[i].name} shares <code>{shortAddress(addr)}</code>
+						{TRANCHES[i].name} shares <Addr pool={pool} addr={addr} />
 					</li>
 				))}
 			</ul>
 		</details>
+	);
+}
+
+/**
+ * Адрес со ссылкой на обозреватель блоков нужной сети. Пустой адрес —
+ * прочерк без ссылки: у некоторых пулов части адресов ещё нет.
+ */
+function Addr({ pool, addr }: { pool: Pool; addr: string | null }) {
+	if (!addr) return <code>—</code>;
+	return (
+		<a
+			className={css.addrLink}
+			href={explorerAddressUrl(pool, addr)}
+			target="_blank"
+			rel="noreferrer"
+			title={addr}
+		>
+			<code>{shortAddress(addr)}</code>
+		</a>
 	);
 }
 
