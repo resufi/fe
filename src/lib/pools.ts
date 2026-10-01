@@ -8,6 +8,13 @@ import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "jso
 import { env } from "./env.ts";
 import { CONTRACTS, MANDATE as HYPEREVM_MANDATE } from "./hyperevm.ts";
 import { CONTRACTS as ROBINHOOD, MANDATE as ROBINHOOD_MANDATE } from "./robinhood.ts";
+import { CONTRACTS as ARBITRUM, MANDATE as ARBITRUM_MANDATE } from "./arbitrum.ts";
+import {
+	MSFT as BASE_MSFT,
+	MSFT_MANDATE,
+	NVDA as BASE_NVDA,
+	NVDA_MANDATE,
+} from "./base.ts";
 
 /**
  * Реестр пулов.
@@ -190,6 +197,60 @@ export const POOLS: Pool[] = [
 		registry: null,
 		jettonMaster: ROBINHOOD.asset,
 		trancheMasters: [...ROBINHOOD.trancheTokens],
+	},
+	{
+		id: "arbitrum-weth",
+		chain: "arbitrum",
+		kind: "coupon",
+		label: "WETH",
+		// Вносят WETH, стоимость доли в долларах через Chainlink ETH/USD.
+		asset: "WETH",
+		unit: "USD",
+		decimals: 18,
+		network: "mainnet",
+		deployed: true,
+		mandate: ARBITRUM_MANDATE,
+		minDeposit: 6_000_000_000_000_000n, // 0.006 WETH (~$16)
+		vault: ARBITRUM.vault,
+		registry: null,
+		jettonMaster: ARBITRUM.asset,
+		trancheMasters: [...ARBITRUM.trancheTokens],
+	},
+	{
+		id: "base-msft",
+		chain: "base",
+		kind: "coupon",
+		label: "MSFT",
+		// Токенизированная акция Microsoft (B20), 8 знаков; цена из Chainlink.
+		asset: "MSFT",
+		unit: "USD",
+		decimals: 8,
+		network: "mainnet",
+		deployed: true,
+		mandate: MSFT_MANDATE,
+		minDeposit: 3_000_000n, // 0.03 MSFT (~$15)
+		vault: BASE_MSFT.vault,
+		registry: null,
+		jettonMaster: BASE_MSFT.asset,
+		trancheMasters: [...BASE_MSFT.trancheTokens],
+	},
+	{
+		id: "base-nvda",
+		chain: "base",
+		kind: "coupon",
+		label: "NVDA",
+		// Токенизированная акция Nvidia (B20), 8 знаков; цена из Chainlink.
+		asset: "NVDA",
+		unit: "USD",
+		decimals: 8,
+		network: "mainnet",
+		deployed: true,
+		mandate: NVDA_MANDATE,
+		minDeposit: 7_000_000n, // 0.07 NVDA (~$16)
+		vault: BASE_NVDA.vault,
+		registry: null,
+		jettonMaster: BASE_NVDA.asset,
+		trancheMasters: [...BASE_NVDA.trancheTokens],
 	},
 	{
 		id: "solana",

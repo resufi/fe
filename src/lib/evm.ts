@@ -45,6 +45,24 @@ export const EVM_CHAINS: Partial<Record<ChainId, EvmChainParams>> = {
 		explorer: "https://robinhoodchain.blockscout.com",
 		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 	},
+	arbitrum: {
+		chainId: 42161,
+		chainIdHex: "0xa4b1",
+		name: "Arbitrum One",
+		rpc: "https://arb1.arbitrum.io/rpc",
+		rpcEnv: "VITE_ARBITRUM_RPC",
+		explorer: "https://arbiscan.io",
+		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+	},
+	base: {
+		chainId: 8453,
+		chainIdHex: "0x2105",
+		name: "Base",
+		rpc: "https://mainnet.base.org",
+		rpcEnv: "VITE_BASE_RPC",
+		explorer: "https://basescan.org",
+		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+	},
 };
 
 export function evmChain(id: ChainId): EvmChainParams {
