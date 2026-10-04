@@ -249,7 +249,16 @@ export function useProtocol(
         } catch (e) {
             // Публичные RPC регулярно отвечают 429 — показываем это как есть,
             // а не как «протокол сломался».
-            setError(e instanceof Error ? e.message : 'Не удалось прочитать данные сети');
+            const raw = e instanceof Error ? e.message : 'Не удалось прочитать данные сети';
+            // Купонные пулы на акциях честно реветят «stale price», когда фид
+            // Chainlink не обновлялся дольше maxStaleness — то есть пока рынок
+            // закрыт (выходные, праздники). Это не поломка: показываем спокойно.
+            const stalePrice = /stale price/i.test(raw);
+            setError(
+                stalePrice
+                    ? 'Price feed is paused — the stock market is closed. Live values resume when it reopens.'
+                    : raw,
+            );
         } finally {
             setLoading(false);
         }
