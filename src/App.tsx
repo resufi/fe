@@ -32,7 +32,7 @@ export default function App() {
 	// Кошелёк EVM целится в сеть активного пула; для не-EVM пула берём
 	// любую EVM-сеть как заглушку — он там всё равно не используется.
 	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
-	const { data, error, loading, refresh, network } = useProtocol(
+	const { data, error, paused, loading, refresh, network } = useProtocol(
 		pool,
 		pool.chain === "solana" ? solana.address : null,
 		pool.chain in EVM_CHAINS ? evm.address : null,
@@ -143,6 +143,10 @@ export default function App() {
 								Refresh
 							</button>
 						</p>
+					)}
+
+					{paused && (
+						<p className={`${css.state} small`}>{paused}</p>
 					)}
 
 					<div className={css.hero}>

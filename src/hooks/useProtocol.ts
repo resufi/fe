@@ -4,7 +4,40 @@ import { useTonAddress } from '@tonconnect/ui-react';
 import { addrOf, TRANCHES } from '../lib/config';
 import type { Pool } from '../lib/pools';
 import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana';
-import { readVault as readEvmVault, readWallet as readEvmWallet, EVM_CHAINS, type EvmPoolContracts } from '../lib/evm';
+import { readVault as readEvmVault, readWallet as readEvmWallet, EVM_CHAINS, type EvmPoolContracts, type EvmVaultState } from '../lib/evm';
+
+/**
+ * Часы до ближайшего открытия рынка акций США (будни, ~9:30 по Нью-Йорку).
+ * Приблизительно: без учёта праздников и ±1ч на переход летнего времени —
+ * этого достаточно для плашки «рынок на паузе». Нужен для купонных пулов на
+ * акциях, где фид Chainlink не обновляется, пока биржа закрыта.
+ */
+function hoursUntilUsMarketOpen(): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).formatToParts(new Date());
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+    const idx: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const dow = idx[get('weekday')] ?? 1;
+    let hh = Number(get('hour'));
+    if (hh === 24) hh = 0; // некоторые среды дают '24' для полуночи
+    const minsNow = hh * 60 + Number(get('minute'));
+    const OPEN = 9 * 60 + 30;
+    let days = 0;
+    for (let i = 0; i < 8; i++) {
+        const day = (dow + i) % 7;
+        const weekday = day >= 1 && day <= 5;
+        if (weekday && (i > 0 || minsNow < OPEN)) {
+            days = i;
+            break;
+        }
+    }
+    return Math.max(0, Math.round((days * 1440 + (OPEN - minsNow)) / 60));
+}
 import {
     hasApiKey,
     readAssetRate,
@@ -100,11 +133,15 @@ export function useProtocol(
     const wallet = useTonAddress();
     const [data, setData] = useState<ProtocolData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // Пул жив, но фид Chainlink протух (рынок акций закрыт). Тогда показываем
+    // карточку пула с плашкой, а не экран ошибки.
+    const [paused, setPaused] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const refresh = useCallback(async () => {
         setLoading(true);
         setError(null);
+        setPaused(null);
         try {
             // На Solana состояние читается одним аккаунтом: там нет
             // асинхронных сообщений, и весь пул лежит в одной структуре.
@@ -153,7 +190,30 @@ export function useProtocol(
                     asset: pool.jettonMaster!,
                     trancheTokens: pool.trancheMasters,
                 };
-                const v = await readEvmVault(evmPool);
+                // На купонных пулах с акциями nav() реветит «stale price»,
+                // когда рынок закрыт (фид не обновлялся дольше maxStaleness).
+                // Пул при этом рабочий — показываем его с нулями и плашкой,
+                // а не прячем за ошибкой.
+                let v: EvmVaultState;
+                let isPaused = false;
+                try {
+                    v = await readEvmVault(evmPool);
+                } catch (e) {
+                    const msg = e instanceof Error ? e.message : String(e);
+                    if (!/stale price/i.test(msg)) throw e;
+                    isPaused = true;
+                    const h = hoursUntilUsMarketOpen();
+                    const when =
+                        h <= 0
+                            ? "shortly"
+                            : h === 1
+                                ? "in about 1 hour"
+                                : `in about ${h} hours`;
+                    setPaused(
+                        `Markets are on pause — stocks trade on weekdays only. The pool is live; prices and values resume when the market reopens ${when}.`,
+                    );
+                    v = { nav: 0n, values: [0n, 0n, 0n], totalShares: [0n, 0n, 0n] };
+                }
                 const tranches = [0, 1, 2].map((i) => ({
                     totalAssets: v.values[i],
                     totalShares: v.totalShares[i],
@@ -168,7 +228,9 @@ export function useProtocol(
                 // нулём честнее, чем выдумывать.
                 const base = { tranches, vault, headroom: 0n, rate: null };
 
-                if (!evmAddress) {
+                // На паузе кошелёк не догружаем: nav/values нулевые, показывать
+                // позицию не из чего — достаточно карточки пула с плашкой.
+                if (isPaused || !evmAddress) {
                     setData({ ...base, wallet: null });
                     return;
                 }
@@ -293,6 +355,7 @@ export function useProtocol(
     return {
         data,
         error,
+        paused,
         loading,
         refresh,
         network: pool.network,
