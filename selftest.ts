@@ -174,8 +174,11 @@ console.log('\nреестр пулов');
     check(
         'минимальный взнос соразмерен своему активу',
         POOLS.every((p) => {
+            // Ловит ошибку разрядности (взнос не в тех масштабах), но достаточно
+            // широко: у дешёвого актива контрактный минимум $10 — это сотни
+            // токенов (aprMON ~$0.04 -> ~300 штук), и это не ошибка.
             const one = 10n ** BigInt(p.decimals);
-            return p.minDeposit >= one / 1000n && p.minDeposit <= one * 10n;
+            return p.minDeposit >= one / 1000n && p.minDeposit <= one * 1000n;
         }),
     );
     check(

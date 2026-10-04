@@ -63,6 +63,15 @@ export const EVM_CHAINS: Partial<Record<ChainId, EvmChainParams>> = {
 		explorer: "https://basescan.org",
 		nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 	},
+	monad: {
+		chainId: 143,
+		chainIdHex: "0x8f",
+		name: "Monad",
+		rpc: "https://rpc.monad.xyz",
+		rpcEnv: "VITE_MONAD_RPC",
+		explorer: "https://monadexplorer.com",
+		nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
+	},
 };
 
 export function evmChain(id: ChainId): EvmChainParams {

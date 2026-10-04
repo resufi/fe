@@ -15,6 +15,7 @@ import {
 	NVDA as BASE_NVDA,
 	NVDA_MANDATE,
 } from "./base.ts";
+import { CONTRACTS as MONAD, MANDATE as MONAD_MANDATE } from "./monad.ts";
 
 /**
  * Реестр пулов.
@@ -251,6 +252,25 @@ export const POOLS: Pool[] = [
 		registry: null,
 		jettonMaster: BASE_NVDA.asset,
 		trancheMasters: [...BASE_NVDA.trancheTokens],
+	},
+	{
+		id: "monad-aprmon",
+		chain: "monad",
+		kind: "coupon",
+		label: "aprMON",
+		// Вносят aprMON (застейканный MON), стоимость доли в долларах через
+		// адаптер MON/USD x курс aprMON. Накопленный стейкинг-доход в NAV.
+		asset: "aprMON",
+		unit: "USD",
+		decimals: 18,
+		network: "mainnet",
+		deployed: true,
+		mandate: MONAD_MANDATE,
+		minDeposit: 300_000_000_000_000_000_000n, // ~300 aprMON (~$11)
+		vault: MONAD.vault,
+		registry: null,
+		jettonMaster: MONAD.asset,
+		trancheMasters: [...MONAD.trancheTokens],
 	},
 	{
 		id: "solana",

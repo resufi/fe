@@ -1,7 +1,7 @@
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
 import type { Mandate } from "./config.ts";
 
-export type ChainId = "ton" | "solana" | "hyperevm" | "robinhood" | "arbitrum" | "base";
+export type ChainId = "ton" | "solana" | "hyperevm" | "robinhood" | "arbitrum" | "base" | "monad";
 
 export type ChainInfo = {
 	id: ChainId;
@@ -113,6 +113,22 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 		mandate: {
 			maxLossBps: 0,
 			withdrawDelay: 345600,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	monad: {
+		id: "monad",
+		name: "Monad",
+		// aprMON — застейканный MON (LST aPriori). Стоимость доли в долларах
+		// через адаптер MON/USD x курс aprMON; senior получает купон.
+		asset: "aprMON",
+		unit: "USD",
+		deployed: true,
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 86400,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,
