@@ -130,10 +130,10 @@
 	color: var(--junior);
 }
 
-/* Значок кошелька в списке.
-   На EVM иконку присылает сам кошелёк по EIP-6963, поэтому это <img>, а не
-   нарисованный нами svg. Запасной вид — первая буква имени: строка не
-   должна разъезжаться из-за кошелька без иконки. */
+/* The wallet icon in the list.
+   On EVM the wallet sends the icon via EIP-6963, so this is an <img>, not
+   an svg we drew. The fallback is the first letter of the name: the row
+   shouldn't fall apart because of a wallet with no icon. */
 .icon {
 	width: 20px;
 	height: 20px;

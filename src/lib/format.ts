@@ -34,10 +34,10 @@ export function fmtAmount(
  * Guessing would be dangerous: "1,5" means 1.5 to a European reader and
  * 15 to anyone stripping separators blindly, so it is rejected instead.
  *
- * Разрядность обязана прийти от пула. Это самое опасное место во всём
- * интерфейсе: здесь введённое человеком превращается в сумму перевода, и
- * девятка, применённая к шестизначному активу, отправила бы тысячу токенов
- * вместо одного — без ошибки, без предупреждения, деньгами пользователя.
+ * Decimals must come from the pool. This is the most dangerous spot in the
+ * whole interface: here a person's input becomes a transfer amount, and
+ * nine applied to a six-decimal asset would send a thousand tokens
+ * instead of one — no error, no warning, with the user's money.
  */
 export function parseAmount(
     input: string,

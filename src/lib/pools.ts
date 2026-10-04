@@ -18,30 +18,30 @@ import {
 import { CONTRACTS as MONAD, MANDATE as MONAD_MANDATE } from "./monad.ts";
 
 /**
- * Реестр пулов.
+ * Pool registry.
  *
- * Пул — это набор правил поверх одного актива: адреса, разрядность, мандат.
- * Раньше интерфейс знал ровно один пул на сеть, и разрядность была зашита
- * девяткой в одном месте на всё приложение. С появлением пула на tsUSDe
- * (шесть знаков) это перестало работать: те же функции рисуют суммы TON и
- * Solana, и одна глобальная константа не может быть верной сразу для всех.
+ * A pool is a set of rules over one asset: addresses, decimals, mandate.
+ * The interface used to know exactly one pool per chain, with decimals
+ * hardcoded as nine in one place for the whole app. With the tsUSDe pool
+ * (six decimals) that broke: the same functions render TON and
+ * Solana amounts, and one global constant can't be right for all at once.
  *
- * Поэтому разрядность, символ актива и минимальный взнос теперь принадлежат
- * пулу и передаются вниз явно. Угаданное значение не вызвало бы ошибки —
- * суммы просто оказались бы в тысячу раз не теми.
+ * So decimals, asset symbol and minimum deposit now belong to the
+ * pool and are passed down explicitly. A guessed value wouldn't error —
+ * the amounts would just be off by a thousandfold.
  */
 /**
- * Как устроена экономика пула.
+ * How a pool's economics work.
  *
- * "fee" — TON и Solana: все транши получают базовую доходность актива, а
- * senior сверх того платит за защиту, и плата течёт вниз по водопаду.
+ * "fee" — TON and Solana: every tranche earns the asset's base yield, and
+ * senior pays extra for protection on top, flowing down the waterfall.
  *
- * "coupon" — HyperEVM: senior и mezzanine имеют фиксированные купоны, junior
- * получает весь остаток NAV. Потолка убытка нет: доли выводятся из NAV
- * заново на каждое чтение, а не списываются событиями.
+ * "coupon" — HyperEVM: senior and mezzanine have fixed coupons, junior
+ * takes the entire NAV residual. There is no loss ceiling: shares are
+ * re-derived from NAV on every read, not written off by events.
  *
- * Разница не косметическая, и показывать одну как другую нельзя: у "fee"
- * senior теряет 2% годовых, у "coupon" — получает 6%. Знак противоположный.
+ * The difference is not cosmetic, and showing one as the other is wrong: in "fee"
+ * senior loses 2%/yr, in "coupon" it earns 6%. The sign is opposite.
  */
 export type PoolKind = "fee" | "coupon";
 
@@ -49,29 +49,29 @@ export type Pool = {
 	id: string;
 	chain: ChainId;
 	kind: PoolKind;
-	/** Короткое имя для вкладки: символ базового актива. */
+	/** Short tab name: the base asset's symbol. */
 	label: string;
-	/** Базовый доходный актив. */
+	/** The base yield-bearing asset. */
 	asset: string;
-	/** Монета, в которой показывается стоимость. */
+	/** The coin the value is shown in. */
 	unit: string;
-	/** Знаков после запятой у базового актива. */
+	/** Decimals of the base asset. */
 	decimals: number;
 	network: string;
 	deployed: boolean;
 	mandate: Mandate;
-	/** Минимальный взнос в минимальных единицах актива. */
+	/** Minimum deposit in the asset's smallest units. */
 	minDeposit: bigint;
 
 	/**
-	 * Пул, по которому считается курс базового актива к GRAM.
+	 * The pool used to compute the base asset's rate to GRAM.
 	 *
-	 * Есть только у tsTON: у стейбла курса к GRAM нет и быть не должно —
-	 * пересчитывать доллары в GRAM значило бы выдумывать число.
+	 * Only tsTON has one: a stablecoin has no GRAM rate and shouldn't —
+	 * converting dollars to GRAM would mean inventing a number.
 	 */
 	ratePool?: string;
 
-	/** Адреса. Форма разная у сетей, поэтому необязательные. */
+	/** Addresses. The shape differs per chain, so they're optional. */
 	vault: string | null;
 	registry: string | null;
 	jettonMaster: string | null;
@@ -89,11 +89,11 @@ type Artifact = {
 };
 
 /**
- * Минимальный взнос из артефакта.
+ * Minimum deposit from the artifact.
  *
- * Строкой, потому что JSON не знает bigint. Артефакты, собранные до того как
- * порог стал параметром развёртывания, этого поля не содержат — для них
- * берётся один целый токен.
+ * As a string, because JSON has no bigint. Artifacts built before the
+ * floor became a deploy parameter lack this field — for them
+ * one whole token is used.
  */
 function minDepositOf(a: Artifact, decimals: number): bigint {
 	return a.mandate.minDeposit
@@ -116,15 +116,15 @@ function tonPool(
 		kind: "fee",
 		label,
 		asset,
-		// Стоимость долей показывается в GRAM только там, где есть курс
-		// базового актива к нему. У стейбла такого курса нет и не нужно.
+		// Share value is shown in GRAM only where the base asset has a rate
+		// to it. A stablecoin has no such rate and needs none.
 		unit: "GRAM",
 		decimals,
 		network: a.network ?? "mainnet",
 		deployed: Boolean(a.vault && a.jettonMaster),
 		mandate: a.mandate,
 		minDeposit: minDepositOf(a, decimals),
-		// Пул Tonstakers — единственный источник курса tsTON к GRAM.
+		// The Tonstakers pool is the only source of the tsTON->GRAM rate.
 		ratePool:
 			asset === "tsTON"
 				? "EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR"
@@ -148,10 +148,10 @@ const solanaRaw = (SOLANA_NETWORK === "mainnet" ? solanaMainnet : solanaDevnet) 
 };
 
 /**
- * Пулы в порядке показа.
+ * Pools in display order.
  *
- * На тестнете стейбла нет: Ethena живёт только на мейннете, и вкладка,
- * ведущая в пустоту, хуже отсутствующей.
+ * There is no stablecoin on testnet: Ethena is mainnet-only, and a tab
+ * leading nowhere is worse than a missing one.
  */
 export const POOLS: Pool[] = [
 	TON_NETWORK === "mainnet"
@@ -175,7 +175,7 @@ export const POOLS: Pool[] = [
 		vault: CONTRACTS.vault,
 		registry: null,
 		jettonMaster: CONTRACTS.asset,
-		// Токены долей — такие же мастера, как жетоны на TON и минты на Solana.
+		// Share tokens are masters, like the jettons on TON and the mints on Solana.
 		trancheMasters: [...CONTRACTS.trancheTokens],
 	},
 	{
@@ -183,16 +183,16 @@ export const POOLS: Pool[] = [
 		chain: "robinhood",
 		kind: "coupon",
 		label: "SPY",
-		// Вносят SPY-токен, а стоимость доли показывается в долларах: цена
-		// приходит из Chainlink, все суммы пула в wad USD (1e18).
+		// Deposit the SPY token; share value is shown in dollars: the price
+		// comes from Chainlink, all pool amounts are wad USD (1e18).
 		asset: "SPY",
 		unit: "USD",
 		decimals: 18,
 		network: "mainnet",
 		deployed: true,
 		mandate: ROBINHOOD_MANDATE,
-		// Порог панели в единицах SPY. Контракт держит настоящий минимум $10
-		// (usd = amount x price); это мягкая подсказка выше него.
+		// Panel floor in SPY units. The contract holds the real $10 minimum
+		// (usd = amount x price); this is a soft hint above it.
 		minDeposit: 20_000_000_000_000_000n, // 0.02 SPY (~$15)
 		vault: ROBINHOOD.vault,
 		registry: null,
@@ -204,7 +204,7 @@ export const POOLS: Pool[] = [
 		chain: "arbitrum",
 		kind: "coupon",
 		label: "WETH",
-		// Вносят WETH, стоимость доли в долларах через Chainlink ETH/USD.
+		// Deposit WETH; share value in dollars via Chainlink ETH/USD.
 		asset: "WETH",
 		unit: "USD",
 		decimals: 18,
@@ -222,7 +222,7 @@ export const POOLS: Pool[] = [
 		chain: "base",
 		kind: "coupon",
 		label: "MSFT",
-		// Токенизированная акция Microsoft (B20), 8 знаков; цена из Chainlink.
+		// Tokenized Microsoft stock (B20), 8 decimals; price from Chainlink.
 		asset: "MSFT",
 		unit: "USD",
 		decimals: 8,
@@ -240,7 +240,7 @@ export const POOLS: Pool[] = [
 		chain: "base",
 		kind: "coupon",
 		label: "NVDA",
-		// Токенизированная акция Nvidia (B20), 8 знаков; цена из Chainlink.
+		// Tokenized Nvidia stock (B20), 8 decimals; price from Chainlink.
 		asset: "NVDA",
 		unit: "USD",
 		decimals: 8,
@@ -258,8 +258,8 @@ export const POOLS: Pool[] = [
 		chain: "monad",
 		kind: "coupon",
 		label: "aprMON",
-		// Вносят aprMON (застейканный MON), стоимость доли в долларах через
-		// адаптер MON/USD x курс aprMON. Накопленный стейкинг-доход в NAV.
+		// Deposit aprMON (staked MON); share value in dollars via the
+		// MON/USD x aprMON-rate adapter. Accrued staking yield lands in NAV.
 		asset: "aprMON",
 		unit: "USD",
 		decimals: 18,
@@ -299,7 +299,7 @@ export const findPool = (id: string): Pool | undefined =>
 
 const STORAGE_KEY = "resu:pool";
 
-/** Последний выбранный пул. Мелкое удобство, не состояние протокола. */
+/** The last selected pool. A small convenience, not protocol state. */
 export function loadPool(): Pool {
 	try {
 		const saved = localStorage.getItem(STORAGE_KEY);
@@ -308,7 +308,7 @@ export function loadPool(): Pool {
 			if (found) return found;
 		}
 	} catch {
-		// приватный режим или заблокированное хранилище — не повод падать
+		// private mode or blocked storage — no reason to crash
 	}
 	return POOLS[0];
 }
@@ -317,6 +317,6 @@ export function savePool(id: string): void {
 	try {
 		localStorage.setItem(STORAGE_KEY, id);
 	} catch {
-		// см. выше
+		// see above
 	}
 }

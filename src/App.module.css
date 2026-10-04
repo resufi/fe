@@ -39,7 +39,7 @@
 	max-width: 16em;
 }
 
-/* Переключатели над сообщением там, где водопада нет. */
+/* Switchers above the message where there is no waterfall. */
 .stateBlock {
 	display: grid;
 	gap: var(--s5);
@@ -60,7 +60,7 @@
 }
 
 @media (max-width: 900px) {
-	/* Переключатели над сообщением там, где водопада нет. */
+	/* Switchers above the message where there is no waterfall. */
 .stateBlock {
 	display: grid;
 	gap: var(--s5);
@@ -173,8 +173,8 @@
 	color: var(--muted);
 }
 
-/* Адрес-ссылка на обозреватель блоков. Цвет наследуется, чтобы не спорить
-   с приглушённым списком; подчёркивание появляется при наведении. */
+/* An address link to the block explorer. The color is inherited so it doesn't clash
+   with the muted list; the underline appears on hover. */
 .addrLink {
 	color: inherit;
 	text-decoration: none;

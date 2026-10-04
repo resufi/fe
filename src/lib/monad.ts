@@ -2,22 +2,24 @@ import type { Mandate } from "./config.ts";
 import type { EvmPoolContracts } from "./evm.ts";
 
 /**
- * Пул buffered-note на Monad: транширование aprMON (застейканный MON).
+ * Buffered-note pool on Monad: tranching aprMON (staked MON).
  *
- * aprMON — ERC-4626-LST протокола aPriori (ведущий LST Monad: стейкинг + MEV).
- * Прямого фида aprMON/USD нет, поэтому цену даёт наш адаптер LstRateFeed:
- *   aprMON/USD = MON/USD (Chainlink) x (курс aprMON->MON из ERC-4626).
- * Так накопленный стейкинг-доход aprMON попадает в NAV пула поверх цены MON.
+ * aprMON is aPriori's ERC-4626 LST (the leading Monad LST: staking + MEV).
+ * There is no direct aprMON/USD feed, so the price comes from our LstRateFeed
+ * adapter:
+ *   aprMON/USD = MON/USD (Chainlink) x (aprMON->MON rate from ERC-4626).
+ * That way aprMON's accrued staking yield flows into pool NAV on top of MON's
+ * price.
  *
- * Контракт — OracleVault (coupon-модель): senior получает фиксированный купон
- * и защищён буфером, junior берёт рычаг на доход+цену. Все суммы в wad USD.
- * Адреса из развёртывания 2026-10-05; порядок junior -> senior сверен с
- * trancheId().
+ * The contract is OracleVault (coupon model): senior earns a fixed coupon and
+ * is protected by the buffer, junior takes the leveraged yield + price. All
+ * amounts are wad USD. Addresses from the 2026-10-05 deployment; junior ->
+ * senior order verified against trancheId().
  */
 export const CONTRACTS: EvmPoolContracts = {
 	chain: "monad",
 	vault: "0x804E56c448A14611ECAC4cf07a222878820e3876",
-	/** aprMON (aPriori LST над MON), 18 знаков. */
+	/** aprMON (aPriori LST over MON), 18 decimals. */
 	asset: "0x0c65A0BC65a5D819235B71F554D210D3F80E0852",
 	trancheTokens: [
 		"0x5285F357Eb16E6fd40ba73fCA4F37776A3A5d129", // jraprMON
@@ -26,7 +28,7 @@ export const CONTRACTS: EvmPoolContracts = {
 	],
 };
 
-/** Высокая волатильность нового L1: буфер 35/35/30, купоны senior 7% / mezz 12%. */
+/** High volatility of a young L1: buffer 35/35/30, coupons senior 7% / mezz 12%. */
 export const MANDATE: Mandate = {
 	maxLossBps: 0,
 	withdrawDelay: 86400,
@@ -35,6 +37,6 @@ export const MANDATE: Mandate = {
 	mezzFeeBps: 0,
 	seniorRateBps: 700,
 	mezzRateBps: 1200,
-	// Все суммы в OracleVault — wad USD (1e18). Минимум $10.
+	// All OracleVault amounts are wad USD (1e18). Minimum $10.
 	minDeposit: (10n ** 18n * 10n).toString(),
 };

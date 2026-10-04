@@ -10,10 +10,10 @@ import css from "./PositionsPanel.module.css";
 type Props = {
 	data: ProtocolData;
 	withdrawDelay: number;
-	/** Тикеры базового актива и монеты: у каждой сети свои. */
+	/** Base asset and coin tickers: per-chain. */
 	asset: string;
 	unit: string;
-	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
+	/** Base asset decimals: nine for tsTON, six for tsUSDe. */
 	decimals: number;
 	onDone: () => void;
 };
@@ -26,7 +26,7 @@ export function PositionsPanel({
 	decimals,
 	onDone,
 }: Props) {
-	// Пустой блок «позиций нет» — это шум. Просто не показываем ничего.
+	// An empty "no positions" block is noise. We simply show nothing.
 	if (!data.wallet || data.wallet.positions.length === 0) {
 		return null;
 	}
@@ -74,15 +74,15 @@ function PositionRow({
 	const [busy, setBusy] = useState(false);
 	const meta = TRANCHES[pos.trancheId];
 
-	// Адреса есть только у TON-позиций; на Solana они выводятся при сборке
-	// транзакции, и эти кнопки там не показываются.
+	// Only TON positions have addresses; on Solana they're derived when building
+	// the transaction, and these buttons aren't shown there.
 	const { shareWallet, ticket } = pos;
 	const now = Math.floor(Date.now() / 1000);
 	const matured = pos.pendingShares > 0n && now >= pos.unlockAt;
 	const waiting = pos.pendingShares > 0n && !matured;
 
-	// Адресат зависит от действия: сжигание идёт в кошелёк жетона транша,
-	// получение денег — в контракт заявки. Это разные контракты.
+	// The recipient depends on the action: a burn goes to the tranche jetton wallet,
+	// claiming funds goes to the ticket contract. These are different contracts.
 	async function send(to: Address, payload: string, ton: bigint) {
 		setBusy(true);
 		try {
@@ -101,10 +101,10 @@ function PositionRow({
 			<div className={css.main}>
 				<span className="muted small">{meta.name}</span>
 				<div className={css.figures}>
-					{/* GRAM первым числом намеренно. Учёт ведётся в tsTON, и
-                        рост самого tsTON в наши цифры не попадает: senior
-                        видел бы уменьшающийся остаток и читал его как убыток,
-                        хотя в GRAM он в плюсе. */}
+					{/* GRAM as the first number on purpose. Accounting is in tsTON, and
+                        tsTON's own appreciation doesn't enter our figures: senior
+                        would see a shrinking balance and read it as a loss,
+                        though in GRAM they're up. */}
 					<div className={`${css.value} num`}>
 						{rate === null
 							? fmtAmount(pos.valueNow, 2, BigInt(decimals))

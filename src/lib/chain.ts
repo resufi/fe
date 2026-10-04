@@ -7,8 +7,8 @@ const TONCENTER = {
     testnet: 'https://testnet.toncenter.com/api/v2/jsonRPC',
 };
 
-// Сеть берётся из окружения, а не из артефакта пула: пулов на TON теперь
-// несколько, а узел у них общий.
+// The network comes from the environment, not a pool artifact: there are now
+// several pools on TON, and they share one node.
 const NETWORK = (env("VITE_NETWORK") ?? "testnet") as "testnet" | "mainnet";
 
 const OVERRIDE = env("VITE_TON_ENDPOINT");

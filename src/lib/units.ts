@@ -1,11 +1,11 @@
 /**
- * Разрядность по умолчанию: девять знаков у tsTON, GRAM и JitoSOL.
+ * Default decimals: nine for tsTON, GRAM and JitoSOL.
  *
- * Вынесено отдельно, чтобы форматирование не тянуло за собой конфиг деплоя.
+ * Split out so formatting doesn't drag in the deploy config.
  *
- * ВНИМАНИЕ: значение общее для всех сетей сразу, поэтому пул на активе с
- * другой разрядностью (tsUSDe — шесть знаков) требует передавать её в
- * fmtAmount явно. Сделать её глобально шестизначной нельзя: теми же
- * функциями рисуются суммы TON и Solana.
+ * NOTE: the value is shared across all chains, so a pool on an asset with
+ * different decimals (tsUSDe — six) must pass it to
+ * fmtAmount explicitly. It can't be made six globally: the same
+ * functions render TON and Solana amounts.
  */
 export const DECIMALS = 9n;

@@ -29,8 +29,8 @@ const LOADER_MIN_MS = 3800;
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
 	const solana = useSolanaWallet();
-	// Кошелёк EVM целится в сеть активного пула; для не-EVM пула берём
-	// любую EVM-сеть как заглушку — он там всё равно не используется.
+	// The EVM wallet targets the active pool's chain; for a non-EVM pool we take
+	// any EVM chain as a stub — it isn't used there anyway.
 	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
 	const { data, error, paused, loading, refresh, network } = useProtocol(
 		pool,
@@ -47,16 +47,16 @@ export default function App() {
 		saveChain(p.chain);
 	}
 
-	// Смена сети выбирает её первый пул: адреса, разрядность и мандат у сетей
-	// свои, и держать выбор прошлой сети было бы просто неверно.
+	// Switching chain selects its first pool: addresses, decimals and mandate are
+	// per-chain, and keeping the previous chain's choice would simply be wrong.
 	function switchChain(id: ChainId) {
 		const next = poolsOfChain(id)[0];
 		if (next) switchPool(next);
 	}
 
-	// Один и тот же выбор в двух местах: в шапке водопада, когда данные есть,
-	// и над сообщением, когда их нет. Уйти с неразвёрнутого пула надо именно
-	// оттуда, где водопада не существует.
+	// The same selector in two places: in the waterfall header when data exists,
+	// and above the message when it doesn't. Leaving an undeployed pool must happen
+	// exactly where no waterfall exists.
 	const controls = (
 		<PoolControls
 			chain={chain}
@@ -113,11 +113,11 @@ export default function App() {
 			) : !data ? (
 				<div className={css.stateBlock}>
 					{/*
-					 * Блоки живые во всех состояниях. Смена пула сбрасывает
-					 * data в null, и экран уходит сюда при каждом переключении —
-					 * если подменять блоки скелетом, они исчезают прямо под
-					 * курсором. Ждать им нечего: списки сетей и пулов
-					 * статические.
+					 * The blocks stay live in every state. Switching pool resets
+					 * data to null, and the screen comes here on every switch —
+					 * if we swap the blocks for a skeleton they vanish right under
+					 * the cursor. They have nothing to wait for: the chain and pool lists
+					 * are static.
 					 */}
 					{controls}
 					{error ? (
@@ -281,8 +281,8 @@ function Details({
 				<li>
 					Vault <Addr pool={pool} addr={pool.vault} />
 				</li>
-				{/* Registry есть не у всех сетей: на HyperEVM убыток не
-				    объявляется, а наблюдается, и объявлять его некому. */}
+				{/* Not every chain has a Registry: on HyperEVM loss is not
+				    declared but observed, and there's no one to declare it. */}
 				{pool.registry && (
 					<li>
 						Registry <Addr pool={pool} addr={pool.registry} />
@@ -291,8 +291,8 @@ function Details({
 				<li>
 					Asset ({pool.asset}) <Addr pool={pool} addr={pool.jettonMaster} />
 				</li>
-				{/* Адреса токенов долей: кошельки не находят их сами, и без
-				    этих строк человек не увидит свою позицию у себя. */}
+				{/* Share token addresses: wallets don't find them on their own, and without
+				    these rows a person won't see their position in their wallet. */}
 				{pool.trancheMasters.map((addr, i) => (
 					<li key={addr}>
 						{TRANCHES[i].name} shares <Addr pool={pool} addr={addr} />
@@ -304,8 +304,8 @@ function Details({
 }
 
 /**
- * Адрес со ссылкой на обозреватель блоков нужной сети. Пустой адрес —
- * прочерк без ссылки: у некоторых пулов части адресов ещё нет.
+ * An address linked to the right chain's block explorer. An empty address is
+ * a dash with no link: some pools don't have all addresses yet.
  */
 function Addr({ pool, addr }: { pool: Pool; addr: string | null }) {
 	if (!addr) return <code>—</code>;

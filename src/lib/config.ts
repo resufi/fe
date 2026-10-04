@@ -12,20 +12,20 @@ export type Mandate = {
 	seniorFeeToMezzBps: number;
 	mezzFeeBps: number;
 	/**
-	 * Купоны senior и mezzanine, годовых, у пулов вида "coupon".
+	 * Senior and mezzanine coupons, annualized, for "coupon" pools.
 	 *
-	 * Это не плата, а доход: на HyperEVM senior получает фиксированную
-	 * ставку, а не платит за защиту. Поля отдельные намеренно — сложить их
-	 * с seniorFeeBps значило бы показать доход как расход.
+	 * This is income, not a fee: on HyperEVM senior earns a fixed
+	 * rate rather than paying for protection. Separate fields on purpose — adding them
+	 * to seniorFeeBps would show income as an expense.
 	 */
 	seniorRateBps?: number;
 	mezzRateBps?: number;
 	/**
-	 * Минимальный взнос в минимальных единицах актива, строкой.
+	 * Minimum deposit in the asset's smallest units, as a string.
 	 *
-	 * Строкой, потому что JSON не знает bigint. Появилось не везде: артефакты
-	 * прошлых деплоев этого поля не содержат, и запасное значение ниже
-	 * рассчитано на них.
+	 * A string, because JSON has no bigint. Not present everywhere: artifacts
+	 * from past deploys lack this field, and the fallback below
+	 * is for them.
 	 */
 	minDeposit?: string;
 };
@@ -36,9 +36,9 @@ export type Deployment = {
 	registry: string | null;
 	jettonMaster: string | null;
 	vaultJettonWallet: string | null;
-	/** Мастера жетонов траншей — по одному на транш, в порядке junior→senior. */
+	/** Tranche jetton masters — one per tranche, in junior->senior order. */
 	trancheMasters?: string[];
-	/** Разрядность базового актива: девять у tsTON, шесть у tsUSDe. */
+	/** Base asset decimals: nine for tsTON, six for tsUSDe. */
 	assetDecimals?: number;
 	mandate: Mandate;
 };
@@ -54,19 +54,19 @@ export const deployment = (NETWORK === "mainnet"
 export const isDeployed = Boolean(deployment.vault && deployment.jettonMaster);
 
 /**
- * Адреса выбранного пула.
+ * The selected pool's addresses.
  *
- * Функция от пула, а не модульная константа: пулов на TON теперь больше
- * одного, и глобальный набор адресов молча обслуживал бы не тот.
+ * A function of the pool, not a module constant: there is now more than
+ * one pool on TON, and a global address set would silently serve the wrong one.
  */
 export function addrOf(pool: Pool) {
 	return {
 		vault: () => Address.parse(pool.vault!),
 		registry: () => Address.parse(pool.registry!),
 		jettonMaster: () => Address.parse(pool.jettonMaster!),
-		/** Источник курса базового актива к GRAM. У стейбла его нет. */
+		/** Source of the base asset's rate to GRAM. A stablecoin has none. */
 		assetPool: () => (pool.ratePool ? Address.parse(pool.ratePool) : null),
-		/** Мастер жетона транша: там же живут доли пользователя. */
+		/** The tranche jetton master: the user's shares live there too. */
 		trancheMaster: (trancheId: number) => {
 			const m = pool.trancheMasters[trancheId];
 			return m ? Address.parse(m) : null;
@@ -77,15 +77,15 @@ export function addrOf(pool: Pool) {
 
 
 /**
- * Единственный источник правды о траншах, включая их цвет: раньше он был
- * размазан по CSS-классам `.t0/.t1/.t2` и `.position--0/1/2`, и добавление
- * транша требовало правок в трёх местах. Здесь `hue` — имя токена из
- * `styles/tokens.css`, компонент подставляет его в свою `--hue`.
+ * The single source of truth about tranches, including their color: it used to be
+ * spread across CSS classes `.t0/.t1/.t2` and `.position--0/1/2`, and adding
+ * a tranche needed edits in three places. Here `hue` is a token name from
+ * `styles/tokens.css`; the component feeds it into its own `--hue`.
  */
 /*
- * Названия говорят о роли, а не о старшинстве: Junior/Middle/Senior
- * читались как грейд в найме. Ключи остались прежними — они завязаны на
- * контракты и на порядок траншей, меняются только подписи.
+ * The names speak of role, not seniority: Junior/Middle/Senior
+ * read like a hiring grade. The keys stayed the same — they're tied to the
+ * contracts and tranche order; only the labels change.
  */
 export const TRANCHES = [
 	{
@@ -111,7 +111,7 @@ export const TRANCHES = [
 	},
 ] as const;
 
-/** Инлайновый стиль, задающий компоненту цвет его транша. */
+/** An inline style giving a component its tranche color. */
 export function hueStyle(trancheId: number): CSSProperties {
 	return { ["--hue" as string]: `var(${TRANCHES[trancheId].hue})` };
 }

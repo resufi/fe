@@ -13,22 +13,22 @@ type Props = {
 	rate: number | null;
 
 	asset: string;
-	/** Знаков у базового актива: девять у tsTON, шесть у tsUSDe. */
+	/** Base asset decimals: nine for tsTON, six for tsUSDe. */
 	decimals: number;
-	/** Экономика пула: плата за защиту или фиксированные купоны. */
+	/** Pool economics: a protection fee or fixed coupons. */
 	kind: PoolKind;
-	/** Выбор сети и пула. Живёт в шапке водопада — это шаг того же выбора. */
+	/** Chain and pool selector. Lives in the waterfall header — a step of the same choice. */
 	controls?: ReactNode;
 	selected: number;
 	onSelect: (id: number) => void;
 };
 
 /**
- * Что транш получает или отдаёт за год, сверх базовой доходности актива.
+ * What a tranche earns or gives up per year, on top of the asset's base yield.
  *
- * У пулов вида "coupon" знак противоположный: там senior не платит за
- * защиту, а получает фиксированную ставку, и junior забирает не надбавку,
- * а весь остаток сверх этих ставок.
+ * For "coupon" pools the sign is opposite: there senior doesn't pay for
+ * protection but earns a fixed rate, and junior takes not a premium
+ * but the entire residual above those rates.
  */
 function rateLabel(id: number, m: Mandate, kind: PoolKind): string {
 	if (kind === "coupon") {
@@ -120,10 +120,10 @@ export function Waterfall({
 					Pool is empty. The first deposit sets the proportions.
 				</p>
 			) : kind === "coupon" ? (
-				/* У этого пула потолка убытка нет: доли выводятся из стоимости
-				   пула заново на каждое чтение, а не списываются событиями,
-				   поэтому ограничивать нечего. Рисовать здесь шкалу значило бы
-				   обещать предел, которого не существует. */
+				/* This pool has no loss ceiling: shares are re-derived from the pool's
+				   value on every read, not written off by events,
+				   so there's nothing to cap. Drawing a scale here would
+				   promise a limit that doesn't exist. */
 				<p className={s.capNote}>
 					No write-off ceiling here: the split is recomputed from the pool
 					value on every read. Buffer absorbs the drawdown until it is gone,

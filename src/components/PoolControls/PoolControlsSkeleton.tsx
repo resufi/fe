@@ -1,11 +1,11 @@
 import css from "./PoolControls.module.css";
 
 /**
- * Скелет переключателей сети и пула.
+ * Skeleton of the chain and pool switchers.
  *
- * Числа блоков взяты по факту: три сети и два пула у самой длинной из них.
- * Считать их от `CHAIN_LIST` и `POOLS` не нужно и даже вредно — скелет
- * должен быть одинаковым до того, как выбор станет известен.
+ * The block counts are fixed on purpose: a few chains and two pools for the longest of them.
+ * Computing them from `CHAIN_LIST` and `POOLS` is unnecessary and even harmful — the skeleton
+ * must be the same before the choice is known.
  */
 export function PoolControlsSkeleton() {
 	return (

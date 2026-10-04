@@ -30,11 +30,11 @@ const RPC: Record<string, string> = {
 };
 
 /**
- * Узел, через который читается состояние.
+ * The node the state is read through.
  *
- * Публичный api.mainnet-beta.solana.com отвечает браузеру 403: он намеренно
- * не рассчитан на приложения. Молчать об этом нельзя — без объяснения отказ
- * выглядит как поломка протокола, а не как незаданная настройка.
+ * The public api.mainnet-beta.solana.com answers the browser with 403: it is deliberately
+ * not meant for apps. We can't stay silent about it — without explanation the rejection
+ * looks like a broken protocol, not an unset config.
  */
 const endpoint = () => {
 	const custom = env("VITE_SOLANA_RPC");

@@ -2,10 +2,10 @@ import type { Pool } from "./pools.ts";
 import { EVM_CHAINS } from "./evm.ts";
 
 /**
- * Ссылка на обозреватель блоков для адреса — у каждой сети свой формат.
+ * A block-explorer link for an address — each chain has its own format.
  *
- * TON и Solana не EVM, поэтому и путь другой: TON смотрят на tonviewer,
- * Solana — на explorer.solana.com с указанием кластера для девнета.
+ * TON and Solana aren't EVM, so the path differs: TON goes to tonviewer,
+ * Solana to explorer.solana.com with the cluster for devnet.
  */
 export function explorerAddressUrl(pool: Pool, address: string): string {
 	if (pool.chain === "ton") {
@@ -16,7 +16,7 @@ export function explorerAddressUrl(pool: Pool, address: string): string {
 		const cluster = pool.network === "mainnet" ? "" : `?cluster=${pool.network}`;
 		return `https://explorer.solana.com/address/${address}${cluster}`;
 	}
-	// EVM-сети: HyperEVM, Robinhood — у всех путь /address/<addr>.
+	// EVM chains: HyperEVM, Robinhood — all use the path /address/<addr>.
 	const evm = EVM_CHAINS[pool.chain];
 	return evm ? `${evm.explorer}/address/${address}` : "#";
 }

@@ -1,14 +1,14 @@
 /**
- * Обнаружение кошельков EVM.
+ * EVM wallet discovery.
  *
- * По EIP-6963 кошельки объявляют себя сами: имя, иконку и свой провайдер.
- * Это заметно лучше того, что мы сделали на Solana, где три кошелька зашиты
- * в код вместе с нарисованными вручную значками. Здесь список получается
- * настоящим — что у человека установлено, то и покажется, с родной иконкой.
+ * Under EIP-6963 wallets announce themselves: name, icon and their provider.
+ * This is noticeably better than what we did on Solana, where three wallets are
+ * hardcoded along with hand-drawn icons. Here the list comes out
+ * real — whatever a person has installed is shown, with its native icon.
  *
- * Старый способ, window.ethereum, оставлен запасным: несколько установленных
- * кошельков дерутся за это поле, и кто победит — неизвестно. Именно ради
- * этого EIP-6963 и появился.
+ * The old way, window.ethereum, is kept as a fallback: several installed
+ * wallets fight over that field, and who wins is unknown. That is exactly why
+ * EIP-6963 came to be.
  */
 
 export type Eip1193 = {
@@ -18,10 +18,10 @@ export type Eip1193 = {
 };
 
 export type DiscoveredWallet = {
-	/** rdns, например io.rabby. Устойчив между запусками, в отличие от uuid. */
+	/** rdns, e.g. io.rabby. Stable across runs, unlike uuid. */
 	id: string;
 	name: string;
-	/** data:-иконка от самого кошелька. */
+	/** a data: icon from the wallet itself. */
 	icon: string;
 	provider: Eip1193;
 };
@@ -32,11 +32,11 @@ type AnnounceEvent = CustomEvent<{
 }>;
 
 /**
- * Кошельки, которые предлагаем поставить, если ничего не найдено.
+ * Wallets we suggest installing if nothing is found.
  *
- * Порядок не случаен: Rabby плотнее всех работает с HyperEVM и показывает
- * его сети из коробки, MetaMask работает, но на HyperEVM у него бывают
- * заминки. Phantom в списке нет намеренно — для Hyperliquid он не подходит.
+ * The order isn't random: Rabby works most closely with HyperEVM and shows
+ * its networks out of the box; MetaMask works, but on HyperEVM it sometimes
+ * stumbles. Phantom is deliberately absent — it doesn't suit Hyperliquid.
  */
 export const SUGGESTED = [
 	{ id: "io.rabby", name: "Rabby", url: "https://rabby.io" },
@@ -46,10 +46,10 @@ export const SUGGESTED = [
 ] as const;
 
 /**
- * Спросить установленные кошельки.
+ * Ask for the installed wallets.
  *
- * Ответ приходит событиями, синхронно в момент запроса, поэтому подписка
- * ставится ДО него. Обратный порядок не нашёл бы ничего.
+ * The answer comes as events, synchronously at request time, so the subscription
+ * is set up BEFORE it. The reverse order would find nothing.
  */
 export function discover(onFound: (w: DiscoveredWallet) => void): () => void {
 	if (typeof window === "undefined") return () => undefined;
@@ -65,10 +65,10 @@ export function discover(onFound: (w: DiscoveredWallet) => void): () => void {
 }
 
 /**
- * Запасной путь для кошельков, не умеющих EIP-6963.
+ * A fallback for wallets that don't support EIP-6963.
  *
- * Имя угадываем по флагам: стандарта на них нет, но они устоялись, а
- * безымянная строка в списке хуже приблизительного имени.
+ * We guess the name from flags: there's no standard for them, but they're settled, and
+ * a nameless row in the list is worse than an approximate name.
  */
 export function legacyProvider(): DiscoveredWallet | null {
 	const eth = (globalThis as { window?: { ethereum?: Eip1193 & Record<string, boolean> } })

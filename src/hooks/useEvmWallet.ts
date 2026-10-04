@@ -16,14 +16,14 @@ export type EvmEntry = {
 	name: string;
 	icon: string;
 	installed: boolean;
-	/** Куда идти, если не установлен. */
+	/** Where to go if not installed. */
 	url?: string;
 };
 
 export type EvmWallet = {
 	address: string | null;
 	chainId: number | null;
-	/** Подключён, но сеть не та: переводы делать нельзя. */
+	/** Connected, but the wrong network: transfers aren't allowed. */
 	wrongChain: boolean;
 	entries: EvmEntry[];
 	connecting: string | null;
@@ -32,7 +32,7 @@ export type EvmWallet = {
 	connect: (id: string) => Promise<void>;
 	disconnect: () => Promise<void>;
 	switchChain: () => Promise<void>;
-	/** Имя целевой сети — для кнопки «Switch to …». */
+	/** The target network name — for the "Switch to …" button. */
 	chainName: string;
 	send: (to: string, data: string) => Promise<string>;
 };
@@ -51,8 +51,8 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	const remembered =
 		typeof localStorage === "undefined" ? null : localStorage.getItem(REMEMBER_KEY);
 
-	// Кошельки объявляют себя событиями, поэтому подписка ставится один раз
-	// при монтировании: установленный позже тоже успеет откликнуться.
+	// Wallets announce themselves via events, so the subscription is set up once
+	// on mount: one installed later will still get a chance to respond.
 	useEffect(() => {
 		return discover((w) =>
 			setFound((prev) => (prev.some((p) => p.id === w.id) ? prev : [...prev, w])),
@@ -60,11 +60,11 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	}, []);
 
 	/**
-	 * Список для показа.
+	 * The list to display.
 	 *
-	 * Сначала то, что действительно установлено — с родными иконками.
-	 * Потом WalletConnect, потом предложения поставить. Кошелёк, нашедший
-	 * себя сам, из предложений убирается: одна и та же строка дважды сбивает.
+	 * First what is actually installed — with native icons.
+	 * Then WalletConnect, then install suggestions. A wallet that found
+	 * itself is removed from the suggestions: the same row twice is confusing.
 	 */
 	const entries = useMemo<EvmEntry[]>(() => {
 		const installed = found.length > 0 ? found : ([legacyProvider()].filter(Boolean) as DiscoveredWallet[]);
@@ -91,8 +91,8 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 		setChainId(Number(BigInt(id)));
 	}, []);
 
-	// Смена аккаунта или сети в кошельке обязана отражаться сразу: иначе
-	// интерфейс покажет баланс одного адреса, а переведёт с другого.
+	// A change of account or network in the wallet must reflect immediately: otherwise
+	// the interface shows one address's balance but transfers from another.
 	useEffect(() => {
 		const p = active?.provider;
 		if (!p?.on) return;
@@ -109,8 +109,8 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	const connect = useCallback(
 		async (id: string) => {
 			const entry = entries.find((e) => e.id === id);
-			// Не установлен — это не ошибка, а ссылка. Открываем страницу
-			// кошелька вместо отказа.
+			// Not installed is not an error but a link. We open the wallet's
+			// page instead of failing.
 			if (entry && !entry.installed) {
 				globalThis.open?.(entry.url, "_blank", "noopener");
 				return;
@@ -146,8 +146,8 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	);
 
 	const disconnect = useCallback(async () => {
-		// У инжектированных кошельков отключения нет: разрешение помнит сам
-		// кошелёк. Забываем адрес у себя — это всё, на что приложение вправе.
+		// Injected wallets have no disconnect: the permission is remembered by the
+		// wallet itself. We forget the address on our side — that's all the app may do.
 		if (wcDisconnect) await wcDisconnect().catch(() => undefined);
 		setWcDisconnect(null);
 		setActive(null);
@@ -165,7 +165,7 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 				params: [{ chainId: target.chainIdHex }],
 			});
 		} catch (e) {
-			// 4902 — сети нет в кошельке, сначала её надо добавить.
+			// 4902 — the network isn't in the wallet; it must be added first.
 			if ((e as { code?: number })?.code !== 4902) throw e;
 			await p.request({
 				method: "wallet_addEthereumChain",

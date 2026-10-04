@@ -57,7 +57,7 @@ export function useSolanaWallet() {
 			} catch {
 			}
 		} catch (e) {
-			const msg = e instanceof Error ? e.message : "Не удалось подключиться";
+			const msg = e instanceof Error ? e.message : "Could not connect";
 
 			setError(/reject|denied|cancel|closed/i.test(msg) ? null : msg);
 		} finally {
@@ -87,7 +87,7 @@ export function useSolanaWallet() {
 				);
 				return bs58(sig);
 			}
-			throw new Error("Кошелёк не подключён");
+			throw new Error("Wallet not connected");
 		},
 		[standard, wc],
 	);

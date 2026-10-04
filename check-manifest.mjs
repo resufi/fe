@@ -1,14 +1,14 @@
 /**
- * Проверяет манифест TonConnect ДО публикации.
+ * Checks the TonConnect manifest BEFORE publishing.
  *
- * Манифест — единственное, что кошелёк скачивает сам, со своего устройства.
- * Поэтому его поломка не видна ни в сборке, ни в тестах: приложение
- * открывается нормально и падает только в момент подключения кошелька,
- * сообщением «invalid manifest» без подробностей.
+ * The manifest is the only thing the wallet downloads itself, from its own device.
+ * So its breakage shows neither in the build nor in tests: the app
+ * opens fine and fails only at wallet-connect time,
+ * with an "invalid manifest" message and no details.
  *
- * Ровно так и вышло: файл public/tonconnect-manifest.json удалили, сборка
- * молча ушла на запасной путь, которого больше нет, и обнаружилось это уже
- * на живом сайте.
+ * That's exactly what happened: public/tonconnect-manifest.json was deleted, the build
+ * silently fell back to a path that no longer exists, and it was found only
+ * on the live site.
  */
 import { existsSync, readFileSync } from 'fs';
 
@@ -31,22 +31,22 @@ const check = (name, ok, extra = '') => {
 const localFile = new URL('./public/tonconnect-manifest.json', import.meta.url);
 
 if (!envUrl) {
-    // Без переменной приложение берёт манифест из собственной раздачи —
-    // значит файл обязан лежать в public/, иначе будет 404.
-    console.log('манифест берётся из public/ (VITE_TONCONNECT_MANIFEST_URL не задан)');
-    check('public/tonconnect-manifest.json существует', existsSync(localFile));
+    // Without the variable the app takes the manifest from its own serving —
+    // so the file must be in public/, otherwise it's a 404.
+    console.log('manifest taken from public/ (VITE_TONCONNECT_MANIFEST_URL not set)');
+    check('public/tonconnect-manifest.json exists', existsSync(localFile));
     if (existsSync(localFile)) {
         const m = JSON.parse(readFileSync(localFile, 'utf8'));
-        check('есть url', typeof m.url === 'string' && m.url.startsWith('https://'), `-> ${m.url}`);
-        check('есть name', typeof m.name === 'string' && m.name.length > 0);
-        check('есть iconUrl', typeof m.iconUrl === 'string' && m.iconUrl.startsWith('https://'));
+        check('has url', typeof m.url === 'string' && m.url.startsWith('https://'), `-> ${m.url}`);
+        check('has name', typeof m.name === 'string' && m.name.length > 0);
+        check('has iconUrl', typeof m.iconUrl === 'string' && m.iconUrl.startsWith('https://'));
     }
 } else {
-    console.log(`манифест по ссылке: ${envUrl}`);
-    check('ссылка https', envUrl.startsWith('https://'));
+    console.log(`manifest via link: ${envUrl}`);
+    check('link is https', envUrl.startsWith('https://'));
 
     const res = await fetch(envUrl).catch((e) => ({ ok: false, status: String(e.message) }));
-    check('скачивается', res.ok === true, `-> HTTP ${res.status}`);
+    check('downloads', res.ok === true, `-> HTTP ${res.status}`);
 
     if (res.ok) {
         const text = await res.text();
@@ -54,19 +54,19 @@ if (!envUrl) {
         try {
             m = JSON.parse(text);
         } catch {
-            check('это валидный JSON', false, `-> ${text.slice(0, 60)}`);
+            check('is valid JSON', false, `-> ${text.slice(0, 60)}`);
         }
         if (m) {
-            check('есть url', typeof m.url === 'string' && m.url.startsWith('https://'), `-> ${m.url}`);
-            check('есть name', typeof m.name === 'string' && m.name.length > 0);
-            check('есть iconUrl', typeof m.iconUrl === 'string' && m.iconUrl.startsWith('https://'));
+            check('has url', typeof m.url === 'string' && m.url.startsWith('https://'), `-> ${m.url}`);
+            check('has name', typeof m.name === 'string' && m.name.length > 0);
+            check('has iconUrl', typeof m.iconUrl === 'string' && m.iconUrl.startsWith('https://'));
 
-            // url в манифесте обязан указывать на сам сайт: по нему кошелёк
-            // сверяет, кто просит подключение.
+            // the manifest url must point at the site itself: the wallet uses it
+            // to verify who's requesting the connection.
             const origin = process.env.PAGES_ORIGIN;
             if (origin && m.url) {
                 check(
-                    `url ведёт на ${origin}`,
+                    `url points to ${origin}`,
                     m.url.startsWith(origin),
                     `-> ${m.url}`,
                 );
@@ -74,11 +74,11 @@ if (!envUrl) {
 
             if (m.iconUrl) {
                 const icon = await fetch(m.iconUrl, { method: 'HEAD' }).catch(() => ({ ok: false }));
-                check('иконка доступна', icon.ok === true);
+                check('icon is reachable', icon.ok === true);
             }
         }
     }
 }
 
-console.log(failed === 0 ? '\nманифест в порядке' : `\nпроблем: ${failed}`);
+console.log(failed === 0 ? '\nmanifest is fine' : `\nproblems: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

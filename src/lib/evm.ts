@@ -2,16 +2,16 @@ import { env } from "./env.ts";
 import type { ChainId } from "./chains.ts";
 
 /**
- * Общий слой для всех EVM-сетей Resu: HyperEVM, Robinhood, Arbitrum.
+ * A shared layer for all of Resu's EVM chains: HyperEVM, Robinhood, Arbitrum.
  *
- * Вызовы собираются вручную, без viem и ethers — та же причина, что у
- * solana.ts: нам нужно прочитать десяток функций фиксированной формы, а
- * библиотека принесла бы сотни килобайт. Сети отличаются только адресами и
- * узлом; читающая логика одна.
+ * Calls are built by hand, without viem or ethers — the same reason as in
+ * solana.ts: we only need to read a dozen fixed-shape functions, and a
+ * library would add hundreds of kilobytes. The chains differ only by addresses
+ * and node; the reading logic is one.
  *
- * Купонный контракт (OracleVault на Robinhood/Arbitrum) и HLP-контракт
- * (ResuVault на HyperEVM) совпадают по сигнатурам чтения — nav/values/
- * totalShares/claims/tickets, — поэтому обслуживаются одним ридером.
+ * The coupon contract (OracleVault on Robinhood/Arbitrum) and the HLP contract
+ * (ResuVault on HyperEVM) share the same read signatures — nav/values/
+ * totalShares/claims/tickets — so one reader serves both.
  */
 
 export type EvmChainParams = {
@@ -19,13 +19,13 @@ export type EvmChainParams = {
 	chainIdHex: string;
 	name: string;
 	rpc: string;
-	/** Переменная окружения, переопределяющая узел (публичный бывает медленным). */
+	/** Env variable overriding the node (a public one can be slow). */
 	rpcEnv?: string;
 	explorer: string;
 	nativeCurrency: { name: string; symbol: string; decimals: number };
 };
 
-/** Параметры EVM-сетей. Ключ совпадает с ChainId приложения. */
+/** EVM chain params. The key matches the app's ChainId. */
 export const EVM_CHAINS: Partial<Record<ChainId, EvmChainParams>> = {
 	hyperevm: {
 		chainId: 999,
@@ -85,7 +85,7 @@ export function evmRpc(id: ChainId): string {
 	return (c.rpcEnv ? env(c.rpcEnv) : undefined) ?? c.rpc;
 }
 
-/** Селекторы. Общие для ResuVault и OracleVault — сигнатуры совпадают. */
+/** Selectors. Shared by ResuVault and OracleVault — the signatures match. */
 export const SIG = {
 	nav: "0xc1590cd7",
 	values: "0x971217b7",
@@ -102,7 +102,7 @@ export const SIG = {
 	approve: "0x095ea7b3",
 } as const;
 
-/** Слово ABI: 32 байта, выравнивание вправо. */
+/** An ABI word: 32 bytes, right-aligned. */
 export const word = (v: bigint | number | string): string => {
 	if (typeof v === "string") return v.toLowerCase().replace(/^0x/, "").padStart(64, "0");
 	return BigInt(v).toString(16).padStart(64, "0");
@@ -132,13 +132,13 @@ async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T
 	return json.result as T;
 }
 
-/** Адреса пула на EVM-сети. */
+/** A pool's addresses on an EVM chain. */
 export type EvmPoolContracts = {
 	chain: ChainId;
 	vault: string;
-	/** Базовый актив, который вносят (USDC на HLP, SPY-токен на Robinhood). */
+	/** The base asset deposited (USDC on HLP, the SPY token on Robinhood). */
 	asset: string;
-	/** Токены долей, junior -> senior. */
+	/** Share tokens, junior -> senior. */
 	trancheTokens: readonly string[];
 };
 
@@ -152,8 +152,8 @@ export type EvmVaultState = {
 };
 
 /**
- * Состояние пула. Последовательно, а не залпом: публичный узел лимитирован,
- * и пачка параллельных запросов возвращается отказами вместо данных.
+ * Pool state. Sequentially, not in a burst: a public node is rate-limited,
+ * and a batch of parallel requests comes back as rejections, not data.
  */
 export async function readVault(c: EvmPoolContracts): Promise<EvmVaultState> {
 	const [nav] = await call(c, c.vault, SIG.nav);
@@ -178,8 +178,8 @@ export async function readWallet(c: EvmPoolContracts, owner: string): Promise<Ev
 	const [balance] = await call(c, c.asset, encode(SIG.balanceOf, owner));
 	const [allowance] = await call(c, c.asset, encode(SIG.allowance, owner, c.vault));
 
-	// Доли на руках лежат в токене транша, а не в пуле. Заявки на выход —
-	// у пула, там они и живут.
+	// Held shares live in the tranche token, not the pool. Exit tickets —
+	// live on the pool.
 	const shares: bigint[] = [];
 	const tickets: { shares: bigint; unlockAt: number }[] = [];
 	for (const i of [0, 1, 2]) {

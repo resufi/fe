@@ -11,20 +11,20 @@ type Props = {
 };
 
 /**
- * Сеть и пул блоками, друг под другом.
+ * Chain and pool as blocks, one under the other.
  *
- * Прежние вкладки с бегунком не пережили роста: бегунок считался от числа
- * элементов и требовал, чтобы все они помещались в один ряд равной ширины.
- * Блоки не связаны друг с другом — ряд просто переносится.
+ * The old tabs with a slider didn't survive growth: the slider was computed from the
+ * element count and required them all to fit in one equal-width row.
+ * The blocks aren't tied to each other — the row simply wraps.
  *
- * Сеть и пул различаются формой, а не только местом: сеть — подпись с
- * подчёркиванием, пул — пилюля. Раньше оба ряда были пилюлями и путались
- * между собой.
+ * Chain and pool differ by shape, not only position: a chain is a label with an
+ * underline, a pool is a pill. Both rows used to be pills and got confused
+ * with each other.
  *
- * Пул показывается даже когда он в сети один. Вкладка-одиночка ничего не
- * выбирала и потому пряталась, но блок — это ещё и подпись: он говорит, во
- * что кладут деньги, и на Hyperliquid с Solana иначе на экране не остаётся
- * ничего, кроме названия сети.
+ * The pool is shown even when a chain has only one. A lone tab selected
+ * nothing and was hidden, but a block is also a label: it says what
+ * money goes into, and on Hyperliquid and Solana nothing would otherwise remain
+ * on screen but the chain name.
  */
 export function PoolControls({
 	chain,
@@ -46,7 +46,7 @@ export function PoolControls({
 						onClick={() => onChainChange(c.id)}
 					>
 						{c.name}
-						{/* Недоступное помечаем до клика, а не после. */}
+						{/* We mark what's unavailable before the click, not after. */}
 						{!c.deployed && <span className={css.soon}>soon</span>}
 					</button>
 				))}

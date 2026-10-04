@@ -23,8 +23,8 @@ export async function connectWalletConnect(): Promise<WcSession> {
 	const id = projectId();
 	if (!id) {
 		throw new Error(
-			"WalletConnect не настроен: нужен VITE_WALLETCONNECT_PROJECT_ID " +
-				"(бесплатно на dashboard.reown.com)",
+			"WalletConnect is not configured: VITE_WALLETCONNECT_PROJECT_ID is required " +
+				"(free at dashboard.reown.com)",
 		);
 	}
 
@@ -83,10 +83,10 @@ export async function connectWalletConnect(): Promise<WcSession> {
 		modal.closeModal();
 	}
 
-	if (cancelled && !session) throw new Error("Подключение отменено");
+	if (cancelled && !session) throw new Error("Connection cancelled");
 
 	const accounts = session?.namespaces?.solana?.accounts ?? [];
-    if (accounts.length === 0) throw new Error("Кошелёк не вернул ни одного счёта");
+    if (accounts.length === 0) throw new Error("The wallet returned no accounts");
 
 	const address = accounts[0].split(":").pop()!;
 
@@ -109,7 +109,7 @@ export async function connectWalletConnect(): Promise<WcSession> {
 				chain,
 			)) as { transaction?: string; signature?: string };
 			if (res.signature) return res.signature;
-			throw new Error("Кошелёк не поддерживает отправку транзакций");
+			throw new Error("The wallet does not support sending transactions");
 		},
 		async disconnect() {
 			await provider.disconnect().catch(() => undefined);

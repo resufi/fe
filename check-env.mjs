@@ -1,11 +1,11 @@
 /**
- * Сверяет переменные сборки: что читает код против того, что передаёт
- * workflow публикации.
+ * Reconciles build variables: what the code reads vs what the
+ * publish workflow passes.
  *
- * Пропущенная переменная — не ошибка сборки. Приложение соберётся,
- * опубликуется и молча уйдёт в запасное поведение: не тот адрес манифеста,
- * не та сеть, неработающее подключение кошелька. Замечается это уже на
- * живом сайте, и по симптомам причину не угадать.
+ * A missing variable isn't a build error. The app builds,
+ * publishes and silently falls back: the wrong manifest URL,
+ * the wrong network, a broken wallet connection. You notice it only on the
+ * live site, and the symptoms don't reveal the cause.
  */
 import { readFileSync, readdirSync, statSync } from "fs";
 import { join } from "path";
@@ -17,11 +17,11 @@ function walk(dir) {
     });
 }
 
-// Что код действительно читает.
+// What the code actually reads.
 const used = new Set();
 for (const file of walk("src").filter((f) => /\.tsx?$/.test(f))) {
-    // Комментарии вырезаем: в них попадаются примеры вида import.meta.env.VITE_X,
-    // и без этого проверка спорит сама с собой.
+    // We strip comments: they contain examples like import.meta.env.VITE_X,
+    // and without that the check argues with itself.
     const src = readFileSync(file, "utf8")
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/(^|[^:])\/\/.*$/gm, "$1");
@@ -40,23 +40,23 @@ const check = (name, ok, extra = "") => {
     if (!ok) failed++;
 };
 
-console.log(`переменные сборки: код читает ${used.size}, workflow передаёт ${passed.size}`);
+console.log(`build variables: code reads ${used.size}, workflow passes ${passed.size}`);
 
 const missing = [...used].filter((v) => !passed.has(v)).sort();
 check(
-    "все читаемые переменные передаются в сборку",
+    "every read variable is passed to the build",
     missing.length === 0,
-    missing.length ? `\n         не передаются: ${missing.join(", ")}` : "",
+    missing.length ? `\n         not passed: ${missing.join(", ")}` : "",
 );
 
-// Обратное направление — не ошибка, но признак забытой переменной.
+// The reverse direction isn't an error but a sign of a forgotten variable.
 const unused = [...passed].filter((v) => !used.has(v)).sort();
 if (unused.length) {
-    console.log(`  (workflow передаёт лишнее, код не читает: ${unused.join(", ")})`);
+    console.log(`  (workflow passes extras the code doesn't read: ${unused.join(", ")})`);
 }
 
-// .env.example — документация для человека; расхождение с кодом вводит в
-// заблуждение того, кто по нему настраивает окружение.
+// .env.example is documentation for a human; a mismatch with the code
+// misleads whoever configures the environment from it.
 try {
     const example = readFileSync(".env.example", "utf8");
     const documented = new Set(
@@ -64,32 +64,32 @@ try {
     );
     const undocumented = [...used].filter((v) => !documented.has(v)).sort();
     check(
-        "все переменные описаны в .env.example",
+        "every variable is documented in .env.example",
         undocumented.length === 0,
-        undocumented.length ? `\n         не описаны: ${undocumented.join(", ")}` : "",
+        undocumented.length ? `\n         undocumented: ${undocumented.join(", ")}` : "",
     );
 } catch {
-    check(".env.example на месте", false);
+    check(".env.example is present", false);
 }
 
-// Публичный узел Solana отдаёт 403 на запросы из браузера: он не рассчитан
-// на приложения. На девнете это терпимо, на мейннете означает, что не
-// прочитается ничего — а выглядит как бесконечная загрузка, не как отказ.
-// Поэтому мейннет без своего RPC — ошибка сборки, а не сюрприз на проде.
+// The public Solana node answers 403 to browser requests: it's not meant
+// for apps. On devnet that's tolerable; on mainnet it means nothing
+// will be read — and it looks like an endless load, not a rejection.
+// So mainnet without its own RPC is a build error, not a surprise in prod.
 try {
     const env = readFileSync(".env", "utf8");
     const val = (name) => env.match(new RegExp(`^\\s*${name}\\s*=\\s*(\\S*)`, "m"))?.[1] ?? "";
     if (val("VITE_SOLANA_NETWORK") === "mainnet") {
         check(
-            "на мейннете Solana задан свой RPC",
+            "on mainnet Solana has its own RPC set",
             val("VITE_SOLANA_RPC").length > 0,
-            "\n         VITE_SOLANA_RPC пуст, а api.mainnet-beta.solana.com" +
-                "\n         отвечает браузеру 403 — нужен свой узел (Helius, QuickNode, Triton)",
+            "\n         VITE_SOLANA_RPC is empty, and api.mainnet-beta.solana.com" +
+                "\n         answers the browser with 403 — you need your own node (Helius, QuickNode, Triton)",
         );
     }
 } catch {
-    // .env может не быть — в CI переменные приходят из секретов.
+    // .env may be absent — in CI variables come from secrets.
 }
 
-console.log(failed === 0 ? "\nпеременные сходятся" : `\nпроблем: ${failed}`);
+console.log(failed === 0 ? "\nvariables reconcile" : `\nproblems: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

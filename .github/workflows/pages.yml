@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # Позволяет запустить вручную из вкладки Actions, не делая коммит.
+  # Allows a manual run from the Actions tab without a commit.
   workflow_dispatch:
 
 permissions:
@@ -11,8 +11,8 @@ permissions:
   pages: write
   id-token: write
 
-# Одновременно идёт только одна публикация. Незавершённые не отменяем:
-# оборванный деплой Pages оставляет сайт в промежуточном состоянии.
+# Only one publish runs at a time. We don't cancel unfinished ones:
+# an aborted Pages deploy leaves the site in an intermediate state.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -30,18 +30,18 @@ jobs:
 
       - run: npm ci
 
-      # Те же проверки, что и локально: типы, сборка сообщений для контрактов,
-      # запуск приложения в браузероподобной среде. Публиковать неработающее
-      # хуже, чем не публиковать вовсе.
+      # The same checks as locally: types, building the contract messages,
+      # running the app in a browser-like environment. Publishing something broken
+      # is worse than not publishing at all.
       - run: npm run typecheck
       - run: npm run selftest
       - run: npm run smoke
 
-      # Манифест — единственное, что кошелёк скачивает сам, и единственное,
-      # чего не видно до попытки подключения. Проверяем до публикации.
-      # Переменных много, и пропущенная не ломает сборку — приложение просто
-      # молча уходит в запасное поведение. Ровно так мы потеряли манифест
-      # TonConnect и получили «invalid manifest» уже на живом сайте.
+      # The manifest is the only thing the wallet downloads itself, and the only thing
+      # invisible until a connection attempt. We check it before publishing.
+      # There are many variables, and a missing one doesn't break the build — the app just
+      # silently falls back. That's exactly how we lost the
+      # TonConnect manifest and got "invalid manifest" on the live site.
       - run: npm run check-env
 
       - name: Check TonConnect manifest
@@ -52,26 +52,26 @@ jobs:
 
       - name: Build
         env:
-          # Pages раздаёт сайт по пути /<репозиторий>/, а не из корня домена.
+          # Pages serves the site at /<repo>/, not from the domain root.
           BASE_PATH: /${{ github.event.repository.name }}/
 
-          # Все VITE_* переменные обязаны быть здесь: сборка видит только то,
-          # что ей передали явно. Пропущенная переменная не ошибка сборки —
-          # приложение просто молча уходит в запасное поведение.
+          # All VITE_* variables must be here: the build sees only what
+          # is passed to it explicitly. A missing variable isn't a build error —
+          # the app just silently falls back.
           # --- TON ---
           VITE_NETWORK: ${{ secrets.VITE_NETWORK || 'mainnet' }}
           VITE_TONCONNECT_MANIFEST_URL: ${{ secrets.VITE_TONCONNECT_MANIFEST_URL }}
           VITE_TON_ENDPOINT: ${{ secrets.VITE_TON_ENDPOINT }}
-          # Ключ toncenter снимает лимит запросов. В статической сборке он
-          # попадает в публичный бандл — см. README, раздел про Pages.
+          # The toncenter key removes the request limit. In a static build it
+          # ends up in the public bundle — see the README, the Pages section.
           VITE_TONCENTER_API_KEY: ${{ secrets.VITE_TONCENTER_API_KEY }}
 
           # --- Solana ---
           VITE_SOLANA_NETWORK: ${{ secrets.VITE_SOLANA_NETWORK || 'devnet' }}
           VITE_SOLANA_RPC: ${{ secrets.VITE_SOLANA_RPC }}
           VITE_HYPEREVM_RPC: ${{ secrets.VITE_HYPEREVM_RPC }}
-          # Без него подключение по WalletConnect не работает вовсе.
-          # Публичный по назначению: попадает в бандл и виден всем.
+          # Without it WalletConnect won't work at all.
+          # Public by design: it ends up in the bundle and is visible to all.
           VITE_WALLETCONNECT_PROJECT_ID: ${{ secrets.VITE_WALLETCONNECT_PROJECT_ID }}
         run: npm run build
 

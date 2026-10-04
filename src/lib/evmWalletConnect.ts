@@ -2,11 +2,11 @@ import { env } from "./env.ts";
 import type { Eip1193 } from "./evmWallets.ts";
 
 /**
- * WalletConnect для HyperEVM.
+ * WalletConnect for HyperEVM.
  *
- * Тот же приём, что в walletconnect.ts для Solana, только пространство имён
- * eip155. Держится отдельным файлом и грузится по требованию: библиотека
- * весит сотни килобайт, а нужна только тому, кто выбрал этот способ.
+ * The same approach as walletconnect.ts for Solana, only the namespace is
+ * eip155. Kept in a separate file and loaded on demand: the library
+ * weighs hundreds of kilobytes and is needed only by whoever chose this method.
  */
 
 export const projectId = () => env("VITE_WALLETCONNECT_PROJECT_ID");
@@ -42,9 +42,9 @@ export async function connectEvmWalletConnect(chainId: number): Promise<EvmWcSes
 
 	const chain = `eip155:${chainId}`;
 
-	// Провайдер отдаёт ссылку событием display_uri. Без показанного QR-кода
-	// человеку нечего сканировать, а подключение просто ждёт — снаружи это
-	// выглядит как вечная загрузка. На Solana мы уже на этом обожглись.
+	// The provider emits the link via a display_uri event. Without a shown QR code
+	// there's nothing to scan, and the connection just waits — from outside that
+	// looks like an endless load. On Solana we already got burned by this.
 	const modal = new WalletConnectModal({ projectId: id, chains: [chain] });
 	const onUri = (uri: string) => void modal.openModal({ uri });
 	provider.on("display_uri", onUri);
@@ -76,10 +76,10 @@ export async function connectEvmWalletConnect(chainId: number): Promise<EvmWcSes
 	}
 
 	const accounts = provider.session?.namespaces?.eip155?.accounts ?? [];
-	// Формат eip155:999:0xадрес — нужен последний сегмент.
+	// Format eip155:999:0xaddress — we need the last segment.
 	const address = accounts[0]?.split(":").pop() ?? null;
 	if (!address) {
-		throw new Error(cancelled ? "Подключение отменено" : "Кошелёк не вернул адрес");
+		throw new Error(cancelled ? "Connection cancelled" : "The wallet returned no address");
 	}
 
 	return {

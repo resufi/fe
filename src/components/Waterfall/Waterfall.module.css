@@ -10,8 +10,8 @@
 }
 
 .headline {
-	/* Шапка выровнена по левому краю ради переключателей, но строка
-	   заголовка тянется на всю ширину: объём пула стоит справа. */
+	/* The header is left-aligned for the switchers, but the title
+	   row spans the full width: the pool size sits on the right. */
 	justify-self: stretch;
 	display: flex;
 	align-items: baseline;
@@ -73,9 +73,9 @@
 
 .name {
 	/*
-	 * Блоком явно. Раньше строку держал `display: flex`, стоявший здесь ради
-	 * цветной точки; без него строчный span съезжал к описанию, а его
-	 * вертикальный отступ не применялся.
+	 * A block explicitly. The row used to be held by `display: flex`, placed here for
+	 * the colored dot; without it the inline span slid toward the description, and its
+	 * vertical margin wasn't applied.
 	 */
 	display: block;
 	font-size: 15px;

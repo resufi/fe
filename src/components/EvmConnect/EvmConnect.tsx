@@ -8,12 +8,12 @@ type Props = { wallet: EvmWallet };
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /**
- * Значок кошелька.
+ * The wallet icon.
  *
- * По EIP-6963 кошелёк присылает свою иконку сам, и рисовать её за него не
- * нужно — в отличие от Solana, где три значка нарисованы у нас в коде.
- * Пустая строка означает WalletConnect или кошелёк без иконки: там ставим
- * первую букву имени, чтобы строка не разъезжалась.
+ * Under EIP-6963 the wallet sends its own icon, and we don't need to draw it for it
+ * — unlike Solana, where three icons are drawn in our code.
+ * An empty string means WalletConnect or a wallet with no icon: there we put
+ * the first letter of the name so the row doesn't fall apart.
  */
 function Mark({ icon, name }: { icon: string; name: string }) {
 	if (icon) {
@@ -41,8 +41,8 @@ export function EvmConnect({ wallet }: Props) {
 	}, [open]);
 
 	if (wallet.address) {
-		// Не та сеть — это один клик, а не ошибка. Показываем его вместо
-		// адреса: иначе человек нажмёт «внести» и упрётся в отказ.
+		// The wrong network is one click, not an error. We show it instead of
+		// the address: otherwise a person taps "deposit" and hits a rejection.
 		if (wallet.wrongChain) {
 			return (
 				<button

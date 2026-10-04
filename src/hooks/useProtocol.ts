@@ -7,10 +7,10 @@ import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana
 import { readVault as readEvmVault, readWallet as readEvmWallet, EVM_CHAINS, type EvmPoolContracts, type EvmVaultState } from '../lib/evm';
 
 /**
- * Часы до ближайшего открытия рынка акций США (будни, ~9:30 по Нью-Йорку).
- * Приблизительно: без учёта праздников и ±1ч на переход летнего времени —
- * этого достаточно для плашки «рынок на паузе». Нужен для купонных пулов на
- * акциях, где фид Chainlink не обновляется, пока биржа закрыта.
+ * Hours until the next US stock-market open (weekdays, ~9:30 New York).
+ * Approximate: ignoring holidays and ±1h for daylight-saving shifts —
+ * enough for the "market paused" badge. Needed for coupon pools on
+ * stocks, where the Chainlink feed doesn't update while the exchange is closed.
  */
 function hoursUntilUsMarketOpen(): number {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -24,7 +24,7 @@ function hoursUntilUsMarketOpen(): number {
     const idx: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const dow = idx[get('weekday')] ?? 1;
     let hh = Number(get('hour'));
-    if (hh === 24) hh = 0; // некоторые среды дают '24' для полуночи
+    if (hh === 24) hh = 0; // some environments return '24' for midnight
     const minsNow = hh * 60 + Number(get('minute'));
     const OPEN = 9 * 60 + 30;
     let days = 0;
@@ -53,40 +53,40 @@ import {
 
 export type MyPosition = {
     trancheId: number;
-    /** Доли на руках: токен транша, его можно переводить и продавать. */
+    /** Held shares: the tranche token, transferable and sellable. */
     shares: bigint;
-    /** Доли, сожжённые и ждущие созревания заявки. */
+    /** Shares burned and awaiting a ticket's maturity. */
     pendingShares: bigint;
     unlockAt: number;
-    /** Сколько всё это стоит сейчас, в единицах базового актива. */
+    /** What all of it is worth now, in base-asset units. */
     valueNow: bigint;
 
-    // Адреса нужны только TON: там сжигание и получение идут в разные
-    // контракты, и оба адреса надо знать заранее. На Solana они выводятся
-    // из владельца прямо при сборке транзакции.
+    // Addresses are needed only on TON: there burning and claiming go to different
+    // contracts, and both must be known in advance. On Solana they're derived
+    // from the owner right when building the transaction.
     shareWallet?: Address;
     ticket?: Address;
 };
 
 /**
- * Данные кошелька отделены от данных пула намеренно.
+ * Wallet data is separated from pool data on purpose.
  *
- * Чтение кошелька — это ещё несколько запросов поверх пула, а публичный узел
- * лимитирован. Раньше всё грузилось одним куском, и до окончания чтения на
- * экране висел баланс из прошлого снимка — то есть ноль, снятый до
- * подключения кошелька. `null` здесь означает «ещё не знаем», и интерфейс
- * обязан показать это, а не выдумать ноль.
+ * Reading the wallet is a few more requests on top of the pool, and a public node
+ * is rate-limited. Everything used to load in one chunk, and until the read finished
+ * the screen showed a balance from the previous snapshot — i.e. a zero read before
+ * the wallet connected. `null` here means "we don't know yet", and the interface
+ * must show that, not invent a zero.
  */
 export type WalletData = {
     balance: bigint;
     positions: MyPosition[];
-    /** Только TON: кошелёк базового жетона, куда уходит перевод при депозите. */
+    /** TON only: the base jetton wallet the deposit transfer goes to. */
     jettonWallet?: Address;
     /**
-     * Только EVM: сколько владелец разрешил пулу списать.
+     * EVM only: how much the owner allowed the pool to spend.
      *
-     * У ERC20 разрешение — отдельная транзакция, и без него депозит
-     * откатится. Интерфейс обязан знать это ДО нажатия, а не после.
+     * In ERC20 approval is a separate transaction, and without it the deposit
+     * reverts. The interface must know this BEFORE the tap, not after.
      */
     allowance?: bigint;
 };
@@ -96,7 +96,7 @@ export type ProtocolData = {
     vault: VaultState;
     headroom: bigint;
     wallet: WalletData | null;
-    /** Сколько GRAM за один базовый жетон. null — курс недоступен. */
+    /** How many GRAM per base jetton. null — the rate is unavailable. */
     rate: number | null;
 };
 
@@ -106,12 +106,12 @@ function assetsForShares(t: TrancheState, shares: bigint): bigint {
 }
 
 /**
- * Сколько убытка протокол способен списать сейчас.
+ * How much loss the protocol can absorb right now.
  *
- * Повторяет lossHeadroom из контракта, но считается на клиенте. Это не только
- * экономит запрос: отдельное чтение могло прийтись на момент между двумя
- * изменениями, и ёмкость на экране не сходилась бы с показанными траншами.
- * Здесь всё считается из одного снимка.
+ * Mirrors lossHeadroom from the contract, but computed on the client. That not only
+ * saves a request: a separate read could land between two
+ * changes, and the headroom on screen wouldn't match the tranches shown.
+ * Here everything is computed from one snapshot.
  */
 function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
     const cap = (vault.principalDeposited * BigInt(vault.maxLossBps)) / 10000n;
@@ -120,7 +120,7 @@ function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
     return byMandate < byAssets ? byMandate : byAssets;
 }
 
-/** Пауза между обновлениями, отсчитывается от окончания предыдущего. */
+/** The pause between refreshes, counted from the end of the previous one. */
 const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
 
 export function useProtocol(
@@ -133,8 +133,8 @@ export function useProtocol(
     const wallet = useTonAddress();
     const [data, setData] = useState<ProtocolData | null>(null);
     const [error, setError] = useState<string | null>(null);
-    // Пул жив, но фид Chainlink протух (рынок акций закрыт). Тогда показываем
-    // карточку пула с плашкой, а не экран ошибки.
+    // The pool is live but the Chainlink feed went stale (stock market closed). Then we show
+    // the pool card with a badge, not an error screen.
     const [paused, setPaused] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -143,8 +143,8 @@ export function useProtocol(
         setError(null);
         setPaused(null);
         try {
-            // На Solana состояние читается одним аккаунтом: там нет
-            // асинхронных сообщений, и весь пул лежит в одной структуре.
+            // On Solana state is read from one account: there are no
+            // async messages, and the whole pool sits in one struct.
             if (chain === "solana") {
                 if (!solanaDeployed) return;
                 const v = await readSolanaVault();
@@ -158,8 +158,8 @@ export function useProtocol(
                     maxLossBps: v.mandate.maxLossBps,
                     withdrawDelay: v.mandate.withdrawDelay,
                 };
-                // Курса к SOL пока нет: на девнете базовый актив тестовый,
-                // а выдумывать курс хуже, чем показать суммы как есть.
+                // No SOL rate yet: on devnet the base asset is a test one,
+                // and inventing a rate is worse than showing amounts as-is.
                 const base = {
                     tranches,
                     vault,
@@ -172,28 +172,28 @@ export function useProtocol(
                     return;
                 }
 
-                // Пул показываем сразу, кошелёк догружаем: это ещё несколько
-                // запросов, и держать экран пустым всё это время незачем.
+                // We show the pool immediately and load the wallet after: that's a few more
+                // requests, and keeping the screen empty all that time is pointless.
                 setData({ ...base, wallet: null });
                 const w = await readSolanaWallet(solanaAddress, tranches);
                 setData({ ...base, wallet: w });
                 return;
             }
 
-            // HyperEVM: состояние читается одним контрактом, потерь по
-            // мандату там нет — доли выводятся из стоимости пула заново.
+            // HyperEVM: state is read from one contract; there is no mandate-based
+            // loss there — shares are re-derived from the pool's value.
             if (chain in EVM_CHAINS) {
-                // Адреса пула на EVM-сети. Токены долей у нас в trancheMasters.
+                // The pool's addresses on an EVM chain. Share tokens are in trancheMasters.
                 const evmPool: EvmPoolContracts = {
                     chain,
                     vault: pool.vault!,
                     asset: pool.jettonMaster!,
                     trancheTokens: pool.trancheMasters,
                 };
-                // На купонных пулах с акциями nav() реветит «stale price»,
-                // когда рынок закрыт (фид не обновлялся дольше maxStaleness).
-                // Пул при этом рабочий — показываем его с нулями и плашкой,
-                // а не прячем за ошибкой.
+                // On coupon stock pools nav() reverts with "stale price"
+                // when the market is closed (the feed hasn't updated for longer than maxStaleness).
+                // The pool still works — we show it with zeros and a badge,
+                // rather than hiding it behind an error.
                 let v: EvmVaultState;
                 let isPaused = false;
                 try {
@@ -224,12 +224,12 @@ export function useProtocol(
                     maxLossBps: 0,
                     withdrawDelay: pool.mandate.withdrawDelay,
                 };
-                // Потолка убытка нет, поэтому и ёмкости нет: показывать её
-                // нулём честнее, чем выдумывать.
+                // There is no loss ceiling, so no headroom either: showing it as
+                // zero is more honest than inventing one.
                 const base = { tranches, vault, headroom: 0n, rate: null };
 
-                // На паузе кошелёк не догружаем: nav/values нулевые, показывать
-                // позицию не из чего — достаточно карточки пула с плашкой.
+                // While paused we don't load the wallet: nav/values are zero, there's nothing
+                // to build a position from — the pool card with a badge is enough.
                 if (isPaused || !evmAddress) {
                     setData({ ...base, wallet: null });
                     return;
@@ -264,10 +264,10 @@ export function useProtocol(
             const vault = await readVaultState(vaultAddr);
             const headroom = lossHeadroom(tranches, vault);
 
-            // Пул показываем сразу, не дожидаясь кошелька: это ещё несколько
-            // секунд запросов, и держать экран пустым всё это время незачем.
-            // Курс базового актива к GRAM. У стейбла его нет — и выдумывать
-            // нельзя: доллары в GRAM пересчитываются только через рынок.
+            // We show the pool immediately, without waiting for the wallet: that's a few more
+            // seconds of requests, and keeping the screen empty all that time is pointless.
+            // The base asset's rate to GRAM. A stablecoin has none — and inventing it
+            // is not allowed: dollars convert to GRAM only through the market.
             const ratePool = addr.assetPool();
             const rate = ratePool ? await readAssetRate(ratePool, addr.jettonMaster()) : null;
 
@@ -280,8 +280,8 @@ export function useProtocol(
             const jettonWallet = await readJettonWallet(addr.jettonMaster(), owner);
             const balance = await readJettonBalance(jettonWallet);
 
-            // Последовательно, а не Promise.all: залп упирается в лимит
-            // публичного RPC и возвращает отказы вместо данных.
+            // Sequentially, not Promise.all: a burst hits the limit of the
+            // public RPC and returns rejections instead of data.
             const positions: MyPosition[] = [];
             for (const t of TRANCHES) {
                 const master = addr.trancheMaster(t.id);
@@ -290,7 +290,7 @@ export function useProtocol(
                 const shareWallet = await readJettonWallet(master, owner);
                 const shares = await readJettonBalance(shareWallet);
 
-                // Заявка есть не всегда: она появляется только после сжигания.
+                // A ticket isn't always there: it appears only after a burn.
                 const ticket = await readTicketAddress(vaultAddr, owner, t.id);
                 const pending = await readTicket(ticket);
                 const pendingShares = pending?.pendingShares ?? 0n;
@@ -309,12 +309,12 @@ export function useProtocol(
 
             setData({ tranches, vault, headroom, rate, wallet: { balance, jettonWallet, positions } });
         } catch (e) {
-            // Публичные RPC регулярно отвечают 429 — показываем это как есть,
-            // а не как «протокол сломался».
-            const raw = e instanceof Error ? e.message : 'Не удалось прочитать данные сети';
-            // Купонные пулы на акциях честно реветят «stale price», когда фид
-            // Chainlink не обновлялся дольше maxStaleness — то есть пока рынок
-            // закрыт (выходные, праздники). Это не поломка: показываем спокойно.
+            // Public RPCs regularly answer 429 — we show it as-is,
+            // not as "the protocol broke".
+            const raw = e instanceof Error ? e.message : 'Could not read network data';
+            // Coupon stock pools honestly revert with "stale price" when the
+            // Chainlink feed hasn't updated for longer than maxStaleness — i.e. while the market
+            // is closed (weekends, holidays). It's not a failure: we show it calmly.
             const stalePrice = /stale price/i.test(raw);
             setError(
                 stalePrice
@@ -326,8 +326,8 @@ export function useProtocol(
         }
     }, [wallet, pool, solanaAddress, evmAddress]);
 
-    // Данные прошлой сети должны исчезнуть сразу, а не висеть до первого
-    // ответа новой: цифры чужого пула под чужой вкладкой хуже пустоты.
+    // The previous chain's data must disappear at once, not linger until the first
+    // response of the new one: another pool's numbers under another tab are worse than nothing.
     useEffect(() => {
         setData(null);
     }, [pool]);
@@ -336,10 +336,10 @@ export function useProtocol(
         let stopped = false;
         let timer: ReturnType<typeof setTimeout>;
 
-        // Отсчёт от ОКОНЧАНИЯ прошлого обновления, а не по расписанию.
-        // На публичном узле без ключа полный проход занимает секунды, и
-        // фиксированный интервал накладывал бы обновления друг на друга,
-        // держа узел под постоянной нагрузкой.
+        // Counted from the END of the previous refresh, not on a schedule.
+        // On a public node without a key a full pass takes seconds, and
+        // a fixed interval would overlap refreshes,
+        // keeping the node under constant load.
         const loop = async () => {
             await refresh();
             if (!stopped) timer = setTimeout(() => void loop(), REFRESH_GAP_MS);

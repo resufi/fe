@@ -48,8 +48,8 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	hyperevm: {
 		id: "hyperevm",
 		name: "Hyperliquid",
-		// Базовый актив — доля в HLP, вейлте маркетмейкера биржи. Доходность
-		// там своя, не стейкинговая, и просадки настоящие.
+		// Base asset: a share of HLP, the exchange's market-maker vault. Its
+		// yield is its own, not staking, and the drawdowns are real.
 		asset: "USDC",
 		unit: "USD",
 		deployed: true,
@@ -64,8 +64,8 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	robinhood: {
 		id: "robinhood",
 		name: "Robinhood",
-		// Базовый актив — токенизированный SPY (S&P 500). Стоимость доли
-		// считается в долларах через Chainlink; senior получает купон.
+		// Base asset: tokenized SPY (S&P 500). Share value in dollars via
+		// Chainlink; senior earns a coupon.
 		asset: "SPY",
 		unit: "USD",
 		deployed: true,
@@ -89,8 +89,8 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	arbitrum: {
 		id: "arbitrum",
 		name: "Arbitrum",
-		// Базовый актив — WETH; стоимость доли в долларах через Chainlink
-		// ETH/USD, senior получает купон.
+		// Base asset: WETH; share value in dollars via Chainlink ETH/USD,
+		// senior earns a coupon.
 		asset: "WETH",
 		unit: "USD",
 		deployed: true,
@@ -105,8 +105,8 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	base: {
 		id: "base",
 		name: "Base",
-		// Токенизированные акции Coinbase (B20): MSFT и NVDA. Стоимость доли
-		// в долларах через Chainlink, senior получает купон.
+		// Coinbase tokenized stocks (B20): MSFT and NVDA. Share value in
+		// dollars via Chainlink, senior earns a coupon.
 		asset: "Stocks",
 		unit: "USD",
 		deployed: true,
@@ -121,8 +121,8 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	monad: {
 		id: "monad",
 		name: "Monad",
-		// aprMON — застейканный MON (LST aPriori). Стоимость доли в долларах
-		// через адаптер MON/USD x курс aprMON; senior получает купон.
+		// aprMON: staked MON (aPriori LST). Share value in dollars via the
+		// MON/USD x aprMON-rate adapter; senior earns a coupon.
 		asset: "aprMON",
 		unit: "USD",
 		deployed: true,

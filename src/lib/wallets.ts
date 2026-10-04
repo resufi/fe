@@ -76,7 +76,7 @@ export async function connectStandard(w: Wallet): Promise<WalletAccount> {
 	};
 	const { accounts } = await feature.connect();
 	const account = accounts.find((a) => a.chains.includes(solanaChain())) ?? accounts[0];
-	if (!account) throw new Error("Кошелёк не вернул ни одного счёта");
+	if (!account) throw new Error("The wallet returned no accounts");
 	return account;
 }
 

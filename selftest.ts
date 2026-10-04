@@ -1,9 +1,9 @@
 /**
- * Проверка чистой логики фронтенда без браузера.
+ * Pure frontend logic checks, without a browser.
  *
- * Главное здесь — не форматирование, а то, что сообщение, которое собирает
- * интерфейс, побитово совпадает с тем, что принимают контракты. Ошибка в одном
- * бите Either-флага или в порядке полей означает потерянный депозит.
+ * The point here isn't formatting but that the message the
+ * interface builds is byte-for-byte what the contracts accept. A wrong bit in one
+ * Either flag or field order means a lost deposit.
  */
 import { Address, Cell } from '@ton/core';
 import { burnMessage, claimMessage, depositMessage, DEPOSIT_FORWARD_TON } from './src/lib/payloads.ts';
@@ -19,77 +19,77 @@ function check(name: string, cond: boolean, extra = '') {
     }
 }
 
-console.log('форматирование сумм');
-check('round-trip целого', parseAmount('1000') === 1000_000000000n);
-check('round-trip дробного', parseAmount('12.345') === 12_345000000n);
-check('мусор отвергается', parseAmount('abc') === null && parseAmount('') === null);
-check('ноль не депозит', parseAmount('0') === null);
-check('лишние знаки отвергаются', parseAmount('1.0000000001') === null);
+console.log('amount formatting');
+check('round-trip of an integer', parseAmount('1000') === 1000_000000000n);
+check('round-trip of a decimal', parseAmount('12.345') === 12_345000000n);
+check('garbage is rejected', parseAmount('abc') === null && parseAmount('') === null);
+check('zero is not a deposit', parseAmount('0') === null);
+check('extra decimals are rejected', parseAmount('1.0000000001') === null);
 
-// Разделители разрядов: то, что показали, должно читаться обратно.
-check('запятые как разделители разрядов принимаются', parseAmount('1,234.5') === 1234_500000000n);
-check('и дают то же, что без них', parseAmount('1,234.5') === parseAmount('1234.5'));
+// Thousands separators: what's displayed must read back.
+check('commas as thousands separators are accepted', parseAmount('1,234.5') === 1234_500000000n);
+check('and give the same as without them', parseAmount('1,234.5') === parseAmount('1234.5'));
 check(
-    'двусмысленная запятая отвергается, а не угадывается',
+    'an ambiguous comma is rejected, not guessed',
     parseAmount('1,5') === null,
     `"1,5" -> ${parseAmount('1,5')}`,
 );
-check('вывод читается обратно', parseAmount(fmtAmount(1234567_000000000n)) === 1234567_000000000n);
+check('output reads back', parseAmount(fmtAmount(1234567_000000000n)) === 1234567_000000000n);
 
 check(
-    'разряды делятся запятой',
+    'thousands are split by a comma',
     fmtAmount(1234567_000000000n) === '1,234,567',
     `-> "${fmtAmount(1234567_000000000n)}"`,
 );
-check('вывод дробного', fmtAmount(12_345000000n) === '12.34', `-> "${fmtAmount(12_345000000n)}"`);
-check('цена доли 1:1 у пустого транша', sharePrice(0n, 0n) === '1.0000');
-check('цена доли после убытка', sharePrice(50n, 100n) === '0.5000');
+check('decimal output', fmtAmount(12_345000000n) === '12.34', `-> "${fmtAmount(12_345000000n)}"`);
+check('share price 1:1 for an empty tranche', sharePrice(0n, 0n) === '1.0000');
+check('share price after a loss', sharePrice(50n, 100n) === '0.5000');
 
-console.log('\nсообщение депозита');
+console.log('\ndeposit message');
 const vault = new Address(0, Buffer.alloc(32, 0x11));
 const owner = new Address(0, Buffer.alloc(32, 0x22));
 const body = depositMessage(vault, owner, 1, 500_000000000n);
 
 const s = body.beginParse();
-check('опкод jetton transfer', s.loadUint(32) === 0x0f8a7ea5);
+check('jetton transfer opcode', s.loadUint(32) === 0x0f8a7ea5);
 s.loadUint(64); // queryId
-check('сумма на месте', s.loadCoins() === 500_000000000n);
-check('получатель — vault', s.loadAddress().equals(vault));
-check('излишек газа возвращается владельцу', s.loadAddress().equals(owner));
-check('customPayload отсутствует', s.loadMaybeRef() === null);
+check('amount in place', s.loadCoins() === 500_000000000n);
+check('recipient is the vault', s.loadAddress().equals(vault));
+check('excess gas returns to the owner', s.loadAddress().equals(owner));
+check('customPayload absent', s.loadMaybeRef() === null);
 const fwdTon = s.loadCoins();
-check('forwardTonAmount положителен', fwdTon === DEPOSIT_FORWARD_TON && fwdTon > 0n);
+check('forwardTonAmount is positive', fwdTon === DEPOSIT_FORWARD_TON && fwdTon > 0n);
 
-// Именно здесь ломается тихо: если Either-бит 0, контракт читает нагрузку
-// из остатка слайса, а не из ссылки.
-check('Either-бит указывает на ссылку', s.loadBit() === true);
+// This is where it breaks silently: if the Either bit is 0, the contract reads the payload
+// from the slice remainder, not from a reference.
+check('the Either bit points to a reference', s.loadBit() === true);
 const fwd = s.loadRef().beginParse();
-check('вид нагрузки = депозит', fwd.loadUint(8) === 0);
-check('номер транша', fwd.loadUint(8) === 1);
-check('в нагрузке больше ничего нет', fwd.remainingBits === 0 && fwd.remainingRefs === 0);
+check('payload kind = deposit', fwd.loadUint(8) === 0);
+check('tranche number', fwd.loadUint(8) === 1);
+check('nothing else in the payload', fwd.remainingBits === 0 && fwd.remainingRefs === 0);
 
-console.log('\nсообщения выхода');
-// Выход теперь начинается со СЖИГАНИЯ доли в кошельке жетона транша,
-// а не с заявки в контракт позиции: доли стали переводимым жетоном.
+console.log('\nexit messages');
+// Exit now starts with BURNING the share in the tranche jetton wallet,
+// not with a ticket to the position contract: shares are now a transferable jetton.
 const burn = burnMessage(40_000000000n, owner).beginParse();
-check('опкод сжигания (TEP-74)', burn.loadUint(32) === 0x595f07bc);
+check('burn opcode (TEP-74)', burn.loadUint(32) === 0x595f07bc);
 burn.loadUint(64); // queryId
-check('доли в сжигании', burn.loadCoins() === 40_000000000n);
-check('излишек газа возвращается владельцу', burn.loadAddress().equals(owner));
-check('customPayload при сжигании отсутствует', burn.loadMaybeRef() === null);
+check('shares in the burn', burn.loadCoins() === 40_000000000n);
+check('excess gas returns to the owner', burn.loadAddress().equals(owner));
+check('customPayload absent in the burn', burn.loadMaybeRef() === null);
 
 const claim = claimMessage().beginParse();
-check('опкод получения', claim.loadUint(32) === 0x52455553);
-check('у получения нет параметров', claim.remainingBits === 0);
+check('claim opcode', claim.loadUint(32) === 0x52455553);
+check('claim has no parameters', claim.remainingBits === 0);
 
-console.log('\nсериализация');
-check('BOC разбирается обратно', Cell.fromBase64(body.toBoc().toString('base64')).equals(body));
+console.log('\nserialization');
+check('BOC parses back', Cell.fromBase64(body.toBoc().toString('base64')).equals(body));
 
-// --- сборка транзакций Solana ------------------------------------------
+// --- Solana transaction building ------------------------------------------
 //
-// Порядок аккаунтов обязан совпадать с #[derive(Accounts)] в программе.
-// Перепутанный порядок даёт отказ на симуляции — но лучше поймать здесь.
-console.log('\nтранзакции Solana');
+// Account order must match #[derive(Accounts)] in the program.
+// A wrong order fails at simulation — but better to catch it here.
+console.log('\nSolana transactions');
 {
     const { PublicKey } = await import('@solana/web3.js');
     const { buildDeposit, ticketAddress, shareAccount } = await import('./src/lib/solanaTx.ts');
@@ -97,158 +97,158 @@ console.log('\nтранзакции Solana');
 
     const owner = new PublicKey('7mn1vG8eVM7F6sVUhMNkS4Qm1oLAm2nK7b4SDaq7ZmqK');
 
-    // PDA заявки выводится детерминированно — значит воспроизводимо.
+    // The ticket PDA is derived deterministically — so reproducibly.
     const t1 = ticketAddress(owner, 0).toBase58();
     const t2 = ticketAddress(owner, 0).toBase58();
-    check('адрес заявки детерминирован', t1 === t2);
+    check('ticket address is deterministic', t1 === t2);
     check(
-        'заявки разных траншей различаются',
+        'tickets of different tranches differ',
         ticketAddress(owner, 0).toBase58() !== ticketAddress(owner, 1).toBase58(),
     );
     check(
-        'счета долей разных траншей различаются',
+        'share accounts of different tranches differ',
         shareAccount(owner, 0).toBase58() !== shareAccount(owner, 2).toBase58(),
     );
 
-    // Дискриминатор Anchor: первые 8 байт sha256("global:deposit").
+    // Anchor discriminator: the first 8 bytes of sha256("global:deposit").
     const expected = new Uint8Array(
         await crypto.subtle.digest('SHA-256', new TextEncoder().encode('global:deposit')),
     ).slice(0, 8);
 
     const tx = await buildDeposit(owner, 1, 5_000_000_000n);
-    check('транзакция собрана', tx.length > 0);
+    check('transaction built', tx.length > 0);
     check(
-        'дискриминатор deposit на месте',
+        'deposit discriminator in place',
         [...tx].join(',').includes([...expected].join(',')),
     );
-    check('адреса пула подставлены', solanaDeployment.vault !== null);
+    check('pool addresses substituted', solanaDeployment.vault !== null);
 }
 
-// --- разрядность актива ---------------------------------------------------
+// --- asset decimals ---------------------------------------------------
 //
-// Самое опасное место интерфейса. У tsTON девять знаков, у tsUSDe шесть, и
-// применённая не к тому активу разрядность не даёт ни ошибки, ни отказа —
-// сумма просто оказывается в тысячу раз не той. Причём в parseAmount это
-// деньги пользователя: введённая «1» ушла бы как тысяча токенов.
-console.log('\nразрядность актива');
+// The most dangerous spot in the interface. tsTON has nine decimals, tsUSDe six, and
+// decimals applied to the wrong asset give neither an error nor a rejection —
+// the amount just ends up a thousandfold off. And in parseAmount that's
+// the user's money: an entered "1" would go out as a thousand tokens.
+console.log('\nasset decimals');
 {
-    check('ввод разбирается по мерке пула', parseAmount('1', 6n) === 1_000_000n);
-    check('девятка осталась девяткой', parseAmount('1', 9n) === 1_000_000_000n);
-    check('дробное тоже', parseAmount('1.5', 6n) === 1_500_000n);
+    check('input is parsed to the pool\'s scale', parseAmount('1', 6n) === 1_000_000n);
+    check('nine stays nine', parseAmount('1', 9n) === 1_000_000_000n);
+    check('a decimal too', parseAmount('1.5', 6n) === 1_500_000n);
     check(
-        'седьмой знак у шестизначного актива отвергается',
+        'a seventh decimal on a six-decimal asset is rejected',
         parseAmount('0.0000001', 6n) === null && parseAmount('0.0000001', 9n) === 100n,
     );
-    check('показ считает по активу', fmtAmount(1_000_000n, 2, 6n) === '1');
+    check('display scales by the asset', fmtAmount(1_000_000n, 2, 6n) === '1');
     check(
-        'та же сумма при девяти знаках — это ноль целых',
+        'the same amount at nine decimals is zero whole',
         fmtAmount(1_000_000n, 2, 9n) === '0',
     );
     check(
-        'разбор и показ сходятся обратно при обеих разрядностях',
+        'parse and display round-trip at both decimal scales',
         [6n, 9n].every((d) => fmtAmount(parseAmount('12.34', d)!, 2, d) === '12.34'),
     );
 }
 
-// --- реестр пулов ---------------------------------------------------------
+// --- pool registry ---------------------------------------------------------
 //
-// Пулов на TON теперь несколько, и у каждого свои адреса, разрядность и
-// мандат. Перепутанный набор выглядел бы как работающий интерфейс с чужими
-// числами, поэтому проверяем связность каждого.
-console.log('\nреестр пулов');
+// There are now several pools on TON, each with its own addresses, decimals and
+// mandate. A mixed-up set would look like a working interface with the wrong
+// numbers, so we check each one's consistency.
+console.log('\npool registry');
 {
     const { POOLS, findPool, poolsOfChain } = await import('./src/lib/pools.ts');
 
-    check('пулы вообще есть', POOLS.length > 0);
+    check('pools exist at all', POOLS.length > 0);
     check(
-        'идентификаторы не повторяются',
+        'ids don\'t repeat',
         new Set(POOLS.map((p) => p.id)).size === POOLS.length,
     );
     check(
-        'у каждого пула положительная разрядность',
+        'every pool has positive decimals',
         POOLS.every((p) => p.decimals > 0),
     );
-    // Целым токеном минимум быть не обязан: на Solana это 0.001. Но он
-    // обязан лежать вокруг одного токена — перепутанная разрядность сдвигает
-    // его на три знака и сразу выкидывает за эти границы.
+    // The minimum need not be a whole token: on Solana it's 0.001. But it
+    // must sit around one token — wrong decimals shift
+    // it by three digits and immediately throw it out of these bounds.
     check(
-        'минимальный взнос соразмерен своему активу',
+        'minimum deposit is commensurate with its asset',
         POOLS.every((p) => {
-            // Ловит ошибку разрядности (взнос не в тех масштабах), но достаточно
-            // широко: у дешёвого актива контрактный минимум $10 — это сотни
-            // токенов (aprMON ~$0.04 -> ~300 штук), и это не ошибка.
+            // Catches a decimals error (deposit at the wrong scale), but wide
+            // enough: for a cheap asset the contract's $10 minimum is hundreds
+            // of tokens (aprMON ~$0.04 -> ~300), and that's not an error.
             const one = 10n ** BigInt(p.decimals);
             return p.minDeposit >= one / 1000n && p.minDeposit <= one * 1000n;
         }),
     );
     check(
-        'развёрнутым считается только пул с адресом хранилища',
+        'only a pool with a vault address counts as deployed',
         POOLS.every((p) => !p.deployed || Boolean(p.vault)),
     );
     check(
-        'курс к GRAM есть только там, где он существует',
+        'a GRAM rate exists only where it actually does',
         POOLS.every((p) => !p.ratePool || p.asset === 'tsTON'),
     );
-    check('у каждой сети есть хотя бы один пул', poolsOfChain('ton').length > 0 && poolsOfChain('solana').length > 0);
-    check('забытый выбор пула не роняет приложение', findPool('нет-такого') === undefined);
+    check('every chain has at least one pool', poolsOfChain('ton').length > 0 && poolsOfChain('solana').length > 0);
+    check('a forgotten pool choice doesn\'t crash the app', findPool('no-such') === undefined);
 
-    // Экономика у сетей разная, и это не косметика: у "fee" senior ПЛАТИТ
-    // за защиту, у "coupon" — ПОЛУЧАЕТ фиксированную ставку. Знак
-    // противоположный, и подмена одной формы другой показала бы расход как
-    // доход.
+    // Economics differ per chain, and it's not cosmetic: in "fee" senior PAYS
+    // for protection, in "coupon" it EARNS a fixed rate. The sign is
+    // opposite, and swapping one for the other would show an expense as
+    // income.
     const coupon = POOLS.filter((p) => p.kind === 'coupon');
     const fee = POOLS.filter((p) => p.kind === 'fee');
-    check('купонные пулы объявляют свои ставки', coupon.every(
+    check('coupon pools declare their rates', coupon.every(
         (p) => (p.mandate.seniorRateBps ?? 0) > 0 && (p.mandate.mezzRateBps ?? 0) > 0,
     ));
-    check('и не объявляют платы за защиту', coupon.every(
+    check('and declare no protection fee', coupon.every(
         (p) => p.mandate.seniorFeeBps === 0 && p.mandate.mezzFeeBps === 0,
     ));
-    check('пулы с платой не объявляют купонов', fee.every(
+    check('fee pools declare no coupons', fee.every(
         (p) => p.mandate.seniorRateBps === undefined && p.mandate.mezzRateBps === undefined,
     ));
-    // У купонного пула потолка убытка нет: доли выводятся из стоимости пула
-    // заново. Ненулевой потолок означал бы обещание предела, которого нет.
-    check('у купонных пулов нет потолка убытка', coupon.every(
+    // A coupon pool has no loss ceiling: shares are re-derived from the pool's value
+    // each time. A non-zero ceiling would promise a limit that doesn't exist.
+    check('coupon pools have no loss ceiling', coupon.every(
         (p) => p.mandate.maxLossBps === 0,
     ));
-    check('у пулов с платой потолок задан', fee.every((p) => p.mandate.maxLossBps > 0));
+    check('fee pools have a ceiling set', fee.every((p) => p.mandate.maxLossBps > 0));
 
-    // Токены долей: без них позиция остаётся записью, а её нельзя ни
-    // продать, ни увидеть в кошельке. Адреса обязаны быть разными — один
-    // и тот же токен на двух траншах смешал бы риски молча.
+    // Share tokens: without them a position stays a ledger entry, which can be neither
+    // sold nor seen in a wallet. The addresses must differ — one
+    // and the same token on two tranches would silently mix the risks.
     const tokenised = POOLS.filter((p) => p.trancheMasters.length > 0);
-    check('у токенизированных пулов ровно три токена', tokenised.every(
+    check('tokenized pools have exactly three tokens', tokenised.every(
         (p) => p.trancheMasters.length === 3,
     ));
-    check('адреса токенов не повторяются', tokenised.every(
+    check('token addresses don\'t repeat', tokenised.every(
         (p) => new Set(p.trancheMasters.map((a) => a.toLowerCase())).size === 3,
     ));
-    // Registry есть не везде: на HyperEVM убыток наблюдается, а не
-    // объявляется, и объявлять его некому. Интерфейс обязан это пережить.
-    check('пул без registry — законное состояние', POOLS.every(
+    // Not every chain has a Registry: on HyperEVM loss is observed, not
+    // declared, and there's no one to declare it. The interface must survive that.
+    check('a pool with no registry is a valid state', POOLS.every(
         (p) => p.registry === null || p.registry.length > 0,
     ));
 
-    // Список кошельков EVM не должен оказываться пустым: раньше человек без
-    // расширения видел строку «No EVM wallet found» и упирался в тупик.
-    // Теперь даже при нулевом обнаружении остаются предложения поставить.
+    // The EVM wallet list must not end up empty: a person without an
+    // extension used to see "No EVM wallet found" and hit a dead end.
+    // Now even with zero discovery there are install suggestions.
     const { SUGGESTED } = await import('./src/lib/evmWallets.ts');
-    check('есть что предложить, если ничего не установлено', SUGGESTED.length >= 3);
-    check('у каждого предложения есть ссылка', SUGGESTED.every(
+    check('there\'s something to suggest if nothing is installed', SUGGESTED.length >= 3);
+    check('every suggestion has a link', SUGGESTED.every(
         (w) => w.url.startsWith('https://'),
     ));
-    check('Phantom не предлагается для HyperEVM', !SUGGESTED.some(
+    check('Phantom is not suggested for HyperEVM', !SUGGESTED.some(
         (w) => w.name.toLowerCase().includes('phantom'),
     ));
 }
 
-// --- переменные сборки ---------------------------------------------------
+// --- build variables ---------------------------------------------------
 //
-// Незаполненный секрет в CI приходит пустой строкой, а не отсутствием.
-// Если считать её значением, приложение подставит пустой адрес и начнёт
-// слать запросы само себе — ровно это и случилось на живом сайте.
-console.log('\nпеременные сборки');
+// An unfilled secret in CI arrives as an empty string, not as absence.
+// Treating it as a value makes the app substitute an empty address and start
+// sending requests to itself — exactly what happened on the live site.
+console.log('\nbuild variables');
 {
     const { env } = await import('./src/lib/env.ts');
     const P = globalThis.process.env;
@@ -258,14 +258,14 @@ console.log('\nпеременные сборки');
     P.RESU_TEST_VALUE = 'https://toncenter.com/api/v2/jsonRPC';
     delete P.RESU_TEST_MISSING;
 
-    check('пустая строка считается незаданной', env('RESU_TEST_EMPTY') === undefined);
-    check('пробелы считаются незаданными', env('RESU_TEST_SPACES') === undefined);
-    check('отсутствующая переменная — undefined', env('RESU_TEST_MISSING') === undefined);
+    check('an empty string counts as unset', env('RESU_TEST_EMPTY') === undefined);
+    check('whitespace counts as unset', env('RESU_TEST_SPACES') === undefined);
+    check('a missing variable is undefined', env('RESU_TEST_MISSING') === undefined);
     check(
-        'настоящее значение возвращается как есть',
+        'a real value is returned as-is',
         env('RESU_TEST_VALUE') === 'https://toncenter.com/api/v2/jsonRPC',
     );
 }
 
-console.log(failed === 0 ? '\nвсе проверки пройдены' : `\nпровалено: ${failed}`);
+console.log(failed === 0 ? '\nall checks passed' : `\nfailed: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);
