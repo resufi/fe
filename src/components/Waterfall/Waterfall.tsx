@@ -28,13 +28,24 @@ type Props = {
  *
  * For "coupon" pools the sign is opposite: there senior doesn't pay for
  * protection but earns a fixed rate, and junior takes not a premium
- * but the entire residual above those rates.
+ * but the entire residual above those rates. Junior has no fixed rate — its
+ * number is the leverage on the price move (pool / junior, i.e. 1 / junior's
+ * share), shown from the live split so it tracks the real proportions as the
+ * pool fills.
  */
-function rateLabel(id: number, m: Mandate, kind: PoolKind): string {
+function rateLabel(
+	id: number,
+	m: Mandate,
+	kind: PoolKind,
+	juniorAssets: bigint,
+	total: bigint,
+): string {
 	if (kind === "coupon") {
 		if (id === 2) return `+${fmtBps(m.seniorRateBps ?? 0)}`;
 		if (id === 1) return `+${fmtBps(m.mezzRateBps ?? 0)}`;
-		return "all the rest";
+		if (juniorAssets <= 0n) return "leveraged";
+		const lev = Number(total) / Number(juniorAssets);
+		return `${lev.toFixed(1)}×`;
 	}
 	if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
 	if (id === 1) {
@@ -102,7 +113,9 @@ export function Waterfall({
 							</span>
 
 							<span className={s.figures}>
-								<span className={`${s.rate} num`}>{rateLabel(id, mandate, kind)}</span>
+								<span className={`${s.rate} num`}>
+									{rateLabel(id, mandate, kind, tranches[0].totalAssets, total)}
+								</span>
 								<span className={`${s.pool} num`}>
 									{rate === null
 										? `${fmtAmount(state.totalAssets, 2, BigInt(decimals))} ${asset}`
