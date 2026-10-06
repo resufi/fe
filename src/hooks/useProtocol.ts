@@ -3,6 +3,7 @@ import { Address } from '@ton/core';
 import { useTonAddress } from '@tonconnect/ui-react';
 import { addrOf, TRANCHES } from '../lib/config';
 import type { Pool } from '../lib/pools';
+import type { ChainId } from '../lib/chains';
 import { readSolanaVault, readSolanaWallet, solanaDeployed } from '../lib/solana';
 import { readVault as readEvmVault, readWallet as readEvmWallet, EVM_CHAINS, type EvmPoolContracts, type EvmVaultState } from '../lib/evm';
 
@@ -120,8 +121,21 @@ function lossHeadroom(tranches: TrancheState[], vault: VaultState): bigint {
     return byMandate < byAssets ? byMandate : byAssets;
 }
 
-/** The pause between refreshes, counted from the end of the previous one. */
-const REFRESH_GAP_MS = hasApiKey ? 15000 : 45000;
+/**
+ * The pause between refreshes, counted from the end of the previous one.
+ *
+ * Per chain, because the limit belongs to the node. The toncenter key used to
+ * set the pace for every chain at once, Base included, where it means nothing:
+ * a TON key made the Base loop three times faster against a node that had
+ * never heard of it.
+ *
+ * An EVM pass is one `eth_call` through multicall, so 20s is cheap. TON needs
+ * a dozen separate reads, hence the gap three times longer without a key.
+ */
+function refreshGapMs(chain: ChainId): number {
+    if (chain in EVM_CHAINS) return 20000;
+    return hasApiKey ? 15000 : 45000;
+}
 
 export function useProtocol(
     pool: Pool,
@@ -309,9 +323,15 @@ export function useProtocol(
 
             setData({ tranches, vault, headroom, rate, wallet: { balance, jettonWallet, positions } });
         } catch (e) {
-            // Public RPCs regularly answer 429 — we show it as-is,
-            // not as "the protocol broke".
             const raw = e instanceof Error ? e.message : 'Could not read network data';
+            /*
+             * A public node answers 429 when it dislikes the pace. The reader
+             * already waits and retries, so by the time it reaches here the
+             * limit has outlasted the retries — that is about the node, not
+             * about the protocol, and the numbers already on screen are still
+             * the numbers. Previous data stays; this only labels it.
+             */
+            const limited = /429|rate limit|too many requests/i.test(raw);
             // Coupon stock pools honestly revert with "stale price" when the
             // Chainlink feed hasn't updated for longer than maxStaleness — i.e. while the market
             // is closed (weekends, holidays). It's not a failure: we show it calmly.
@@ -319,7 +339,9 @@ export function useProtocol(
             setError(
                 stalePrice
                     ? 'Price feed is paused — the stock market is closed. Live values resume when it reopens.'
-                    : raw,
+                    : limited
+                        ? 'The public node is rate-limiting us. Numbers may be a little behind; the next refresh usually gets through.'
+                        : raw,
             );
         } finally {
             setLoading(false);
@@ -342,7 +364,7 @@ export function useProtocol(
         // keeping the node under constant load.
         const loop = async () => {
             await refresh();
-            if (!stopped) timer = setTimeout(() => void loop(), REFRESH_GAP_MS);
+            if (!stopped) timer = setTimeout(() => void loop(), refreshGapMs(pool.chain));
         };
         void loop();
 
