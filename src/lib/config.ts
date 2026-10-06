@@ -82,30 +82,25 @@ export function addrOf(pool: Pool) {
  * a tranche needed edits in three places. Here `hue` is a token name from
  * `styles/tokens.css`; the component feeds it into its own `--hue`.
  */
-/*
- * The names speak of role, not seniority: Junior/Middle/Senior
- * read like a hiring grade. The keys stayed the same — they're tied to the
- * contracts and tranche order; only the labels change.
- */
 export const TRANCHES = [
 	{
 		id: 0,
 		key: "junior",
-		name: "Buffer",
+		name: "Junior",
 		order: "Absorbs losses first",
 		hue: "--junior",
 	},
 	{
 		id: 1,
 		key: "mezzanine",
-		name: "Balance",
+		name: "Middle",
 		order: "Absorbs losses second",
 		hue: "--mezz",
 	},
 	{
 		id: 2,
 		key: "senior",
-		name: "Shield",
+		name: "Senior",
 		order: "Absorbs losses last",
 		hue: "--senior",
 	},

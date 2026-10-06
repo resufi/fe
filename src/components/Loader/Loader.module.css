@@ -6,13 +6,28 @@
 	justify-items: center;
 	gap: var(--s5);
 	background: var(--bg);
-	z-index: 10;
+	z-index: 100;
+	transition: opacity 0.5s ease;
+	/* The screen sits over the page — gestures must not reach through. */
+	touch-action: none;
+	overscroll-behavior: contain;
+}
+
+.leaving {
+	opacity: 0;
+	pointer-events: none;
 }
 
 .mark {
 	width: 96px;
-	height: auto;
 	display: block;
+}
+
+/* The mark is inline markup now — the wrapper sets its size. */
+.mark svg {
+	display: block;
+	width: 100%;
+	height: auto;
 }
 
 .sign {

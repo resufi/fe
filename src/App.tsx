@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTonAddress } from "@tonconnect/ui-react";
 
 import { TRANCHES } from "./lib/config.ts";
@@ -23,8 +23,6 @@ import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
 import { Loader } from "./components/Loader/Loader.tsx";
 import { HeroSkeleton } from "./components/HeroSkeleton/HeroSkeleton.tsx";
 import css from "./App.module.css";
-
-const LOADER_MIN_MS = 3800;
 
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
@@ -67,24 +65,19 @@ export default function App() {
 		/>
 	);
 
-	const booted = useRef(false);
-	useEffect(() => {
-		if (data) booted.current = true;
-	}, [data]);
-
-	const [minShown, setMinShown] = useState(false);
-	useEffect(() => {
-		const t = setTimeout(() => setMinShown(true), LOADER_MIN_MS);
-		return () => clearTimeout(t);
-	}, []);
-
-	if (!booted.current && (!minShown || (pool.deployed && !data && !error))) {
-		return <Loader />;
-	}
-
+	/*
+	 * The opening screen runs once per visit and owns its own exit: it decides
+	 * when its animation is finished, we only tell it whether there is anything
+	 * to show underneath. A pool switch later must not bring it back, so this
+	 * is state and not a check over `data`.
+	 */
+	const [intro, setIntro] = useState(true);
+	const ready = Boolean(data) || Boolean(error) || !pool.deployed;
 
 	return (
 		<div className={css.page}>
+			{intro && <Loader ready={ready} onDone={() => setIntro(false)} />}
+
 			<header className={css.topbar}>
 				<span className={css.brand}>
 					<Logo />
@@ -255,7 +248,7 @@ function Details({
 					<dd className="num">{fmtDuration(vault.withdrawDelay)}</dd>
 				</div>
 				<div>
-					<dt>Shield fee</dt>
+					<dt>Senior fee</dt>
 					<dd className="num">{fmtBps(m.seniorFeeBps)}</dd>
 				</div>
 				<div>
