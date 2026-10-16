@@ -13,6 +13,14 @@ import {
 	type BasketState,
 	type BasketWalletState,
 } from "../../lib/baskets.ts";
+import {
+	zapSupported,
+	quoteUsdcToAsset,
+	readUsdcBalance,
+	readUsdcAllowance,
+	encodeApproveUsdc,
+	type ZapQuote,
+} from "../../lib/zap.ts";
 import css from "../DepositPanel/DepositPanel.module.css";
 
 /**
@@ -22,9 +30,14 @@ import css from "../DepositPanel/DepositPanel.module.css";
  *
  * Deposit is one asset in; exit is redemption in kind (a pro-rata slice of the
  * tranche tokens), which is instant and needs no vault window.
+ *
+ * Two ways to fund: with the underlying directly, or "Pay with USDC" — a zap
+ * that swaps USDC into the underlying via 0x, then the ordinary deposit runs.
  */
 export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWallet }) {
 	const baskets = basketsOfChain(chain);
+	const canZap = zapSupported(chain);
+
 	const [sel, setSel] = useState(0);
 	const [raw, setRaw] = useState("");
 	const [state, setState] = useState<BasketState | null>(null);
@@ -32,16 +45,28 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 	const [busy, setBusy] = useState(false);
 	const [note, setNote] = useState<string | null>(null);
 
+	// Zap (pay with USDC) state.
+	const [payUsdc, setPayUsdc] = useState(false);
+	const [usdcBal, setUsdcBal] = useState<bigint | null>(null);
+	const [quote, setQuote] = useState<ZapQuote | null>(null);
+	const [quoting, setQuoting] = useState(false);
+	const [usdcAllowance, setUsdcAllowance] = useState<bigint | null>(null);
+
 	const b: Basket | undefined = baskets[sel];
 	const decimals = b ? BigInt(b.assetDecimals) : 18n;
-	const amount = parseAmount(raw, decimals);
+	const amount = parseAmount(raw, payUsdc ? 6n : decimals);
 
 	async function refresh() {
 		if (!b) return;
 		try {
 			setState(await readBasket(b));
-			if (wallet.address && !wallet.wrongChain) setW(await readBasketWallet(b, wallet.address));
-			else setW(null);
+			if (wallet.address && !wallet.wrongChain) {
+				setW(await readBasketWallet(b, wallet.address));
+				if (canZap) setUsdcBal(await readUsdcBalance(chain, wallet.address));
+			} else {
+				setW(null);
+				setUsdcBal(null);
+			}
 		} catch {
 			/* a transient RPC failure just leaves the last values */
 		}
@@ -52,9 +77,45 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [b?.address, wallet.address, wallet.wrongChain]);
 
+	// Fetch a 0x quote when paying with USDC. Debounced lightly so typing does
+	// not spam the API.
+	useEffect(() => {
+		if (!payUsdc || !b || !wallet.address || wallet.wrongChain || amount === null || amount <= 0n) {
+			setQuote(null);
+			return;
+		}
+		let live = true;
+		setQuoting(true);
+		const t = setTimeout(() => {
+			quoteUsdcToAsset(chain, b.asset, amount, wallet.address!)
+				.then(async (q) => {
+					if (!live) return;
+					setQuote(q);
+					// LI.FI does not say if the allowance suffices; read it ourselves.
+					if (q.ok) setUsdcAllowance(await readUsdcAllowance(chain, wallet.address!, q.approvalAddress));
+				})
+				.catch(() => live && setQuote(null))
+				.finally(() => live && setQuoting(false));
+		}, 400);
+		return () => {
+			live = false;
+			clearTimeout(t);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [payUsdc, b?.asset, raw, wallet.address, wallet.wrongChain, chain]);
+
 	if (baskets.length === 0 || !b) return null;
 
-	const needsApproval = amount !== null && w !== null && w.allowance < amount;
+	const needsApproval = !payUsdc && amount !== null && w !== null && w.allowance < amount;
+	const needsUsdcApproval =
+		payUsdc &&
+		!!quote &&
+		quote.ok &&
+		usdcAllowance !== null &&
+		amount !== null &&
+		usdcAllowance < amount;
+
+	// Validation differs per funding mode.
 	const problem = !wallet.address
 		? "Connect a wallet"
 		: wallet.wrongChain
@@ -63,17 +124,24 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				? "Loading…"
 				: raw && amount === null
 					? "Invalid amount"
-					: amount !== null && amount > w.assetBalance
-						? "Exceeds your balance"
-						: null;
+					: payUsdc
+						? usdcBal !== null && amount !== null && amount > usdcBal
+							? "Exceeds your USDC balance"
+							: amount !== null && amount > 0n && !quoting && quote && !quote.ok
+								? "No swap route for this amount"
+								: null
+						: amount !== null && amount > w.assetBalance
+							? "Exceeds your balance"
+							: null;
 
-	async function run(to: string, data: string, done: string) {
+	async function run(to: string, data: string, done: string, after?: () => void) {
 		setBusy(true);
 		setNote(null);
 		try {
 			const hash = await wallet.send(to, data);
 			setNote(`${done} ${hash.slice(0, 10)}…`);
 			setTimeout(() => void refresh(), 4000);
+			after?.();
 		} catch (e) {
 			setNote(e instanceof Error ? e.message : "Transaction rejected");
 		} finally {
@@ -83,6 +151,24 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 
 	function onPrimary() {
 		if (amount === null || !b) return;
+		if (payUsdc) {
+			if (!quote || !quote.ok) return;
+			if (needsUsdcApproval) {
+				const { to, data } = encodeApproveUsdc(chain, quote.approvalAddress);
+				void run(to, data, "USDC approved.", () =>
+					setUsdcAllowance((1n << 256n) - 1n),
+				);
+			} else {
+				// Swap USDC -> underlying. After it lands, flip back to asset mode so
+				// the ordinary deposit (which reads the real received balance) runs.
+				void run(quote.to, quote.data, `Swapped to ${b.assetSymbol} — now deposit.`, () => {
+					setPayUsdc(false);
+					setRaw("");
+					setQuote(null);
+				});
+			}
+			return;
+		}
 		if (needsApproval) {
 			const { to, data } = encodeApprove(b);
 			void run(to, data, "Approved.");
@@ -101,6 +187,20 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 	// Position value in wad USD = shares (1e18) x sharePrice (wad) / 1e18.
 	const positionUsd = w && state ? (w.shares * state.sharePrice) / 10n ** 18n : 0n;
 
+	const inputDecimals = payUsdc ? 6 : b.assetDecimals;
+	const inputBalance = payUsdc ? usdcBal : w?.assetBalance ?? null;
+	const inputSymbol = payUsdc ? "USDC" : b.assetSymbol;
+
+	const primaryLabel = busy
+		? "Sending…"
+		: payUsdc
+			? needsUsdcApproval
+				? "Approve USDC"
+				: `Swap USDC → ${b.assetSymbol}`
+			: needsApproval
+				? `Approve ${b.assetSymbol}`
+				: `Deposit into ${b.label}`;
+
 	return (
 		<section className={css.panel}>
 			<header className={css.head}>
@@ -109,11 +209,12 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 					type="button"
 					className={`${css.balance} num`}
 					onClick={() =>
-						w && setRaw(fmtAmount(w.assetBalance, b.assetDecimals, decimals).replace(/[\s,]/g, ""))
+						inputBalance !== null &&
+						setRaw(fmtAmount(inputBalance, inputDecimals, BigInt(inputDecimals)).replace(/[\s,]/g, ""))
 					}
-					disabled={!w || w.assetBalance === 0n}
+					disabled={inputBalance === null || inputBalance === 0n}
 				>
-					{w ? `${fmtAmount(w.assetBalance, 2, decimals)} ${b.assetSymbol}` : "…"}
+					{inputBalance !== null ? `${fmtAmount(inputBalance, 2, BigInt(inputDecimals))} ${inputSymbol}` : "…"}
 				</button>
 			</header>
 
@@ -138,21 +239,62 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				))}
 			</div>
 
+			{canZap && (
+				<div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+					{[false, true].map((mode) => (
+						<button
+							key={String(mode)}
+							type="button"
+							className={css.balance}
+							onClick={() => {
+								setPayUsdc(mode);
+								setRaw("");
+								setNote(null);
+								setQuote(null);
+							}}
+							style={{
+								padding: "4px 10px",
+								fontWeight: payUsdc === mode ? 700 : 500,
+								opacity: payUsdc === mode ? 1 : 0.55,
+							}}
+						>
+							{mode ? "Pay with USDC" : `Pay with ${b.assetSymbol}`}
+						</button>
+					))}
+				</div>
+			)}
+
 			<input
 				className={`${css.input} num`}
 				inputMode="decimal"
 				placeholder="0"
 				value={raw}
 				onChange={(e) => setRaw(e.target.value)}
-				aria-label="Deposit amount"
+				aria-label={payUsdc ? "USDC amount" : "Deposit amount"}
 			/>
+
+			{payUsdc && amount !== null && amount > 0n && (
+				<p className="small muted" style={{ marginTop: 2 }}>
+					{quoting
+						? "Fetching best price…"
+						: quote && quote.ok
+							? `≈ ${fmtAmount(quote.buyAmount, 4, decimals)} ${b.assetSymbol} (min ${fmtAmount(
+									quote.minBuyAmount,
+									4,
+									decimals,
+								)} after slippage)`
+							: quote && !quote.ok
+								? "No swap route for this amount."
+								: ""}
+				</p>
+			)}
 
 			<button
 				className={css.submit}
 				onClick={onPrimary}
-				disabled={busy || !!problem || amount === null}
+				disabled={busy || !!problem || amount === null || (payUsdc && (!quote || !quote.ok))}
 			>
-				{busy ? "Sending…" : needsApproval ? `Approve ${b.assetSymbol}` : `Deposit into ${b.label}`}
+				{primaryLabel}
 			</button>
 
 			{w && w.shares > 0n && (
@@ -175,8 +317,9 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			{problem && <p className={css.problem}>{problem}</p>}
 			{note && <p className={css.note}>{note}</p>}
 			<p className={css.gas}>
-				Deposit one asset; the basket splits it across Senior/Middle/Junior. Exit returns the
-				tranche tokens pro-rata.
+				{payUsdc
+					? "USDC is swapped to the underlying via 0x, then deposited. Slippage applies; you deposit what the swap actually returns."
+					: "Deposit one asset; the basket splits it across Senior/Middle/Junior. Exit returns the tranche tokens pro-rata."}
 			</p>
 		</section>
 	);
