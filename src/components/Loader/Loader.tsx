@@ -80,7 +80,10 @@ export function Loader({ ready, onDone }: Props) {
 	 */
 	useLayoutEffect(() => {
 		const svg = markRef.current?.querySelector("svg");
-		svg?.setCurrentTime(0);
+		// setCurrentTime is the SMIL timeline API: present in browsers, absent in
+		// jsdom (our smoke test). Optional-call it so a non-SMIL environment skips
+		// the rewind instead of throwing and tearing down the whole tree.
+		svg?.setCurrentTime?.(0);
 	}, []);
 
 	const reduced =
