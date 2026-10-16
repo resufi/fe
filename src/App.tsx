@@ -17,6 +17,7 @@ import { SolanaPanel } from "./components/SolanaPanel/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
 import { useEvmWallet } from "./hooks/useEvmWallet.ts";
 import { EvmPanel } from "./components/EvmPanel/EvmPanel.tsx";
+import { BasketsPanel } from "./components/BasketsPanel/BasketsPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
@@ -209,6 +210,7 @@ export default function App() {
 									Pick a tranche, then connect a wallet to deposit.
 								</p>
 							)}
+							{chain in EVM_CHAINS && <BasketsPanel chain={chain} wallet={evm} />}
 						</div>
 					</div>
 
