@@ -120,16 +120,189 @@ const words = (hex: string): bigint[] => {
 
 let nextId = 1;
 
-async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
-	const res = await fetch(url, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params }),
+/**
+ * A rate-limited node answers a burst with rejections, not data.
+ *
+ * `mainnet.base.org` lets about eight requests through back to back and then
+ * returns 429 for the rest — a full pool pass used to need thirteen, so the
+ * tail of every refresh arrived as errors. Two things fix that: the pass is
+ * now one `eth_call` (see `multicall`), and whatever is left goes through this
+ * queue, one request at a time with a gap between them.
+ *
+ * Shaped after `enqueue` in chain.ts, which does the same for toncenter. Kept
+ * per node: the chains have separate limits and must not wait on each other.
+ */
+const MIN_GAP_MS = 250;
+
+const RETRIES = 4;
+
+const queues = new Map<string, Promise<unknown>>();
+const lastAt = new Map<string, number>();
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** The node refused the pace, not the call — worth repeating. */
+class RateLimited extends Error {
+	constructor() {
+		super("EVM RPC 429");
+		this.name = "RateLimited";
+	}
+}
+
+/*
+ * A limit shows up in two shapes: as HTTP 429, and — inside a batch, where the
+ * envelope is 200 — as a JSON-RPC error. Base sends -32016 "over rate limit";
+ * other nodes word it their own way, so the message is checked too.
+ */
+const isRateLimited = (e: unknown): boolean =>
+	e instanceof RateLimited ||
+	/rate limit|too many requests|429/i.test(
+		e instanceof Error ? e.message : String(e),
+	);
+
+function enqueue<T>(url: string, fn: () => Promise<T>): Promise<T> {
+	const prev = queues.get(url) ?? Promise.resolve();
+	const run = prev.then(async () => {
+		for (let attempt = 0; ; attempt++) {
+			const wait = MIN_GAP_MS - (Date.now() - (lastAt.get(url) ?? 0));
+			if (wait > 0) await sleep(wait);
+			try {
+				return await fn();
+			} catch (e) {
+				if (!isRateLimited(e) || attempt >= RETRIES) throw e;
+				await sleep(1000 * 2 ** attempt);
+			} finally {
+				lastAt.set(url, Date.now());
+			}
+		}
 	});
-	if (!res.ok) throw new Error(`EVM RPC ${res.status}`);
-	const json = (await res.json()) as { result?: T; error?: { message: string } };
-	if (json.error) throw new Error(json.error.message);
-	return json.result as T;
+
+	queues.set(url, run.catch(() => undefined));
+	return run;
+}
+
+async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T> {
+	return enqueue(url, async () => {
+		const res = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params }),
+		});
+		if (res.status === 429) throw new RateLimited();
+		if (!res.ok) throw new Error(`EVM RPC ${res.status}`);
+		const json = (await res.json()) as { result?: T; error?: { code?: number; message: string } };
+		if (json.error) {
+			if (json.error.code === -32016 || isRateLimited(json.error.message)) {
+				throw new RateLimited();
+			}
+			throw new Error(json.error.message);
+		}
+		return json.result as T;
+	});
+}
+
+/**
+ * Multicall3 — the same address on every EVM chain, Base included.
+ *
+ * Batching plain JSON-RPC does not help: the node counts calls, not requests.
+ * Base refuses a batch of thirteen outright ("maximum 10 calls in 1 batch"),
+ * and inside a batch of ten half the calls come back with "over rate limit" —
+ * under HTTP 200, where a status check cannot see them. For the node a
+ * multicall is one call, so this is the only batching that actually counts.
+ */
+const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
+/** aggregate3((address,bool,bytes)[]) */
+const SIG_AGGREGATE3 = "0x82ad56cb";
+
+type Call = { to: string; data: string };
+
+export type CallResult = { success: boolean; data: string };
+
+function encodeAggregate3(calls: Call[]): string {
+	const structs = calls.map((c) => {
+		const body = c.data.replace(/^0x/, "");
+		const len = body.length / 2;
+		// Dynamic bytes are padded to a whole number of words.
+		const padded = body.padEnd(Math.ceil(len / 32) * 64, "0");
+		// target, allowFailure, offset of the bytes inside the struct.
+		return word(c.to) + word(1) + word(0x60) + word(len) + padded;
+	});
+
+	// Heads hold each struct's offset from the start of the array's data.
+	let cursor = calls.length * 32;
+	const heads = structs.map((st) => {
+		const head = word(cursor);
+		cursor += st.length / 2;
+		return head;
+	});
+
+	return (
+		SIG_AGGREGATE3 + word(0x20) + word(calls.length) + heads.join("") + structs.join("")
+	);
+}
+
+function decodeAggregate3(hex: string): CallResult[] {
+	const body = hex.replace(/^0x/, "");
+	const slot = (i: number) => BigInt("0x" + body.slice(i * 64, i * 64 + 64));
+
+	const arr = Number(slot(0)) / 32;
+	const n = Number(slot(arr));
+	const base = arr + 1;
+
+	const out: CallResult[] = [];
+	for (let i = 0; i < n; i++) {
+		const st = base + Number(slot(base + i)) / 32;
+		const bytes = st + Number(slot(st + 1)) / 32;
+		const len = Number(slot(bytes));
+		out.push({
+			success: slot(st) === 1n,
+			data: "0x" + body.slice((bytes + 1) * 64, (bytes + 1) * 64 + len * 2),
+		});
+	}
+	return out;
+}
+
+/** Error(string) — how a `require` reaches us through a failed multicall. */
+const ERROR_STRING = "08c379a0";
+
+function revertReason(data: string): string | null {
+	const body = data.replace(/^0x/, "");
+	if (!body.startsWith(ERROR_STRING)) return null;
+	const tail = body.slice(ERROR_STRING.length);
+	const len = Number(BigInt("0x" + tail.slice(64, 128)));
+	const chars = tail.slice(128, 128 + len * 2).match(/../g) ?? [];
+	return new TextDecoder().decode(
+		Uint8Array.from(chars.map((h) => parseInt(h, 16))),
+	);
+}
+
+/**
+ * Every read of one pass in a single request.
+ *
+ * `allowFailure` is on for all of them: on coupon stock pools `nav()` reverts
+ * with "stale price" while the market is closed, and that is a state to show,
+ * not a reason to lose the rest of the numbers. The reverting call is rethrown
+ * with its own reason so the caller can tell the two apart.
+ */
+async function multicall(chain: ChainId, calls: Call[]): Promise<CallResult[]> {
+	const hex = await rpc<string>(evmRpc(chain), "eth_call", [
+		{ to: MULTICALL3, data: encodeAggregate3(calls) },
+		"latest",
+	]);
+	/*
+	 * An address with no code answers with empty data, and the decoder would
+	 * fail on it with something unreadable. All five of our chains have
+	 * Multicall3 at the canonical address — this is for the sixth.
+	 */
+	if (!hex || hex === "0x") throw new Error(`No Multicall3 on ${chain}`);
+	return decodeAggregate3(hex);
+}
+
+function take(results: CallResult[], i: number): bigint[] {
+	const r = results[i];
+	if (!r.success) throw new Error(revertReason(r.data) ?? "EVM call reverted");
+	return words(r.data);
 }
 
 /** A pool's addresses on an EVM chain. */
@@ -142,9 +315,6 @@ export type EvmPoolContracts = {
 	trancheTokens: readonly string[];
 };
 
-const call = (c: EvmPoolContracts, to: string, data: string) =>
-	rpc<string>(evmRpc(c.chain), "eth_call", [{ to, data }, "latest"]).then(words);
-
 export type EvmVaultState = {
 	nav: bigint;
 	values: [bigint, bigint, bigint];
@@ -152,18 +322,26 @@ export type EvmVaultState = {
 };
 
 /**
- * Pool state. Sequentially, not in a burst: a public node is rate-limited,
- * and a batch of parallel requests comes back as rejections, not data.
+ * Pool state: five reads in one request.
+ *
+ * It used to be five requests in a row, and together with the wallet pass that
+ * made thirteen — more than a public node lets through back to back.
  */
 export async function readVault(c: EvmPoolContracts): Promise<EvmVaultState> {
-	const [nav] = await call(c, c.vault, SIG.nav);
-	const vals = await call(c, c.vault, SIG.values);
-	const shares: bigint[] = [];
-	for (const i of [0, 1, 2]) shares.push((await call(c, c.vault, encode(SIG.totalShares, i)))[0]);
+	const res = await multicall(c.chain, [
+		{ to: c.vault, data: SIG.nav },
+		{ to: c.vault, data: SIG.values },
+		...[0, 1, 2].map((i) => ({ to: c.vault, data: encode(SIG.totalShares, i) })),
+	]);
+
+	// nav() first and on its own: its "stale price" revert is the signal the
+	// caller watches for, and it must not be shadowed by a later failure.
+	const [nav] = take(res, 0);
+	const vals = take(res, 1);
 	return {
 		nav,
 		values: [vals[0], vals[1], vals[2]],
-		totalShares: shares as [bigint, bigint, bigint],
+		totalShares: [0, 1, 2].map((i) => take(res, 2 + i)[0]) as [bigint, bigint, bigint],
 	};
 }
 
@@ -174,17 +352,26 @@ export type EvmWalletState = {
 	tickets: { shares: bigint; unlockAt: number }[];
 };
 
+/** Wallet state: eight reads in one request. */
 export async function readWallet(c: EvmPoolContracts, owner: string): Promise<EvmWalletState> {
-	const [balance] = await call(c, c.asset, encode(SIG.balanceOf, owner));
-	const [allowance] = await call(c, c.asset, encode(SIG.allowance, owner, c.vault));
+	const res = await multicall(c.chain, [
+		{ to: c.asset, data: encode(SIG.balanceOf, owner) },
+		{ to: c.asset, data: encode(SIG.allowance, owner, c.vault) },
+		// Held shares live in the tranche token, not the pool. Exit tickets —
+		// live on the pool.
+		...[0, 1, 2].flatMap((i) => [
+			{ to: c.trancheTokens[i], data: encode(SIG.balanceOf, owner) },
+			{ to: c.vault, data: encode(SIG.tickets, owner, i) },
+		]),
+	]);
 
-	// Held shares live in the tranche token, not the pool. Exit tickets —
-	// live on the pool.
+	const [balance] = take(res, 0);
+	const [allowance] = take(res, 1);
 	const shares: bigint[] = [];
 	const tickets: { shares: bigint; unlockAt: number }[] = [];
 	for (const i of [0, 1, 2]) {
-		shares.push((await call(c, c.trancheTokens[i], encode(SIG.balanceOf, owner)))[0]);
-		const t = await call(c, c.vault, encode(SIG.tickets, owner, i));
+		shares.push(take(res, 2 + i * 2)[0]);
+		const t = take(res, 3 + i * 2);
 		tickets.push({ shares: t[0], unlockAt: Number(t[1]) });
 	}
 	return { balance, allowance, shares: shares as [bigint, bigint, bigint], tickets };
