@@ -19,6 +19,7 @@ import { useEvmWallet } from "./hooks/useEvmWallet.ts";
 import { EvmPanel } from "./components/EvmPanel/EvmPanel.tsx";
 import { BasketsPanel } from "./components/BasketsPanel/BasketsPanel.tsx";
 import { IndexPanel } from "./components/IndexPanel/IndexPanel.tsx";
+import { PointsPanel } from "./components/PointsPanel/PointsPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
@@ -215,6 +216,8 @@ export default function App() {
 							{chain in EVM_CHAINS && <IndexPanel chain={chain} wallet={evm} />}
 						</div>
 					</div>
+
+					<PointsPanel address={chain === "solana" ? solana.address : evm.address} />
 
 					<Details vault={data.vault} pool={pool} loading={loading} />
 				</>
