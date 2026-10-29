@@ -191,5 +191,6 @@ export const MANDATE: Mandate = {
 	mezzFeeBps: 0,
 	seniorRateBps: 600,
 	mezzRateBps: 1200,
+	weights: [35, 35, 30],
 	minDeposit: "1000000",
 };

@@ -37,6 +37,7 @@ export const MANDATE: Mandate = {
 	mezzFeeBps: 0,
 	seniorRateBps: 600,
 	mezzRateBps: 1000,
+	weights: [20, 20, 60],
 	// All OracleVault amounts are wad USD (1e18). Minimum $10.
 	minDeposit: (10n ** 18n * 10n).toString(),
 };

@@ -10,6 +10,7 @@ import {
 	encodeDeposit,
 	encodeRedeem,
 	type Basket,
+	type Profile,
 	type BasketState,
 	type BasketWalletState,
 } from "../../lib/baskets.ts";
@@ -22,6 +23,10 @@ import {
 	type ZapQuote,
 } from "../../lib/zap.ts";
 import css from "../DepositPanel/DepositPanel.module.css";
+import bs from "./BasketsPanel.module.css";
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const PROFILE_ORDER: Profile[] = ["conservative", "balanced", "aggressive"];
 
 /**
  * One-click risk profiles over a single vault. Hidden entirely when no basket
@@ -38,7 +43,9 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 	const baskets = basketsOfChain(chain);
 	const canZap = zapSupported(chain);
 
-	const [sel, setSel] = useState(0);
+	const assets = [...new Set(baskets.map((x) => x.assetSymbol))];
+	const [assetSel, setAssetSel] = useState(assets[0] ?? "");
+	const [profileSel, setProfileSel] = useState<Profile>("balanced");
 	const [raw, setRaw] = useState("");
 	const [state, setState] = useState<BasketState | null>(null);
 	const [w, setW] = useState<BasketWalletState | null>(null);
@@ -52,7 +59,15 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 	const [quoting, setQuoting] = useState(false);
 	const [usdcAllowance, setUsdcAllowance] = useState<bigint | null>(null);
 
-	const b: Basket | undefined = baskets[sel];
+	// Two-axis selection: pick an asset, then a risk profile for it. Guard a
+	// stale asset (chain switched) by falling back to the first.
+	const activeAsset = assets.includes(assetSel) ? assetSel : assets[0] ?? "";
+	const forAsset = baskets.filter((x) => x.assetSymbol === activeAsset);
+	const orderedProfiles = PROFILE_ORDER.map((pr) => forAsset.find((x) => x.profile === pr)).filter(
+		(x): x is Basket => Boolean(x),
+	);
+	const b: Basket | undefined =
+		orderedProfiles.find((x) => x.profile === profileSel) ?? orderedProfiles[0];
 	const decimals = b ? BigInt(b.assetDecimals) : 18n;
 	const amount = parseAmount(raw, payUsdc ? 6n : decimals);
 
@@ -218,44 +233,55 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				</button>
 			</header>
 
-			<div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-				{baskets.map((p, i) => (
+			{assets.length > 1 && (
+				<div className={bs.seg}>
+					{assets.map((a) => (
+						<button
+							key={a}
+							type="button"
+							className={activeAsset === a ? bs.on : ""}
+							onClick={() => {
+								setAssetSel(a);
+								setNote(null);
+							}}
+						>
+							{a}
+						</button>
+					))}
+				</div>
+			)}
+
+			<div className={bs.profiles}>
+				{orderedProfiles.map((p) => (
 					<button
 						key={p.address}
 						type="button"
-						className={css.balance}
+						className={`${bs.profile} ${p.profile === b.profile ? bs.profileOn : ""}`}
 						onClick={() => {
-							setSel(i);
+							setProfileSel(p.profile);
 							setNote(null);
 						}}
-						style={{
-							padding: "6px 12px",
-							fontWeight: i === sel ? 700 : 500,
-							opacity: i === sel ? 1 : 0.6,
-						}}
 					>
-						{p.label} ({p.blendPct[0]}/{p.blendPct[1]}/{p.blendPct[2]})
+						<span className={bs.pName}>{cap(p.profile)}</span>
+						<span className={bs.pBlend}>
+							{p.blendPct[0]}/{p.blendPct[1]}/{p.blendPct[2]}
+						</span>
 					</button>
 				))}
 			</div>
 
 			{canZap && (
-				<div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+				<div className={bs.seg}>
 					{[false, true].map((mode) => (
 						<button
 							key={String(mode)}
 							type="button"
-							className={css.balance}
+							className={payUsdc === mode ? bs.on : ""}
 							onClick={() => {
 								setPayUsdc(mode);
 								setRaw("");
 								setNote(null);
 								setQuote(null);
-							}}
-							style={{
-								padding: "4px 10px",
-								fontWeight: payUsdc === mode ? 700 : 500,
-								opacity: payUsdc === mode ? 1 : 0.55,
 							}}
 						>
 							{mode ? "Pay with USDC" : `Pay with ${b.assetSymbol}`}
@@ -319,7 +345,7 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			<p className={css.gas}>
 				{payUsdc
 					? "USDC is swapped to the underlying via 0x, then deposited. Slippage applies; you deposit what the swap actually returns."
-					: "Deposit one asset; the basket splits it across Senior/Middle/Junior. Exit returns the tranche tokens pro-rata."}
+					: "Deposit one asset; the basket splits it across all three tiers (Protected / Balanced / Aggressive). Exit returns the tier tokens pro-rata."}
 			</p>
 		</section>
 	);

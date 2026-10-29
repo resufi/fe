@@ -12,6 +12,7 @@ import { PositionsPanel } from "./components/PositionsPanel/PositionsPanel.tsx";
 import { Logo } from "./components/Logo/Logo.tsx";
 import { ChainNotReady } from "./components/ChainNotReady/ChainNotReady.tsx";
 import { NetworkControls } from "./components/NetworkControls/NetworkControls.tsx";
+import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle.tsx";
 import { PoolControls } from "./components/PoolControls/PoolControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
@@ -19,7 +20,13 @@ import { useEvmWallet } from "./hooks/useEvmWallet.ts";
 import { EvmPanel } from "./components/EvmPanel/EvmPanel.tsx";
 import { BasketsPanel } from "./components/BasketsPanel/BasketsPanel.tsx";
 import { IndexPanel } from "./components/IndexPanel/IndexPanel.tsx";
+import { Tabs } from "./components/Tabs/Tabs.tsx";
+import { chainHasBaskets } from "./lib/baskets.ts";
+import { chainHasIndexes } from "./lib/indexes.ts";
+import type { EvmWallet } from "./hooks/useEvmWallet.ts";
+import type { ProtocolData } from "./hooks/useProtocol.ts";
 import { PointsPanel } from "./components/PointsPanel/PointsPanel.tsx";
+import { Onboarding } from "./components/Onboarding/Onboarding.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
@@ -87,14 +94,19 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<NetworkControls chain={chain} solana={solana} evm={evm} />
+				<span style={{ display: "inline-flex", alignItems: "center", gap: "var(--s3)" }}>
+					<ThemeToggle />
+					<NetworkControls chain={chain} solana={solana} evm={evm} />
+				</span>
 			</header>
 
 			<h1 className={css.lede} data-lede>
-				Staking where you pick
+				Choose your risk on any asset —
 				<br />
-				your place in the loss queue.
+				from protected to high-upside.
 			</h1>
+
+			<Onboarding />
 
 			{!CHAINS[chain].deployed ? (
 				<div className={css.stateBlock}>
@@ -161,20 +173,14 @@ export default function App() {
 
 						<div className={css.side}>
 							{chain in EVM_CHAINS ? (
-								evm.address ? (
-									<EvmPanel
-										data={data}
-										trancheId={selected}
-										pool={pool}
-										wallet={evm}
-										onDone={() => void refresh()}
-									/>
-								) : (
-									<p className="muted state">
-										Connect an EVM wallet to deposit. Pool state above is live
-										on-chain.
-									</p>
-								)
+								<EvmActions
+									chain={chain}
+									data={data}
+									selected={selected}
+									pool={pool}
+									evm={evm}
+									onDone={() => void refresh()}
+								/>
 							) : chain === "solana" ? (
 								solana.address ? (
 									<SolanaPanel
@@ -212,8 +218,6 @@ export default function App() {
 									Pick a tranche, then connect a wallet to deposit.
 								</p>
 							)}
-							{chain in EVM_CHAINS && <BasketsPanel chain={chain} wallet={evm} />}
-							{chain in EVM_CHAINS && <IndexPanel chain={chain} wallet={evm} />}
 						</div>
 					</div>
 
@@ -224,6 +228,48 @@ export default function App() {
 			)}
 		</div>
 	);
+}
+
+/**
+ * The EVM action area. One way to deposit shown at a time — single tier,
+ * one-click profiles, or index — as tabs, so the column is one clean widget
+ * instead of a tall stack. Chains with no baskets/index skip the tab strip.
+ */
+function EvmActions({
+	chain,
+	data,
+	selected,
+	pool,
+	evm,
+	onDone,
+}: {
+	chain: ChainId;
+	data: ProtocolData;
+	selected: number;
+	pool: Pool;
+	evm: EvmWallet;
+	onDone: () => void;
+}) {
+	const tier = evm.address ? (
+		<EvmPanel data={data} trancheId={selected} pool={pool} wallet={evm} onDone={onDone} />
+	) : (
+		<p className="muted state">
+			Connect an EVM wallet to deposit. Pool state above is live on-chain.
+		</p>
+	);
+
+	const tabs = [
+		...(chainHasBaskets(chain)
+			? [{ id: "oneclick", label: "One-click", content: <BasketsPanel chain={chain} wallet={evm} /> }]
+			: []),
+		...(chainHasIndexes(chain)
+			? [{ id: "index", label: "Index", content: <IndexPanel chain={chain} wallet={evm} /> }]
+			: []),
+		{ id: "tier", label: "Single tier", content: tier },
+	];
+
+	if (tabs.length === 1) return tier;
+	return <Tabs tabs={tabs} />;
 }
 
 function Details({
@@ -255,7 +301,7 @@ function Details({
 					<dd className="num">{fmtDuration(vault.withdrawDelay)}</dd>
 				</div>
 				<div>
-					<dt>Senior fee</dt>
+					<dt>Protected fee</dt>
 					<dd className="num">{fmtBps(m.seniorFeeBps)}</dd>
 				</div>
 				<div>
@@ -295,7 +341,7 @@ function Details({
 				    these rows a person won't see their position in their wallet. */}
 				{pool.trancheMasters.map((addr, i) => (
 					<li key={addr}>
-						{TRANCHES[i].name} shares <Addr pool={pool} addr={addr} />
+						{TRANCHES[i].tech} shares <Addr pool={pool} addr={addr} />
 					</li>
 				))}
 			</ul>

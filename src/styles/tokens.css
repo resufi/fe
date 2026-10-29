@@ -34,6 +34,51 @@
 		-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
 }
 
+/*
+ * Dark theme. The same tokens, redefined. It applies when the OS prefers dark
+ * (unless the user forced light), and whenever [data-theme="dark"] is set by the
+ * toggle. Keeping both selectors means a manual choice always wins over the OS.
+ */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		color-scheme: dark;
+
+		--bg: #121210;
+		--fg: #ededea;
+		--muted: #8f8f88;
+		--line: #2b2b27;
+		--raise: #1b1b18;
+		--accent: #ededea;
+		--accent-fg: #15140f;
+
+		--junior: #d9674b;
+		--mezz: #c79a2e;
+		--senior: #43a07c;
+
+		--brand: #a684ff;
+		--brand-fg: #15140f;
+	}
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+
+	--bg: #121210;
+	--fg: #ededea;
+	--muted: #8f8f88;
+	--line: #2b2b27;
+	--raise: #1b1b18;
+	--accent: #ededea;
+	--accent-fg: #15140f;
+
+	--junior: #d9674b;
+	--mezz: #c79a2e;
+	--senior: #43a07c;
+
+	--brand: #a684ff;
+	--brand-fg: #15140f;
+}
+
 * {
 	box-sizing: border-box;
 }

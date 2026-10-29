@@ -8,6 +8,28 @@ type Props = { wallet: EvmWallet };
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /**
+ * A neutral wallet glyph for the EVM connect button. EVM covers many chains
+ * (Base, Arbitrum, Monad, HyperEVM, Robinhood), so a single chain logo would be
+ * wrong — unlike Solana/TON, which each get their own mark.
+ */
+function WalletGlyph() {
+	return (
+		<svg
+			width="15"
+			height="15"
+			viewBox="0 0 24 24"
+			aria-hidden="true"
+			style={{ flex: "none" }}
+		>
+			<path
+				fill="currentColor"
+				d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17a1 1 0 1 1 0 2H6.5a.5.5 0 0 0 0 1H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5Zm12 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
+			/>
+		</svg>
+	);
+}
+
+/**
  * The wallet icon.
  *
  * Under EIP-6963 the wallet sends its own icon, and we don't need to draw it for it
@@ -61,7 +83,7 @@ export function EvmConnect({ wallet }: Props) {
 				onClick={() => void wallet.disconnect()}
 				title={`${wallet.address} · click to disconnect`}
 			>
-				<span className={css.mark} aria-hidden="true" />
+				<WalletGlyph />
 				{short(wallet.address)}
 			</button>
 		);
@@ -70,7 +92,7 @@ export function EvmConnect({ wallet }: Props) {
 	return (
 		<>
 			<button type="button" className={css.button} onClick={() => setOpen(true)}>
-				<span className={css.mark} aria-hidden="true" />
+				<WalletGlyph />
 				Connect Wallet
 			</button>
 

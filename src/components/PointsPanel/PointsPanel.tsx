@@ -30,8 +30,8 @@ export function PointsPanel({ address }: { address: string | null }) {
 			</header>
 
 			<p className="small muted" style={{ marginBottom: 10 }}>
-				Earn points for value held over time — Junior ×3, Middle ×2, Senior ×1. Points go toward
-				the future $RESU allocation.
+				Earn points for value held over time — Aggressive ×3, Balanced ×2, Protected ×1. Points go
+				toward the future $RESU allocation.
 			</p>
 
 			{me ? (

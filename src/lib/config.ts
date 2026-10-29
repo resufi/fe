@@ -21,6 +21,13 @@ export type Mandate = {
 	seniorRateBps?: number;
 	mezzRateBps?: number;
 	/**
+	 * Target tier split [junior, middle, senior] in percent — the pool's design
+	 * composition (the "buffer"). Junior's leverage is 1 / junior-share, so this
+	 * lets us show junior's concrete figure even before the pool has filled,
+	 * instead of a vague "highest yield".
+	 */
+	weights?: [number, number, number];
+	/**
 	 * Minimum deposit in the asset's smallest units, as a string.
 	 *
 	 * A string, because JSON has no bigint. Not present everywhere: artifacts
@@ -86,22 +93,27 @@ export const TRANCHES = [
 	{
 		id: 0,
 		key: "junior",
-		name: "Junior",
-		order: "Absorbs losses first",
+		// Friendly, benefit-first name shown to users; `tech` is the structured-
+		// finance term, kept as a secondary label for those who know it.
+		name: "Aggressive",
+		tech: "Junior",
+		order: "Highest yield · takes the first loss",
 		hue: "--junior",
 	},
 	{
 		id: 1,
 		key: "mezzanine",
-		name: "Middle",
-		order: "Absorbs losses second",
+		name: "Balanced",
+		tech: "Middle",
+		order: "A middle ground",
 		hue: "--mezz",
 	},
 	{
 		id: 2,
 		key: "senior",
-		name: "Senior",
-		order: "Absorbs losses last",
+		name: "Protected",
+		tech: "Senior",
+		order: "Steady yield · loses last",
 		hue: "--senior",
 	},
 ] as const;

@@ -19,7 +19,7 @@
 	flex: none;
 	width: 14px;
 	height: 11px;
-	background-color: #ffffff;
+	background-color: var(--accent-fg);
 	mask: url("../../icons/solana.svg") center / contain no-repeat;
 	-webkit-mask: url("../../icons/solana.svg") center / contain no-repeat;
 }
@@ -38,7 +38,7 @@
 	width: 100%;
 	max-width: 380px;
 	padding: 20px;
-	background: #ffffff;
+	background: var(--bg);
 	color: var(--fg);
 	border: 1px solid var(--fg);
 	border-radius: 14px;

@@ -54,7 +54,7 @@
 
 :global([data-tc-wallets-modal-container]),
 :global([data-tc-modal]) {
-	background: #ffffff !important;
+	background: var(--bg) !important;
 	color: var(--fg) !important;
 	border: 1px solid var(--fg) !important;
 }

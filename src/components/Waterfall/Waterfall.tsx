@@ -43,16 +43,32 @@ function rateLabel(
 	if (kind === "coupon") {
 		if (id === 2) return `+${fmtBps(m.seniorRateBps ?? 0)}`;
 		if (id === 1) return `+${fmtBps(m.mezzRateBps ?? 0)}`;
-		if (juniorAssets <= 0n) return "leveraged";
-		const lev = Number(total) / Number(juniorAssets);
-		return `${lev.toFixed(1)}×`;
+		// Junior's reward is leverage on the price = pool / junior share. Use the
+		// live split once the pool has filled; before that, the design leverage
+		// from the target weights, so junior always sees a concrete figure.
+		if (juniorAssets > 0n) return `${(Number(total) / Number(juniorAssets)).toFixed(1)}×`;
+		if (m.weights && m.weights[0] > 0) return `${(100 / m.weights[0]).toFixed(1)}×`;
+		return "highest yield";
 	}
 	if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
 	if (id === 1) {
 		const net = (m.seniorFeeBps * m.seniorFeeToMezzBps) / 10000 - m.mezzFeeBps;
 		return `${net >= 0 ? "+" : "−"}${fmtBps(Math.abs(net))}`;
 	}
-	return "remainder";
+	return "highest yield";
+}
+
+/** A plain 1–5 risk reading: Protected low, Aggressive high. */
+function riskLevel(id: number): number {
+	return id === 2 ? 1 : id === 1 ? 3 : 5;
+}
+
+/** A human caption for what the rate figure means. */
+function rateCaption(id: number, kind: PoolKind): string {
+	if (kind === "coupon") return id === 0 ? "price leverage" : "fixed · per year";
+	if (id === 2) return "protection fee · yr";
+	if (id === 1) return "net · per year";
+	return "variable yield";
 }
 
 export function Waterfall({
@@ -82,8 +98,8 @@ export function Waterfall({
 				{controls}
 				<div className={s.headline}>
 					<h2 className={s.title}>
-						Loss waterfall
-						<span className="muted"> — losses fill from the bottom</span>
+						Risk tiers
+						<span className="muted"> — protected on top, a loss hits the bottom first</span>
 					</h2>
 					{!empty && (
 						<span className="muted small">
@@ -108,14 +124,25 @@ export function Waterfall({
 							aria-pressed={selected === id}
 						>
 							<span>
-								<span className={s.name}>{meta.name}</span>
+								<span className={s.name}>
+									{meta.name} <span className="muted small">· {meta.tech}</span>
+								</span>
 								<span className={s.order}>{meta.order}</span>
+								<span className={s.risk} aria-label={`risk ${riskLevel(id)} of 5`}>
+									<span className={s.riskTrack}>
+										<span
+											className={s.riskFill}
+											style={{ width: `${riskLevel(id) * 20}%`, background: `var(${meta.hue})` }}
+										/>
+									</span>
+								</span>
 							</span>
 
 							<span className={s.figures}>
 								<span className={`${s.rate} num`}>
 									{rateLabel(id, mandate, kind, tranches[0].totalAssets, total)}
 								</span>
+								<span className={s.caption}>{rateCaption(id, kind)}</span>
 								<span className={`${s.pool} num`}>
 									{rate === null
 										? `${fmtAmount(state.totalAssets, 2, BigInt(decimals))} ${asset}`
@@ -130,7 +157,7 @@ export function Waterfall({
 
 			{empty ? (
 				<p className="muted small">
-					Pool is empty. The first deposit sets the proportions.
+					No deposits yet — be the first. Your deposit sets the starting mix.
 				</p>
 			) : kind === "coupon" ? (
 				/* This pool has no loss ceiling: shares are re-derived from the pool's
@@ -138,9 +165,8 @@ export function Waterfall({
 				   so there's nothing to cap. Drawing a scale here would
 				   promise a limit that doesn't exist. */
 				<p className={s.capNote}>
-					No write-off ceiling here: the split is recomputed from the pool
-					value on every read. Junior absorbs the drawdown until it is gone,
-					then middle, then senior.
+					Your tier's value tracks the pool live. Aggressive absorbs a drop
+					first, then Balanced, and Protected only if both are used up.
 				</p>
 			) : (
 
@@ -149,9 +175,9 @@ export function Waterfall({
 						<div className={s.fill} style={{ width: `${headroomPct}%` }} />
 					</div>
 					<p className={s.capNote}>
-						Maximum writedown:{" "}
-						<span className="num">{fmtAmount(headroom, 2, BigInt(decimals))}</span>. Above that the
-						contract rejects the loss outright.
+						Loss buffer:{" "}
+						<span className="num">{fmtAmount(headroom, 2, BigInt(decimals))}</span>. A loss larger
+						than this is rejected outright.
 					</p>
 				</div>
 			)}

@@ -34,6 +34,7 @@ export const MSFT_MANDATE: Mandate = {
 	mezzFeeBps: 0,
 	seniorRateBps: 600,
 	mezzRateBps: 1000,
+	weights: [20, 20, 60],
 	minDeposit: (10n ** 18n * 10n).toString(),
 };
 
@@ -58,5 +59,6 @@ export const NVDA_MANDATE: Mandate = {
 	mezzFeeBps: 0,
 	seniorRateBps: 700,
 	mezzRateBps: 1200,
+	weights: [30, 30, 40],
 	minDeposit: (10n ** 18n * 10n).toString(),
 };

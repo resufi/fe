@@ -1,0 +1,67 @@
+/* Segmented control — asset picker and the pay-with toggle. */
+.seg {
+	display: flex;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+.seg button {
+	flex: 1 1 0;
+	padding: 6px 10px;
+	font: inherit;
+	font-size: 13px;
+	background: transparent;
+	border: 0;
+	border-right: 1px solid var(--line);
+	color: var(--muted);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 120ms ease, color 120ms ease;
+}
+.seg button:last-child {
+	border-right: 0;
+}
+.seg button:hover:not(.on) {
+	color: var(--fg);
+}
+.seg .on {
+	background: var(--accent);
+	color: var(--accent-fg);
+}
+
+/* Three compact profile cards, side by side — no stretched text links. */
+.profiles {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--s2);
+}
+.profile {
+	display: grid;
+	gap: 2px;
+	padding: var(--s3) var(--s2);
+	font: inherit;
+	text-align: center;
+	background: transparent;
+	color: var(--fg);
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: border-color 120ms ease, background 120ms ease;
+}
+.profile:hover:not(.profileOn) {
+	border-color: var(--muted);
+}
+.profileOn {
+	border-color: var(--accent);
+	background: var(--raise);
+}
+.pName {
+	font-size: 13px;
+	font-weight: 500;
+}
+.pBlend {
+	font-family: var(--mono);
+	font-size: 11px;
+	color: var(--muted);
+	letter-spacing: -0.01em;
+}

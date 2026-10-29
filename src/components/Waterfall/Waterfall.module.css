@@ -88,11 +88,37 @@
 	color: var(--muted);
 }
 
+.risk {
+	display: block;
+	margin-top: 7px;
+}
+.riskTrack {
+	display: block;
+	width: 64px;
+	height: 3px;
+	border-radius: 999px;
+	background: var(--line);
+	overflow: hidden;
+}
+.riskFill {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	transition: width 160ms ease;
+}
+
 .figures {
 	display: grid;
-	gap: var(--s1);
+	gap: 2px;
 	justify-items: end;
 	text-align: right;
+}
+
+.caption {
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	color: var(--muted);
+	text-transform: uppercase;
 }
 
 .rate {
