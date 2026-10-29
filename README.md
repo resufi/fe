@@ -1,4 +1,4 @@
-# Resu — frontend
+# Resu frontend
 
 The protocol interface: staking where you pick your place in the loss queue.
 
