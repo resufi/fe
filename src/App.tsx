@@ -106,6 +106,11 @@ export default function App() {
 				from protected to high-upside.
 			</h1>
 
+			<p className={css.subhead}>
+				Built first for tokenized real-world assets — and just as at home with ETH, staking tokens
+				and yield-bearing stablecoins. One deposit, your choice of risk.
+			</p>
+
 			<Onboarding />
 
 			{!CHAINS[chain].deployed ? (

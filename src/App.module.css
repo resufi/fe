@@ -35,8 +35,16 @@
 	line-height: 1.1;
 	letter-spacing: -0.03em;
 	font-weight: 500;
-	margin: 0 0 var(--s7);
+	margin: 0 0 var(--s4);
 	max-width: 16em;
+}
+
+.subhead {
+	font-size: clamp(15px, 2vw, 18px);
+	line-height: 1.5;
+	color: var(--muted);
+	margin: 0 0 var(--s7);
+	max-width: 46ch;
 }
 
 /* Switchers above the message where there is no waterfall. */
