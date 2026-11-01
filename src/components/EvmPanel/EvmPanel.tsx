@@ -5,6 +5,7 @@ import { SIG, encode, evmChain } from "../../lib/evm.ts";
 import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
 import type { ProtocolData } from "../../hooks/useProtocol.ts";
 import type { Pool } from "../../lib/pools.ts";
+import { isStockAsset, usMarketClosed } from "../../lib/market.ts";
 import css from "../DepositPanel/DepositPanel.module.css";
 
 type Props = {
@@ -118,6 +119,14 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 
 			{problem && <p className={css.problem}>{problem}</p>}
 			{note && <p className={css.note}>{note}</p>}
+
+			{isStockAsset(pool.asset) && usMarketClosed() && (
+				<p className={css.note}>
+					US stocks trade on weekdays only — the market is closed right now. You can still deposit;
+					prices and values resume when it reopens.
+				</p>
+			)}
+
 			<p className={css.gas}>Gas is paid in {gasSymbol}</p>
 		</section>
 	);

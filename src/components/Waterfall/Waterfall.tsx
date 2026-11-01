@@ -46,10 +46,6 @@ function rateLabel(
 	return "highest yield";
 }
 
-function riskLevel(id: number): number {
-	return id === 2 ? 1 : id === 1 ? 3 : 5;
-}
-
 function rateCaption(id: number, kind: PoolKind): string {
 	if (kind === "coupon") return id === 0 ? "price leverage" : "fixed · per year";
 	if (id === 2) return "protection fee · yr";
@@ -114,14 +110,6 @@ export function Waterfall({
 									{meta.name} <span className="muted small">· {meta.tech}</span>
 								</span>
 								<span className={s.order}>{meta.order}</span>
-								<span className={s.risk} aria-label={`risk ${riskLevel(id)} of 5`}>
-									<span className={s.riskTrack}>
-										<span
-											className={s.riskFill}
-											style={{ width: `${riskLevel(id) * 20}%`, background: `var(${meta.hue})` }}
-										/>
-									</span>
-								</span>
 							</span>
 
 							<span className={s.figures}>
