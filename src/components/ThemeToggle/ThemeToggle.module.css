@@ -1,36 +1,45 @@
 /*
- * No frame and no background: the glyph alone. The click area stays 24px, so
- * the control did not get harder to hit by losing its box.
+ * No border: a faint brand-coloured shadow holds the circle together instead.
+ * Purple and not grey for the same reason as on a selected pool — grey would
+ * read as a lift above the plane, and nothing here is lifted.
  */
 .toggle {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	height: 24px;
+	width: 34px;
+	height: 34px;
 	padding: 0;
 	background: none;
 	border: 0;
+	border-radius: 999px;
 	color: var(--muted);
 	cursor: pointer;
-	transition: color 180ms ease;
+	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 22%, transparent);
+	/*
+	 * Slower than a click needs, on a curve that ends at one without
+	 * overshoot — the same one the chain underline uses. The shadow is the
+	 * slowest of the three: it is the part the eye follows.
+	 */
+	transition:
+		color 260ms cubic-bezier(0.2, 0, 0, 1),
+		box-shadow 320ms cubic-bezier(0.2, 0, 0, 1),
+		transform 320ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .toggle:hover {
 	color: var(--brand);
+	box-shadow: 0 2px 14px color-mix(in srgb, var(--brand) 42%, transparent);
 }
 
 /* The focus ring has to be drawn here: there is no border left to show it. */
 .toggle:focus-visible {
 	outline: 2px solid var(--fg);
 	outline-offset: 3px;
-	border-radius: 999px;
 }
 
-/*
- * The fill flows in rather than appearing — the same curve, ending at one
- * without overshoot, as the underline under the selected chain.
- */
-.petal {
-	transition: fill 420ms cubic-bezier(0.2, 0, 0, 1);
+/* A click is the one fast thing: the press has to feel immediate. */
+.toggle:active {
+	transform: scale(0.94);
+	transition-duration: 90ms;
 }
