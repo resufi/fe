@@ -30,27 +30,37 @@ const solana = (SOLANA_NETWORK === "mainnet"
 };
 
 export const CHAINS: Record<ChainId, ChainInfo> = {
-	ton: {
-		id: "ton",
-		name: "TON",
-		asset: "tsTON",
-		unit: "GRAM",
-		deployed: true,
+	solana: {
+		id: "solana",
+		name: "Solana",
 
+		asset: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
+		unit: "SOL",
+		deployed: Boolean(solana.programId),
+		mandate: solana.mandate,
+	},
+	arbitrum: {
+		id: "arbitrum",
+		name: "Arbitrum",
+		// Base asset: WETH; share value in dollars via Chainlink ETH/USD,
+		// senior earns a coupon.
+		asset: "WETH",
+		unit: "USD",
+		deployed: true,
 		mandate: {
 			maxLossBps: 0,
-			withdrawDelay: 0,
+			withdrawDelay: 86400,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,
 		},
 	},
-	hyperevm: {
-		id: "hyperevm",
-		name: "Hyperliquid",
-		// Base asset: a share of HLP, the exchange's market-maker vault. Its
-		// yield is its own, not staking, and the drawdowns are real.
-		asset: "USDC",
+	monad: {
+		id: "monad",
+		name: "Monad",
+		// aprMON: staked MON (aPriori LST). Share value in dollars via the
+		// MON/USD x aprMON-rate adapter; senior earns a coupon.
+		asset: "aprMON",
 		unit: "USD",
 		deployed: true,
 		mandate: {
@@ -77,31 +87,6 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 			mezzFeeBps: 0,
 		},
 	},
-	solana: {
-		id: "solana",
-		name: "Solana",
-
-		asset: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
-		unit: "SOL",
-		deployed: Boolean(solana.programId),
-		mandate: solana.mandate,
-	},
-	arbitrum: {
-		id: "arbitrum",
-		name: "Arbitrum",
-		// Base asset: WETH; share value in dollars via Chainlink ETH/USD,
-		// senior earns a coupon.
-		asset: "WETH",
-		unit: "USD",
-		deployed: true,
-		mandate: {
-			maxLossBps: 0,
-			withdrawDelay: 86400,
-			seniorFeeBps: 0,
-			seniorFeeToMezzBps: 0,
-			mezzFeeBps: 0,
-		},
-	},
 	base: {
 		id: "base",
 		name: "Base",
@@ -118,12 +103,27 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 			mezzFeeBps: 0,
 		},
 	},
-	monad: {
-		id: "monad",
-		name: "Monad",
-		// aprMON: staked MON (aPriori LST). Share value in dollars via the
-		// MON/USD x aprMON-rate adapter; senior earns a coupon.
-		asset: "aprMON",
+	ton: {
+		id: "ton",
+		name: "TON",
+		asset: "tsTON",
+		unit: "GRAM",
+		deployed: true,
+
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 0,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	hyperevm: {
+		id: "hyperevm",
+		name: "Hyperliquid",
+		// Base asset: a share of HLP, the exchange's market-maker vault. Its
+		// yield is its own, not staking, and the drawdowns are real.
+		asset: "USDC",
 		unit: "USD",
 		deployed: true,
 		mandate: {
