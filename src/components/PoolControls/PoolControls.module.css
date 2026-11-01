@@ -1,7 +1,12 @@
 .rows {
 	display: grid;
 	justify-items: start;
-	gap: var(--s2);
+	/*
+	 * Twice the gap inside a row, and for a reason: the chain's underline sits
+	 * at the very bottom of its item, so eight pixels put a line right against
+	 * the pills below and the two rows read as one block.
+	 */
+	gap: var(--s4);
 }
 
 .row {
