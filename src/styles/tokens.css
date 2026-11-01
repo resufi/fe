@@ -69,8 +69,6 @@
 
 		--logo-fill: #121210;
 		--logo-stroke: #ededea;
-		/* A touch brighter than --brand: it is the only colour on a dark page. */
-		--logo-brand: #b99cff;
 	}
 }
 
@@ -94,8 +92,6 @@
 
 	--logo-fill: #121210;
 	--logo-stroke: #ededea;
-	/* A touch brighter than --brand: it is the only colour on a dark page. */
-	--logo-brand: #b99cff;
 }
 
 * {
