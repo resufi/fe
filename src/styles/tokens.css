@@ -25,7 +25,8 @@
 	 */
 	--logo-fill: #ffffff;
 	--logo-stroke: #1b1b19;
-	--logo-brand: #a684ff;
+	/* A step darker than --brand: at logo size the pure tint reads washed. */
+	--logo-brand: color-mix(in srgb, var(--brand) 82%, #12100e);
 
 	--s1: 4px;
 	--s2: 8px;

@@ -14,11 +14,10 @@ export function Logo() {
 		<svg
 			className={css.logo}
 			viewBox="0 0 237.06 250.34"
-			width={32}
-			height={32}
+			width={40}
+			height={40}
 			fill="none"
 			stroke="var(--logo-stroke)"
-			strokeWidth="5"
 			strokeLinejoin="round"
 			aria-hidden="true"
 		>
