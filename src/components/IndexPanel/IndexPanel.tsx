@@ -15,15 +15,6 @@ import {
 } from "../../lib/indexes.ts";
 import css from "../DepositPanel/DepositPanel.module.css";
 
-/**
- * Diversified index baskets over several vaults on one chain — one tranche
- * (typically senior) spread across more than a single name. Hidden entirely
- * when no index is deployed on the chain, so it never touches the live app
- * until an address is filled into indexes.ts.
- *
- * Deposit is per leg (each leg holds a different asset); exit is redemption in
- * kind, instant and with no vault window.
- */
 export function IndexPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWallet }) {
 	const indexes = indexesOfChain(chain);
 	const [sel, setSel] = useState(0);
@@ -35,7 +26,6 @@ export function IndexPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWalle
 
 	const x: IndexBasket | undefined = indexes[sel];
 
-	// Per-leg parsed amounts (null = empty/invalid).
 	const amounts = x ? x.legs.map((leg, i) => parseAmount(raws[i] ?? "", BigInt(leg.assetDecimals))) : [];
 
 	async function refresh() {
@@ -58,12 +48,10 @@ export function IndexPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWalle
 
 	if (indexes.length === 0 || !x) return null;
 
-	// Legs the user actually wants to fund (amount > 0).
 	const funded = amounts
 		.map((amt, i) => ({ amt, i }))
 		.filter((e): e is { amt: bigint; i: number } => e.amt !== null && e.amt > 0n);
 
-	// The first funded leg still short on allowance drives an approve step.
 	const toApprove =
 		w && funded.find((e) => w.legs[e.i] && w.legs[e.i].allowance < e.amt);
 
@@ -106,7 +94,7 @@ export function IndexPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWalle
 			void run(to, data, `Approved ${x.legs[toApprove.i].assetSymbol}.`);
 			return;
 		}
-		// Full-length amounts vector; unfunded legs are zero (skipped on-chain).
+
 		const vector = x.legs.map((_, i) => (amounts[i] && amounts[i]! > 0n ? amounts[i]! : 0n));
 		const { to, data } = encodeDeposit(x, vector);
 		void run(to, data, "Deposited.");

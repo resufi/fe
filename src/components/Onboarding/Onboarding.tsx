@@ -11,11 +11,6 @@ function wasDismissed(): boolean {
 	}
 }
 
-/**
- * A first-visit explainer: what Resu is, in one line, plus the three steps and a
- * plain-language tier key. Dismissible and remembered per browser, so it never
- * gets in the way of a returning user. Leads with the benefit, not the loss.
- */
 export function Onboarding() {
 	const [hidden, setHidden] = useState(wasDismissed);
 
@@ -37,8 +32,6 @@ export function Onboarding() {
 		}
 	}
 
-	// When dismissed, leave a quiet link in the same spot so it can be brought
-	// back — a user who closed it by habit can always find it again.
 	if (hidden) {
 		return (
 			<button type="button" className={css.reopen} onClick={reopen}>

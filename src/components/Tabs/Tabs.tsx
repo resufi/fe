@@ -3,10 +3,6 @@ import css from "./Tabs.module.css";
 
 export type Tab = { id: string; label: string; content: ReactNode };
 
-/**
- * A small underline tab strip for the action area — one way to deposit shown at
- * a time (single tier, one-click profiles, index) instead of a tall stack.
- */
 export function Tabs({ tabs }: { tabs: Tab[] }) {
 	const [active, setActive] = useState(tabs[0]?.id ?? "");
 	const current = tabs.find((t) => t.id === active) ?? tabs[0];

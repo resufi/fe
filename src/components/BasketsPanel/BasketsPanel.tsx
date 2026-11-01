@@ -28,18 +28,13 @@ import bs from "./BasketsPanel.module.css";
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const PROFILE_ORDER: Profile[] = ["conservative", "balanced", "aggressive"];
 
-/**
- * One-click risk profiles over a single vault. Hidden entirely when no basket
- * is deployed on the chain, so it never touches the live app until addresses
- * are filled into baskets.ts.
- *
- * Deposit is one asset in; exit is redemption in kind (a pro-rata slice of the
- * tranche tokens), which is instant and needs no vault window.
- *
- * Two ways to fund: with the underlying directly, or "Pay with USDC" — a zap
- * that swaps USDC into the underlying via 0x, then the ordinary deposit runs.
- */
-export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWallet }) {
+export function BasketsPanel({
+	chain,
+	wallet,
+}: {
+	chain: ChainId;
+	wallet: EvmWallet;
+}) {
 	const baskets = basketsOfChain(chain);
 	const canZap = zapSupported(chain);
 
@@ -52,20 +47,17 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 	const [busy, setBusy] = useState(false);
 	const [note, setNote] = useState<string | null>(null);
 
-	// Zap (pay with USDC) state.
 	const [payUsdc, setPayUsdc] = useState(false);
 	const [usdcBal, setUsdcBal] = useState<bigint | null>(null);
 	const [quote, setQuote] = useState<ZapQuote | null>(null);
 	const [quoting, setQuoting] = useState(false);
 	const [usdcAllowance, setUsdcAllowance] = useState<bigint | null>(null);
 
-	// Two-axis selection: pick an asset, then a risk profile for it. Guard a
-	// stale asset (chain switched) by falling back to the first.
-	const activeAsset = assets.includes(assetSel) ? assetSel : assets[0] ?? "";
+	const activeAsset = assets.includes(assetSel) ? assetSel : (assets[0] ?? "");
 	const forAsset = baskets.filter((x) => x.assetSymbol === activeAsset);
-	const orderedProfiles = PROFILE_ORDER.map((pr) => forAsset.find((x) => x.profile === pr)).filter(
-		(x): x is Basket => Boolean(x),
-	);
+	const orderedProfiles = PROFILE_ORDER.map((pr) =>
+		forAsset.find((x) => x.profile === pr),
+	).filter((x): x is Basket => Boolean(x));
 	const b: Basket | undefined =
 		orderedProfiles.find((x) => x.profile === profileSel) ?? orderedProfiles[0];
 	const decimals = b ? BigInt(b.assetDecimals) : 18n;
@@ -82,20 +74,22 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				setW(null);
 				setUsdcBal(null);
 			}
-		} catch {
-			/* a transient RPC failure just leaves the last values */
-		}
+		} catch {}
 	}
 
 	useEffect(() => {
 		void refresh();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [b?.address, wallet.address, wallet.wrongChain]);
 
-	// Fetch a 0x quote when paying with USDC. Debounced lightly so typing does
-	// not spam the API.
 	useEffect(() => {
-		if (!payUsdc || !b || !wallet.address || wallet.wrongChain || amount === null || amount <= 0n) {
+		if (
+			!payUsdc ||
+			!b ||
+			!wallet.address ||
+			wallet.wrongChain ||
+			amount === null ||
+			amount <= 0n
+		) {
 			setQuote(null);
 			return;
 		}
@@ -106,8 +100,15 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				.then(async (q) => {
 					if (!live) return;
 					setQuote(q);
-					// LI.FI does not say if the allowance suffices; read it ourselves.
-					if (q.ok) setUsdcAllowance(await readUsdcAllowance(chain, wallet.address!, q.approvalAddress));
+
+					if (q.ok)
+						setUsdcAllowance(
+							await readUsdcAllowance(
+								chain,
+								wallet.address!,
+								q.approvalAddress,
+							),
+						);
 				})
 				.catch(() => live && setQuote(null))
 				.finally(() => live && setQuoting(false));
@@ -116,12 +117,12 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			live = false;
 			clearTimeout(t);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [payUsdc, b?.asset, raw, wallet.address, wallet.wrongChain, chain]);
 
 	if (baskets.length === 0 || !b) return null;
 
-	const needsApproval = !payUsdc && amount !== null && w !== null && w.allowance < amount;
+	const needsApproval =
+		!payUsdc && amount !== null && w !== null && w.allowance < amount;
 	const needsUsdcApproval =
 		payUsdc &&
 		!!quote &&
@@ -130,7 +131,6 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 		amount !== null &&
 		usdcAllowance < amount;
 
-	// Validation differs per funding mode.
 	const problem = !wallet.address
 		? "Connect a wallet"
 		: wallet.wrongChain
@@ -149,7 +149,12 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 							? "Exceeds your balance"
 							: null;
 
-	async function run(to: string, data: string, done: string, after?: () => void) {
+	async function run(
+		to: string,
+		data: string,
+		done: string,
+		after?: () => void,
+	) {
 		setBusy(true);
 		setNote(null);
 		try {
@@ -174,13 +179,16 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 					setUsdcAllowance((1n << 256n) - 1n),
 				);
 			} else {
-				// Swap USDC -> underlying. After it lands, flip back to asset mode so
-				// the ordinary deposit (which reads the real received balance) runs.
-				void run(quote.to, quote.data, `Swapped to ${b.assetSymbol} — now deposit.`, () => {
-					setPayUsdc(false);
-					setRaw("");
-					setQuote(null);
-				});
+				void run(
+					quote.to,
+					quote.data,
+					`Swapped to ${b.assetSymbol} - now deposit.`,
+					() => {
+						setPayUsdc(false);
+						setRaw("");
+						setQuote(null);
+					},
+				);
 			}
 			return;
 		}
@@ -199,11 +207,11 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 		void run(to, data, "Redeemed.");
 	}
 
-	// Position value in wad USD = shares (1e18) x sharePrice (wad) / 1e18.
-	const positionUsd = w && state ? (w.shares * state.sharePrice) / 10n ** 18n : 0n;
+	const positionUsd =
+		w && state ? (w.shares * state.sharePrice) / 10n ** 18n : 0n;
 
 	const inputDecimals = payUsdc ? 6 : b.assetDecimals;
-	const inputBalance = payUsdc ? usdcBal : w?.assetBalance ?? null;
+	const inputBalance = payUsdc ? usdcBal : (w?.assetBalance ?? null);
 	const inputSymbol = payUsdc ? "USDC" : b.assetSymbol;
 
 	const primaryLabel = busy
@@ -225,11 +233,19 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 					className={`${css.balance} num`}
 					onClick={() =>
 						inputBalance !== null &&
-						setRaw(fmtAmount(inputBalance, inputDecimals, BigInt(inputDecimals)).replace(/[\s,]/g, ""))
+						setRaw(
+							fmtAmount(
+								inputBalance,
+								inputDecimals,
+								BigInt(inputDecimals),
+							).replace(/[\s,]/g, ""),
+						)
 					}
 					disabled={inputBalance === null || inputBalance === 0n}
 				>
-					{inputBalance !== null ? `${fmtAmount(inputBalance, 2, BigInt(inputDecimals))} ${inputSymbol}` : "…"}
+					{inputBalance !== null
+						? `${fmtAmount(inputBalance, 2, BigInt(inputDecimals))} ${inputSymbol}`
+						: "…"}
 				</button>
 			</header>
 
@@ -289,11 +305,6 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				aria-label={payUsdc ? "USDC amount" : "Deposit amount"}
 			/>
 
-			{/*
-			  * Funding is a footnote, not a decision of the same weight as the
-			  * profile: almost everyone pays with the asset itself. A sentence
-			  * with one link says the same as two segments and takes a line.
-			  */}
 			{canZap && (
 				<p className={bs.payline}>
 					<span>Paying with {payUsdc ? "USDC" : b.assetSymbol} ·</span>
@@ -331,7 +342,12 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			<button
 				className={css.submit}
 				onClick={onPrimary}
-				disabled={busy || !!problem || amount === null || (payUsdc && (!quote || !quote.ok))}
+				disabled={
+					busy ||
+					!!problem ||
+					amount === null ||
+					(payUsdc && (!quote || !quote.ok))
+				}
 			>
 				{primaryLabel}
 			</button>
@@ -339,8 +355,8 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			{w && w.shares > 0n && (
 				<div style={{ marginTop: 12 }}>
 					<p className="small muted">
-						Your position: <b className="num">{fmtAmount(w.shares, 2, 18n)}</b> shares ≈{" "}
-						<b className="num">${fmtAmount(positionUsd, 2, 18n)}</b>
+						Your position: <b className="num">{fmtAmount(w.shares, 2, 18n)}</b>{" "}
+						shares ≈ <b className="num">${fmtAmount(positionUsd, 2, 18n)}</b>
 					</p>
 					<button
 						className={css.submit}

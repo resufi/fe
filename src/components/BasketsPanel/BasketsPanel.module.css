@@ -1,33 +1,14 @@
-/*
- * The panel speaks the app's two existing languages and adds none.
- *
- * Three choices used to be dressed three different ways — a black segmented
- * control for the asset, bordered cards for the profile, another black segment
- * for what to pay with. The solid fill was the heaviest thing on the screen,
- * heavier than the deposit button, and nothing else in the app uses it; the
- * cards were the same shape we had already rejected for pools. Nothing told
- * you which of the three choices mattered, because all three shouted equally.
- *
- * Now: the asset is picked the way a chain is (bare text, brand underline),
- * the profile the way a pool is (a pill with a brand shadow when selected),
- * and what to pay with is a quiet line of text under the amount.
- */
-
-/* A caption and its row of controls. */
 .group {
 	display: grid;
 	gap: var(--s2);
 }
 
-/* A small caption over a group of controls. */
 .label {
 	font-size: 11px;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	color: var(--muted);
 }
-
-/* --- Asset: the chain row, down to the curve. --- */
 
 .assets {
 	display: flex;
@@ -47,10 +28,6 @@
 	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/*
- * The underline belongs to every asset, unselected ones hold it at zero: the
- * row keeps its height and the line slides in instead of appearing.
- */
 .asset::after {
 	content: "";
 	position: absolute;
@@ -81,8 +58,6 @@
 	opacity: 1;
 }
 
-/* --- Profile: the pool pill. --- */
-
 .profiles {
 	display: flex;
 	gap: var(--s2);
@@ -100,16 +75,9 @@
 	white-space: nowrap;
 	background: transparent;
 	color: var(--muted);
-	/*
-	 * The border is always there and only changes colour: otherwise the
-	 * selected pill would gain size and the row would jump on every switch.
-	 */
+
 	border: 1px solid var(--line);
-	/*
-	 * Not a stadium: the pill holds two lines, and at 999px the ends bulged
-	 * into fat arcs that ate the padding beside the shorter words. Ten keeps
-	 * the shape soft without pretending the content is one line tall.
-	 */
+
 	border-radius: 10px;
 	cursor: pointer;
 	transition:
@@ -127,7 +95,7 @@
 .profileOn:hover {
 	color: var(--fg);
 	border-color: var(--brand);
-	/* Purple, not grey: grey would read as a lift above the plane. */
+
 	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 
@@ -141,8 +109,6 @@
 	color: var(--muted);
 	letter-spacing: -0.01em;
 }
-
-/* --- What to pay with: a sentence, not a control. --- */
 
 .payline {
 	display: flex;

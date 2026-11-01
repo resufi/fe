@@ -1,12 +1,5 @@
 import css from "./PoolControls.module.css";
 
-/**
- * Skeleton of the chain and pool switchers.
- *
- * The block counts are fixed on purpose: a few chains and two pools for the longest of them.
- * Computing them from `CHAIN_LIST` and `POOLS` is unnecessary and even harmful — the skeleton
- * must be the same before the choice is known.
- */
 export function PoolControlsSkeleton() {
 	return (
 		<div

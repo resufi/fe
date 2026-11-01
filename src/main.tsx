@@ -1,4 +1,3 @@
-
 import './polyfills';
 
 import React from 'react';
@@ -17,12 +16,6 @@ const manifestUrl =
 		window.location.origin,
 	).toString();
 
-/*
- * TonConnect carries its own theme, and it used to be pinned to LIGHT: the
- * wallet modal and the dropdown stayed light over a dark page. It follows the
- * app's theme now, which is why the provider needs a component around it —
- * only a component can subscribe.
- */
 function Root() {
     const theme = useTheme();
 

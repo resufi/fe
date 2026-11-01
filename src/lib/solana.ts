@@ -29,13 +29,6 @@ const RPC: Record<string, string> = {
 	mainnet: "https://api.mainnet-beta.solana.com",
 };
 
-/**
- * The node the state is read through.
- *
- * The public api.mainnet-beta.solana.com answers the browser with 403: it is deliberately
- * not meant for apps. We can't stay silent about it — without explanation the rejection
- * looks like a broken protocol, not an unset config.
- */
 const endpoint = () => {
 	const custom = env("VITE_SOLANA_RPC");
 	if (custom) return custom;

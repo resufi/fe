@@ -15,8 +15,6 @@ type Props = {
 	onDone: () => void;
 };
 
-
-
 export function DepositPanel({ data, trancheId, pool, onDone }: Props) {
 	const decimals = BigInt(pool.decimals);
 	const [tonConnectUI] = useTonConnectUI();

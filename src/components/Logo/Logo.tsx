@@ -1,14 +1,5 @@
 import css from "./Logo.module.css";
 
-/**
- * The mark, as markup rather than as a file.
- *
- * Through `<img src>` it was one fixed picture: white petals with a near-black
- * outline, which is a white flower sitting on a near-black page in the dark
- * theme — the one bright object on the screen. Inline, its three colours are
- * tokens, so the petals go dark and the outline white when the theme does, and
- * only the brand petal stays a colour.
- */
 export function Logo() {
 	return (
 		<svg

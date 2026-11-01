@@ -8,11 +8,7 @@
 	padding: 0 14px;
 	font: inherit;
 	font-size: 13px;
-	/*
-	 * The chain paints the button through these two: EvmConnect sets them to
-	 * the chain's own colours. Nothing set them — the neutral button, which is
-	 * what Solana and an unknown chain get.
-	 */
+
 	background: var(--btn-bg, var(--accent));
 	color: var(--btn-fg, var(--accent-fg));
 	border: 1px solid var(--btn-bg, var(--accent));
@@ -20,11 +16,6 @@
 	cursor: pointer;
 }
 
-/*
- * A chain logo keeps its own colours — the fill under it is the same colour as
- * the logo's own tile, so no edge shows. Not a mask like .mark below, which
- * exists to tint Solana's single-colour mark with the button's text colour.
- */
 .chainMask {
 	flex: none;
 	width: 16px;
@@ -161,10 +152,6 @@
 	color: var(--junior);
 }
 
-/* The wallet icon in the list.
-   On EVM the wallet sends the icon via EIP-6963, so this is an <img>, not
-   an svg we drew. The fallback is the first letter of the name: the row
-   shouldn't fall apart because of a wallet with no icon. */
 .icon {
 	width: 20px;
 	height: 20px;

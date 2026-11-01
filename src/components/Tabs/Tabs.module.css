@@ -3,17 +3,11 @@
 	gap: var(--s4);
 }
 
-/*
- * No rule under the strip: the line ran the full width of the panel and read
- * as a divider of the page rather than as part of the tabs. What marks the
- * selected tab is its own underline, nothing else.
- */
 .strip {
 	display: flex;
 	gap: var(--s4);
 }
 
-/* Spacing and underline are the chain row's, down to the curve. */
 .tab {
 	position: relative;
 	padding: 6px 0 8px;
@@ -26,10 +20,6 @@
 	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/*
- * Every tab carries the underline, unselected ones hold it at zero: the row
- * keeps its height and the line slides in instead of appearing.
- */
 .tab::after {
 	content: "";
 	position: absolute;

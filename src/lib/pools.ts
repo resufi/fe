@@ -17,61 +17,28 @@ import {
 } from "./base.ts";
 import { CONTRACTS as MONAD, MANDATE as MONAD_MANDATE } from "./monad.ts";
 
-/**
- * Pool registry.
- *
- * A pool is a set of rules over one asset: addresses, decimals, mandate.
- * The interface used to know exactly one pool per chain, with decimals
- * hardcoded as nine in one place for the whole app. With the tsUSDe pool
- * (six decimals) that broke: the same functions render TON and
- * Solana amounts, and one global constant can't be right for all at once.
- *
- * So decimals, asset symbol and minimum deposit now belong to the
- * pool and are passed down explicitly. A guessed value wouldn't error —
- * the amounts would just be off by a thousandfold.
- */
-/**
- * How a pool's economics work.
- *
- * "fee" — TON and Solana: every tranche earns the asset's base yield, and
- * senior pays extra for protection on top, flowing down the waterfall.
- *
- * "coupon" — HyperEVM: senior and mezzanine have fixed coupons, junior
- * takes the entire NAV residual. There is no loss ceiling: shares are
- * re-derived from NAV on every read, not written off by events.
- *
- * The difference is not cosmetic, and showing one as the other is wrong: in "fee"
- * senior loses 2%/yr, in "coupon" it earns 6%. The sign is opposite.
- */
 export type PoolKind = "fee" | "coupon";
 
 export type Pool = {
 	id: string;
 	chain: ChainId;
 	kind: PoolKind;
-	/** Short tab name: the base asset's symbol. */
+
 	label: string;
-	/** The base yield-bearing asset. */
+
 	asset: string;
-	/** The coin the value is shown in. */
+
 	unit: string;
-	/** Decimals of the base asset. */
+
 	decimals: number;
 	network: string;
 	deployed: boolean;
 	mandate: Mandate;
-	/** Minimum deposit in the asset's smallest units. */
+
 	minDeposit: bigint;
 
-	/**
-	 * The pool used to compute the base asset's rate to GRAM.
-	 *
-	 * Only tsTON has one: a stablecoin has no GRAM rate and shouldn't —
-	 * converting dollars to GRAM would mean inventing a number.
-	 */
 	ratePool?: string;
 
-	/** Addresses. The shape differs per chain, so they're optional. */
 	vault: string | null;
 	registry: string | null;
 	jettonMaster: string | null;
@@ -88,13 +55,6 @@ type Artifact = {
 	mandate: Mandate;
 };
 
-/**
- * Minimum deposit from the artifact.
- *
- * As a string, because JSON has no bigint. Artifacts built before the
- * floor became a deploy parameter lack this field — for them
- * one whole token is used.
- */
 function minDepositOf(a: Artifact, decimals: number): bigint {
 	return a.mandate.minDeposit
 		? BigInt(a.mandate.minDeposit)
@@ -116,15 +76,14 @@ function tonPool(
 		kind: "fee",
 		label,
 		asset,
-		// Share value is shown in GRAM only where the base asset has a rate
-		// to it. A stablecoin has no such rate and needs none.
+
 		unit: "GRAM",
 		decimals,
 		network: a.network ?? "mainnet",
 		deployed: Boolean(a.vault && a.jettonMaster),
 		mandate: a.mandate,
 		minDeposit: minDepositOf(a, decimals),
-		// The Tonstakers pool is the only source of the tsTON->GRAM rate.
+
 		ratePool:
 			asset === "tsTON"
 				? "EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR"
@@ -147,12 +106,6 @@ const solanaRaw = (SOLANA_NETWORK === "mainnet" ? solanaMainnet : solanaDevnet) 
 	trancheMints?: string[];
 };
 
-/**
- * Pools in display order.
- *
- * There is no stablecoin on testnet: Ethena is mainnet-only, and a tab
- * leading nowhere is worse than a missing one.
- */
 export const POOLS: Pool[] = [
 	TON_NETWORK === "mainnet"
 		? tonPool("ton-tston", "tsTON", "tsTON", tonMainnet)
@@ -175,7 +128,7 @@ export const POOLS: Pool[] = [
 		vault: CONTRACTS.vault,
 		registry: null,
 		jettonMaster: CONTRACTS.asset,
-		// Share tokens are masters, like the jettons on TON and the mints on Solana.
+
 		trancheMasters: [...CONTRACTS.trancheTokens],
 	},
 	{
@@ -183,16 +136,14 @@ export const POOLS: Pool[] = [
 		chain: "robinhood",
 		kind: "coupon",
 		label: "SPY",
-		// Deposit the SPY token; share value is shown in dollars: the price
-		// comes from Chainlink, all pool amounts are wad USD (1e18).
+
 		asset: "SPY",
 		unit: "USD",
 		decimals: 18,
 		network: "mainnet",
 		deployed: true,
 		mandate: ROBINHOOD_MANDATE,
-		// Panel floor in SPY units. The contract holds the real $10 minimum
-		// (usd = amount x price); this is a soft hint above it.
+
 		minDeposit: 20_000_000_000_000_000n, // 0.02 SPY (~$15)
 		vault: ROBINHOOD.vault,
 		registry: null,
@@ -204,7 +155,7 @@ export const POOLS: Pool[] = [
 		chain: "arbitrum",
 		kind: "coupon",
 		label: "WETH",
-		// Deposit WETH; share value in dollars via Chainlink ETH/USD.
+
 		asset: "WETH",
 		unit: "USD",
 		decimals: 18,
@@ -222,7 +173,7 @@ export const POOLS: Pool[] = [
 		chain: "base",
 		kind: "coupon",
 		label: "MSFT",
-		// Tokenized Microsoft stock (B20), 8 decimals; price from Chainlink.
+
 		asset: "MSFT",
 		unit: "USD",
 		decimals: 8,
@@ -240,7 +191,7 @@ export const POOLS: Pool[] = [
 		chain: "base",
 		kind: "coupon",
 		label: "NVDA",
-		// Tokenized Nvidia stock (B20), 8 decimals; price from Chainlink.
+
 		asset: "NVDA",
 		unit: "USD",
 		decimals: 8,
@@ -258,8 +209,7 @@ export const POOLS: Pool[] = [
 		chain: "monad",
 		kind: "coupon",
 		label: "aprMON",
-		// Deposit aprMON (staked MON); share value in dollars via the
-		// MON/USD x aprMON-rate adapter. Accrued staking yield lands in NAV.
+
 		asset: "aprMON",
 		unit: "USD",
 		decimals: 18,
@@ -299,7 +249,6 @@ export const findPool = (id: string): Pool | undefined =>
 
 const STORAGE_KEY = "resu:pool";
 
-/** The last selected pool. A small convenience, not protocol state. */
 export function loadPool(): Pool {
 	try {
 		const saved = localStorage.getItem(STORAGE_KEY);

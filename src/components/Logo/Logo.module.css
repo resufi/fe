@@ -3,7 +3,7 @@
 	height: 40px;
 	display: block;
 	flex: none;
-	/* Both set per theme — see tokens.css. */
+
 	shape-rendering: var(--logo-rendering);
 }
 

@@ -10,20 +10,10 @@ type Props = { wallet: EvmWallet; chain: ChainId };
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
-/**
- * The chain's own mark, and with it the chain's colours on the button.
- *
- * A generic wallet glyph used to stand here for every EVM chain at once,
- * because one chain's logo would have been wrong for the others. It is right
- * now: the button belongs to the chain currently chosen, and that chain is
- * what a person is about to connect to.
- */
 function ChainMark({ chain }: { chain: ChainId }) {
 	const brand = CHAIN_BRAND[chain];
 	if (!brand) return null;
 
-	// A silhouette is painted in the button's text colour, so it holds together
-	// with the label; a full-colour logo is shown as it is.
 	if (brand.mono) {
 		return (
 			<span
@@ -39,7 +29,6 @@ function ChainMark({ chain }: { chain: ChainId }) {
 	return <img className={css.chainMark} src={brand.mark} alt="" width={16} height={16} />;
 }
 
-/** Inline so an unknown chain falls back to the neutral button, not to blank. */
 function brandStyle(chain: ChainId): CSSProperties | undefined {
 	const brand = CHAIN_BRAND[chain];
 	if (!brand) return undefined;
@@ -49,14 +38,6 @@ function brandStyle(chain: ChainId): CSSProperties | undefined {
 	};
 }
 
-/**
- * The wallet icon.
- *
- * Under EIP-6963 the wallet sends its own icon, and we don't need to draw it for it
- * — unlike Solana, where three icons are drawn in our code.
- * An empty string means WalletConnect or a wallet with no icon: there we put
- * the first letter of the name so the row doesn't fall apart.
- */
 function Mark({ icon, name }: { icon: string; name: string }) {
 	if (icon) {
 		return <img className={css.icon} src={icon} alt="" width={20} height={20} />;
@@ -83,8 +64,6 @@ export function EvmConnect({ wallet, chain }: Props) {
 	}, [open]);
 
 	if (wallet.address) {
-		// The wrong network is one click, not an error. We show it instead of
-		// the address: otherwise a person taps "deposit" and hits a rejection.
 		if (wallet.wrongChain) {
 			return (
 				<button
