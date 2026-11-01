@@ -24,7 +24,7 @@ export function NetworkControls({
 				{chain === "ton" ? (
 					<TonConnectButton />
 				) : chain in EVM_CHAINS ? (
-					<EvmConnect wallet={evm} />
+					<EvmConnect wallet={evm} chain={chain} />
 				) : (
 					<SolanaConnect wallet={solana} />
 				)}

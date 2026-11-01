@@ -11,11 +11,6 @@ function wasDismissed(): boolean {
 	}
 }
 
-/**
- * A first-visit explainer: what Resu is, in one line, plus the three steps and a
- * plain-language tier key. Dismissible and remembered per browser, so it never
- * gets in the way of a returning user. Leads with the benefit, not the loss.
- */
 export function Onboarding() {
 	const [hidden, setHidden] = useState(wasDismissed);
 
@@ -37,8 +32,6 @@ export function Onboarding() {
 		}
 	}
 
-	// When dismissed, leave a quiet link in the same spot so it can be brought
-	// back — a user who closed it by habit can always find it again.
 	if (hidden) {
 		return (
 			<button type="button" className={css.reopen} onClick={reopen}>
@@ -87,13 +80,13 @@ export function Onboarding() {
 
 			<div className={css.key}>
 				<span>
-					<i className={css.dotSafe} /> <b>Protected</b> — loses last, steady yield
+					<b>Protected</b> — loses last, steady yield
 				</span>
 				<span>
-					<i className={css.dotMid} /> <b>Balanced</b> — a middle ground
+					<b>Balanced</b> — a middle ground
 				</span>
 				<span>
-					<i className={css.dotAgg} /> <b>Aggressive</b> — highest yield, takes the first loss
+					<b>Aggressive</b> — highest yield, takes the first loss
 				</span>
 			</div>
 		</section>

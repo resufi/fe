@@ -8,11 +8,33 @@
 	padding: 0 14px;
 	font: inherit;
 	font-size: 13px;
-	background: var(--accent);
-	color: var(--accent-fg);
-	border: 1px solid var(--accent);
+
+	background: var(--btn-bg, var(--accent));
+	color: var(--btn-fg, var(--accent-fg));
+	border: 1px solid var(--btn-bg, var(--accent));
 	border-radius: 999px;
 	cursor: pointer;
+}
+
+.chainMask {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	background-color: currentColor;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+}
+
+.chainMark {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	object-fit: contain;
 }
 
 .mark {
@@ -70,7 +92,7 @@
 }
 
 .close:hover {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .list {
@@ -130,10 +152,6 @@
 	color: var(--junior);
 }
 
-/* The wallet icon in the list.
-   On EVM the wallet sends the icon via EIP-6963, so this is an <img>, not
-   an svg we drew. The fallback is the first letter of the name: the row
-   shouldn't fall apart because of a wallet with no icon. */
 .icon {
 	width: 20px;
 	height: 20px;

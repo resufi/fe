@@ -3,4 +3,12 @@
 	height: 40px;
 	display: block;
 	flex: none;
+
+	shape-rendering: var(--logo-rendering);
+}
+
+.logo path,
+.logo circle {
+	vector-effect: var(--logo-vector-effect);
+	stroke-width: var(--logo-stroke-w);
 }

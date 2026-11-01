@@ -136,9 +136,9 @@ if (deployed) {
     };
     const reached = Object.entries(states).find(([, v]) => v)?.[0];
     check(`the app reached protocol interaction (${reached ?? 'no state'})`, Boolean(reached));
-    check('no deploy instructions — the protocol is deployed', !html.includes('not deployed'));
+    check('no "not live" notice — the protocol is deployed', !html.includes('not live yet'));
 } else {
-    check('with no addresses it shows instructions, not made-up data', html.includes('not deployed'));
+    check('with no addresses it says so, instead of made-up data', html.includes('not live yet'));
     check('no tranche cards — nothing to draw', !html.includes('data-waterfall'));
 }
 

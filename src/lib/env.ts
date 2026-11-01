@@ -1,4 +1,3 @@
-
 declare const __RESU_ENV__: Record<string, string | undefined> | undefined;
 
 export function env(name: string): string | undefined {

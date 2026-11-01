@@ -3,11 +3,6 @@ import { shortAddress } from "../../lib/format.ts";
 import { fetchPoints, entryOf, fmtPoints, type PointsResult } from "../../lib/points.ts";
 import css from "../DepositPanel/DepositPanel.module.css";
 
-/**
- * Activity points: USD value held × time, weighted by tier. Read from the
- * static leaderboard the off-chain indexer publishes. Shows the connected
- * wallet's standing and the top holders. Hidden until a leaderboard exists.
- */
 export function PointsPanel({ address }: { address: string | null }) {
 	const [data, setData] = useState<PointsResult | null>(null);
 	const [open, setOpen] = useState(false);
@@ -16,7 +11,6 @@ export function PointsPanel({ address }: { address: string | null }) {
 		void fetchPoints().then(setData);
 	}, []);
 
-	// Nothing published yet, or no holders — keep the app uncluttered.
 	if (!data || data.leaderboard.length === 0) return null;
 
 	const me = entryOf(data, address);

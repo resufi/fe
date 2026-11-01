@@ -1,31 +1,17 @@
 import { env } from "./env.ts";
 import type { ChainId } from "./chains.ts";
 
-/**
- * A shared layer for all of Resu's EVM chains: HyperEVM, Robinhood, Arbitrum.
- *
- * Calls are built by hand, without viem or ethers — the same reason as in
- * solana.ts: we only need to read a dozen fixed-shape functions, and a
- * library would add hundreds of kilobytes. The chains differ only by addresses
- * and node; the reading logic is one.
- *
- * The coupon contract (OracleVault on Robinhood/Arbitrum) and the HLP contract
- * (ResuVault on HyperEVM) share the same read signatures — nav/values/
- * totalShares/claims/tickets — so one reader serves both.
- */
-
 export type EvmChainParams = {
 	chainId: number;
 	chainIdHex: string;
 	name: string;
 	rpc: string;
-	/** Env variable overriding the node (a public one can be slow). */
+
 	rpcEnv?: string;
 	explorer: string;
 	nativeCurrency: { name: string; symbol: string; decimals: number };
 };
 
-/** EVM chain params. The key matches the app's ChainId. */
 export const EVM_CHAINS: Partial<Record<ChainId, EvmChainParams>> = {
 	hyperevm: {
 		chainId: 999,
@@ -85,7 +71,6 @@ export function evmRpc(id: ChainId): string {
 	return (c.rpcEnv ? env(c.rpcEnv) : undefined) ?? c.rpc;
 }
 
-/** Selectors. Shared by ResuVault and OracleVault — the signatures match. */
 export const SIG = {
 	nav: "0xc1590cd7",
 	values: "0x971217b7",
@@ -102,7 +87,6 @@ export const SIG = {
 	approve: "0x095ea7b3",
 } as const;
 
-/** An ABI word: 32 bytes, right-aligned. */
 export const word = (v: bigint | number | string): string => {
 	if (typeof v === "string") return v.toLowerCase().replace(/^0x/, "").padStart(64, "0");
 	return BigInt(v).toString(16).padStart(64, "0");
@@ -120,18 +104,6 @@ const words = (hex: string): bigint[] => {
 
 let nextId = 1;
 
-/**
- * A rate-limited node answers a burst with rejections, not data.
- *
- * `mainnet.base.org` lets about eight requests through back to back and then
- * returns 429 for the rest — a full pool pass used to need thirteen, so the
- * tail of every refresh arrived as errors. Two things fix that: the pass is
- * now one `eth_call` (see `multicall`), and whatever is left goes through this
- * queue, one request at a time with a gap between them.
- *
- * Shaped after `enqueue` in chain.ts, which does the same for toncenter. Kept
- * per node: the chains have separate limits and must not wait on each other.
- */
 const MIN_GAP_MS = 250;
 
 const RETRIES = 4;
@@ -141,7 +113,6 @@ const lastAt = new Map<string, number>();
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** The node refused the pace, not the call — worth repeating. */
 class RateLimited extends Error {
 	constructor() {
 		super("EVM RPC 429");
@@ -149,11 +120,6 @@ class RateLimited extends Error {
 	}
 }
 
-/*
- * A limit shows up in two shapes: as HTTP 429, and — inside a batch, where the
- * envelope is 200 — as a JSON-RPC error. Base sends -32016 "over rate limit";
- * other nodes word it their own way, so the message is checked too.
- */
 const isRateLimited = (e: unknown): boolean =>
 	e instanceof RateLimited ||
 	/rate limit|too many requests|429/i.test(
@@ -201,18 +167,8 @@ async function rpc<T>(url: string, method: string, params: unknown[]): Promise<T
 	});
 }
 
-/**
- * Multicall3 — the same address on every EVM chain, Base included.
- *
- * Batching plain JSON-RPC does not help: the node counts calls, not requests.
- * Base refuses a batch of thirteen outright ("maximum 10 calls in 1 batch"),
- * and inside a batch of ten half the calls come back with "over rate limit" —
- * under HTTP 200, where a status check cannot see them. For the node a
- * multicall is one call, so this is the only batching that actually counts.
- */
 const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
-/** aggregate3((address,bool,bytes)[]) */
 const SIG_AGGREGATE3 = "0x82ad56cb";
 
 type Call = { to: string; data: string };
@@ -223,13 +179,12 @@ function encodeAggregate3(calls: Call[]): string {
 	const structs = calls.map((c) => {
 		const body = c.data.replace(/^0x/, "");
 		const len = body.length / 2;
-		// Dynamic bytes are padded to a whole number of words.
+
 		const padded = body.padEnd(Math.ceil(len / 32) * 64, "0");
-		// target, allowFailure, offset of the bytes inside the struct.
+
 		return word(c.to) + word(1) + word(0x60) + word(len) + padded;
 	});
 
-	// Heads hold each struct's offset from the start of the array's data.
 	let cursor = calls.length * 32;
 	const heads = structs.map((st) => {
 		const head = word(cursor);
@@ -263,7 +218,6 @@ function decodeAggregate3(hex: string): CallResult[] {
 	return out;
 }
 
-/** Error(string) — how a `require` reaches us through a failed multicall. */
 const ERROR_STRING = "08c379a0";
 
 function revertReason(data: string): string | null {
@@ -277,24 +231,12 @@ function revertReason(data: string): string | null {
 	);
 }
 
-/**
- * Every read of one pass in a single request.
- *
- * `allowFailure` is on for all of them: on coupon stock pools `nav()` reverts
- * with "stale price" while the market is closed, and that is a state to show,
- * not a reason to lose the rest of the numbers. The reverting call is rethrown
- * with its own reason so the caller can tell the two apart.
- */
 async function multicall(chain: ChainId, calls: Call[]): Promise<CallResult[]> {
 	const hex = await rpc<string>(evmRpc(chain), "eth_call", [
 		{ to: MULTICALL3, data: encodeAggregate3(calls) },
 		"latest",
 	]);
-	/*
-	 * An address with no code answers with empty data, and the decoder would
-	 * fail on it with something unreadable. All five of our chains have
-	 * Multicall3 at the canonical address — this is for the sixth.
-	 */
+
 	if (!hex || hex === "0x") throw new Error(`No Multicall3 on ${chain}`);
 	return decodeAggregate3(hex);
 }
@@ -305,13 +247,12 @@ function take(results: CallResult[], i: number): bigint[] {
 	return words(r.data);
 }
 
-/** A pool's addresses on an EVM chain. */
 export type EvmPoolContracts = {
 	chain: ChainId;
 	vault: string;
-	/** The base asset deposited (USDC on HLP, the SPY token on Robinhood). */
+
 	asset: string;
-	/** Share tokens, junior -> senior. */
+
 	trancheTokens: readonly string[];
 };
 
@@ -321,12 +262,6 @@ export type EvmVaultState = {
 	totalShares: [bigint, bigint, bigint];
 };
 
-/**
- * Pool state: five reads in one request.
- *
- * It used to be five requests in a row, and together with the wallet pass that
- * made thirteen — more than a public node lets through back to back.
- */
 export async function readVault(c: EvmPoolContracts): Promise<EvmVaultState> {
 	const res = await multicall(c.chain, [
 		{ to: c.vault, data: SIG.nav },
@@ -334,8 +269,6 @@ export async function readVault(c: EvmPoolContracts): Promise<EvmVaultState> {
 		...[0, 1, 2].map((i) => ({ to: c.vault, data: encode(SIG.totalShares, i) })),
 	]);
 
-	// nav() first and on its own: its "stale price" revert is the signal the
-	// caller watches for, and it must not be shadowed by a later failure.
 	const [nav] = take(res, 0);
 	const vals = take(res, 1);
 	return {
@@ -352,13 +285,11 @@ export type EvmWalletState = {
 	tickets: { shares: bigint; unlockAt: number }[];
 };
 
-/** Wallet state: eight reads in one request. */
 export async function readWallet(c: EvmPoolContracts, owner: string): Promise<EvmWalletState> {
 	const res = await multicall(c.chain, [
 		{ to: c.asset, data: encode(SIG.balanceOf, owner) },
 		{ to: c.asset, data: encode(SIG.allowance, owner, c.vault) },
-		// Held shares live in the tranche token, not the pool. Exit tickets —
-		// live on the pool.
+
 		...[0, 1, 2].flatMap((i) => [
 			{ to: c.trancheTokens[i], data: encode(SIG.balanceOf, owner) },
 			{ to: c.vault, data: encode(SIG.tickets, owner, i) },

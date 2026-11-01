@@ -2,11 +2,6 @@ import { DECIMALS } from './units.ts';
 
 const ONE = 10n ** DECIMALS;
 
-/**
- * Integer units -> display string, English conventions: comma groups
- * thousands, period marks the decimal. All arithmetic stays in bigint —
- * money never touches floating point.
- */
 export function fmtAmount(
     units: bigint,
     maxFractionDigits = 2,
@@ -23,22 +18,10 @@ export function fmtAmount(
 
     const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     const body = fracStr ? `${wholeStr}.${fracStr}` : wholeStr;
-    // U+2212 minus, not a hyphen: it lines up with digits in tabular figures.
+
     return negative ? `−${body}` : body;
 }
 
-/**
- * Display string -> integer units. Returns null for anything unparseable.
- *
- * Commas are stripped only when they sit in valid thousands positions.
- * Guessing would be dangerous: "1,5" means 1.5 to a European reader and
- * 15 to anyone stripping separators blindly, so it is rejected instead.
- *
- * Decimals must come from the pool. This is the most dangerous spot in the
- * whole interface: here a person's input becomes a transfer amount, and
- * nine applied to a six-decimal asset would send a thousand tokens
- * instead of one — no error, no warning, with the user's money.
- */
 export function parseAmount(
     input: string,
     decimals: bigint = DECIMALS,
@@ -78,19 +61,10 @@ export function shortAddress(a: string): string {
     return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 }
 
-/**
- * Asset units converted to GRAM.
- *
- * The protocol accounts in the staking token, so the token's own appreciation
- * never shows up in our share price. Without this conversion a senior holder
- * watches their share price drift down to 0.98 and reads it as a loss, while
- * in GRAM terms they are ahead.
- */
 export function toGram(units: bigint, rate: number): bigint {
     return (units * BigInt(Math.round(rate * 1e6))) / 1_000_000n;
 }
 
-/** Share price in asset units, four decimals. */
 export function sharePrice(totalAssets: bigint, totalShares: bigint): string {
     if (totalShares === 0n) return '1.0000';
     const scaled = (totalAssets * 10000n) / totalShares;

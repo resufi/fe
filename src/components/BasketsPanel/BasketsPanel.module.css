@@ -1,67 +1,136 @@
-/* Segmented control — asset picker and the pay-with toggle. */
-.seg {
-	display: flex;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	overflow: hidden;
-}
-.seg button {
-	flex: 1 1 0;
-	padding: 6px 10px;
-	font: inherit;
-	font-size: 13px;
-	background: transparent;
-	border: 0;
-	border-right: 1px solid var(--line);
-	color: var(--muted);
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background 120ms ease, color 120ms ease;
-}
-.seg button:last-child {
-	border-right: 0;
-}
-.seg button:hover:not(.on) {
-	color: var(--fg);
-}
-.seg .on {
-	background: var(--accent);
-	color: var(--accent-fg);
-}
-
-/* Three compact profile cards, side by side — no stretched text links. */
-.profiles {
+.group {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
 	gap: var(--s2);
 }
-.profile {
-	display: grid;
-	gap: 2px;
-	padding: var(--s3) var(--s2);
+
+.label {
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.assets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--s4);
+}
+
+.asset {
+	position: relative;
+	padding: 6px 0 8px;
 	font: inherit;
-	text-align: center;
-	background: transparent;
-	color: var(--fg);
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	cursor: pointer;
-	transition: border-color 120ms ease, background 120ms ease;
-}
-.profile:hover:not(.profileOn) {
-	border-color: var(--muted);
-}
-.profileOn {
-	border-color: var(--accent);
-	background: var(--raise);
-}
-.pName {
 	font-size: 13px;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.asset::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 2px;
+	border-radius: 999px;
+	background: var(--brand);
+	transform: scaleX(0);
+	opacity: 0;
+	transition:
+		transform 340ms cubic-bezier(0.2, 0, 0, 1),
+		opacity 200ms ease;
+}
+
+.asset:hover {
+	color: var(--brand);
+}
+
+.assetOn,
+.assetOn:hover {
+	color: var(--fg);
+}
+
+.assetOn::after {
+	transform: scaleX(1);
+	opacity: 1;
+}
+
+.profiles {
+	display: flex;
+	gap: var(--s2);
+}
+
+.profile {
+	display: inline-flex;
+	flex: 1 1 0;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 8px 6px;
+	font: inherit;
+	font-size: 13px;
+	white-space: nowrap;
+	background: transparent;
+	color: var(--muted);
+
+	border: 1px solid var(--line);
+
+	border-radius: 10px;
+	cursor: pointer;
+	transition:
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.profile:hover:not(.profileOn) {
+	color: var(--brand);
+	border-color: var(--brand);
+}
+
+.profileOn,
+.profileOn:hover {
+	color: var(--fg);
+	border-color: var(--brand);
+
+	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.pName {
 	font-weight: 500;
 }
+
 .pBlend {
 	font-family: var(--mono);
-	font-size: 11px;
+	font-size: 10px;
 	color: var(--muted);
 	letter-spacing: -0.01em;
+}
+
+.payline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.payswap {
+	padding: 0;
+	font: inherit;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.payswap:hover {
+	color: var(--brand);
 }

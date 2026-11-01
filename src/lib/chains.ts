@@ -42,8 +42,7 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	arbitrum: {
 		id: "arbitrum",
 		name: "Arbitrum",
-		// Base asset: WETH; share value in dollars via Chainlink ETH/USD,
-		// senior earns a coupon.
+
 		asset: "WETH",
 		unit: "USD",
 		deployed: true,
@@ -58,8 +57,7 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	monad: {
 		id: "monad",
 		name: "Monad",
-		// aprMON: staked MON (aPriori LST). Share value in dollars via the
-		// MON/USD x aprMON-rate adapter; senior earns a coupon.
+
 		asset: "aprMON",
 		unit: "USD",
 		deployed: true,
@@ -74,8 +72,7 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	robinhood: {
 		id: "robinhood",
 		name: "Robinhood",
-		// Base asset: tokenized SPY (S&P 500). Share value in dollars via
-		// Chainlink; senior earns a coupon.
+
 		asset: "SPY",
 		unit: "USD",
 		deployed: true,
@@ -90,14 +87,28 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 	base: {
 		id: "base",
 		name: "Base",
-		// Coinbase tokenized stocks (B20): MSFT and NVDA. Share value in
-		// dollars via Chainlink, senior earns a coupon.
+
 		asset: "Stocks",
 		unit: "USD",
 		deployed: true,
 		mandate: {
 			maxLossBps: 0,
 			withdrawDelay: 345600,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	hyperevm: {
+		id: "hyperevm",
+		name: "Hyperliquid",
+
+		asset: "USDC",
+		unit: "USD",
+		deployed: true,
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 86400,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,
@@ -113,22 +124,6 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 		mandate: {
 			maxLossBps: 0,
 			withdrawDelay: 0,
-			seniorFeeBps: 0,
-			seniorFeeToMezzBps: 0,
-			mezzFeeBps: 0,
-		},
-	},
-	hyperevm: {
-		id: "hyperevm",
-		name: "Hyperliquid",
-		// Base asset: a share of HLP, the exchange's market-maker vault. Its
-		// yield is its own, not staking, and the drawdowns are real.
-		asset: "USDC",
-		unit: "USD",
-		deployed: true,
-		mandate: {
-			maxLossBps: 0,
-			withdrawDelay: 86400,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,

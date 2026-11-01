@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+	<!--
+		Base's mark: a disc with a horizontal slot cut out of its right half.
+		One path with evenodd, so the slot is a hole — the button's own colour
+		shows through it instead of a painted-in stripe.
+
+		The disc spans 78% of the box, less than the other marks take: a solid
+		round shape reads larger than an outline at equal measurements, so the
+		shares differ to make the sizes look equal.
+	-->
+	<path
+		fill="#ffffff"
+		fill-rule="evenodd"
+		d="M12 2.64A9.36 9.36 0 1 0 12 21.36A9.36 9.36 0 1 0 12 2.64ZM7.88 11.08H22.30V12.92H7.88Z"
+	/>
+</svg>

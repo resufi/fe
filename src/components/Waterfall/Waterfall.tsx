@@ -13,26 +13,16 @@ type Props = {
 	rate: number | null;
 
 	asset: string;
-	/** Base asset decimals: nine for tsTON, six for tsUSDe. */
+
 	decimals: number;
-	/** Pool economics: a protection fee or fixed coupons. */
+
 	kind: PoolKind;
-	/** Chain and pool selector. Lives in the waterfall header — a step of the same choice. */
+
 	controls?: ReactNode;
 	selected: number;
 	onSelect: (id: number) => void;
 };
 
-/**
- * What a tranche earns or gives up per year, on top of the asset's base yield.
- *
- * For "coupon" pools the sign is opposite: there senior doesn't pay for
- * protection but earns a fixed rate, and junior takes not a premium
- * but the entire residual above those rates. Junior has no fixed rate — its
- * number is the leverage on the price move (pool / junior, i.e. 1 / junior's
- * share), shown from the live split so it tracks the real proportions as the
- * pool fills.
- */
 function rateLabel(
 	id: number,
 	m: Mandate,
@@ -43,9 +33,7 @@ function rateLabel(
 	if (kind === "coupon") {
 		if (id === 2) return `+${fmtBps(m.seniorRateBps ?? 0)}`;
 		if (id === 1) return `+${fmtBps(m.mezzRateBps ?? 0)}`;
-		// Junior's reward is leverage on the price = pool / junior share. Use the
-		// live split once the pool has filled; before that, the design leverage
-		// from the target weights, so junior always sees a concrete figure.
+
 		if (juniorAssets > 0n) return `${(Number(total) / Number(juniorAssets)).toFixed(1)}×`;
 		if (m.weights && m.weights[0] > 0) return `${(100 / m.weights[0]).toFixed(1)}×`;
 		return "highest yield";
@@ -58,12 +46,10 @@ function rateLabel(
 	return "highest yield";
 }
 
-/** A plain 1–5 risk reading: Protected low, Aggressive high. */
 function riskLevel(id: number): number {
 	return id === 2 ? 1 : id === 1 ? 3 : 5;
 }
 
-/** A human caption for what the rate figure means. */
 function rateCaption(id: number, kind: PoolKind): string {
 	if (kind === "coupon") return id === 0 ? "price leverage" : "fixed · per year";
 	if (id === 2) return "protection fee · yr";
@@ -160,10 +146,7 @@ export function Waterfall({
 					No deposits yet — be the first. Your deposit sets the starting mix.
 				</p>
 			) : kind === "coupon" ? (
-				/* This pool has no loss ceiling: shares are re-derived from the pool's
-				   value on every read, not written off by events,
-				   so there's nothing to cap. Drawing a scale here would
-				   promise a limit that doesn't exist. */
+
 				<p className={s.capNote}>
 					Your tier's value tracks the pool live. Aggressive absorbs a drop
 					first, then Balanced, and Protected only if both are used up.

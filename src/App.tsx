@@ -37,10 +37,9 @@ import css from "./App.module.css";
 export default function App() {
 	const [pool, setPoolState] = useState<Pool>(loadPool);
 	const solana = useSolanaWallet();
-	// The EVM wallet targets the active pool's chain; for a non-EVM pool we take
-	// any EVM chain as a stub — it isn't used there anyway.
+
 	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
-	const { data, error, paused, loading, refresh, network } = useProtocol(
+	const { data, error, loading, refresh, network } = useProtocol(
 		pool,
 		pool.chain === "solana" ? solana.address : null,
 		pool.chain in EVM_CHAINS ? evm.address : null,
@@ -55,16 +54,11 @@ export default function App() {
 		saveChain(p.chain);
 	}
 
-	// Switching chain selects its first pool: addresses, decimals and mandate are
-	// per-chain, and keeping the previous chain's choice would simply be wrong.
 	function switchChain(id: ChainId) {
 		const next = poolsOfChain(id)[0];
 		if (next) switchPool(next);
 	}
 
-	// The same selector in two places: in the waterfall header when data exists,
-	// and above the message when it doesn't. Leaving an undeployed pool must happen
-	// exactly where no waterfall exists.
 	const controls = (
 		<PoolControls
 			chain={chain}
@@ -75,12 +69,6 @@ export default function App() {
 		/>
 	);
 
-	/*
-	 * The opening screen runs once per visit and owns its own exit: it decides
-	 * when its animation is finished, we only tell it whether there is anything
-	 * to show underneath. A pool switch later must not bring it back, so this
-	 * is state and not a check over `data`.
-	 */
 	const [intro, setIntro] = useState(true);
 	const ready = Boolean(data) || Boolean(error) || !pool.deployed;
 
@@ -101,14 +89,15 @@ export default function App() {
 			</header>
 
 			<h1 className={css.lede} data-lede>
-				Choose your risk on any asset —
+				Choose your risk on any asset -
 				<br />
 				from protected to high-upside.
 			</h1>
 
 			<p className={css.subhead}>
-				Built first for tokenized real-world assets — and just as at home with ETH, staking tokens
-				and yield-bearing stablecoins. One deposit, your choice of risk.
+				Built first for tokenized real-world assets — and just as at home with
+				ETH, staking tokens and yield-bearing stablecoins. One deposit, your
+				choice of risk.
 			</p>
 
 			<Onboarding />
@@ -125,13 +114,7 @@ export default function App() {
 				</div>
 			) : !data ? (
 				<div className={css.stateBlock}>
-					{/*
-					 * The blocks stay live in every state. Switching pool resets
-					 * data to null, and the screen comes here on every switch —
-					 * if we swap the blocks for a skeleton they vanish right under
-					 * the cursor. They have nothing to wait for: the chain and pool lists
-					 * are static.
-					 */}
+
 					{controls}
 					{error ? (
 						<p className={css.state}>
@@ -146,20 +129,16 @@ export default function App() {
 				</div>
 			) : (
 				<>
-					{(error || !hasApiKey) && (
+
+					{(error || (chain === "ton" && !hasApiKey)) && (
 						<p className={`${css.state} small`}>
 							{error
 								? "Data may be stale."
-								: "Public node is rate-limited, so reads are slow."}
-							{!hasApiKey && " A toncenter API key removes the limit."}{" "}
+								: "Public node is rate-limited, so reads are slow. A toncenter API key removes the limit."}{" "}
 							<button className={css.linkish} onClick={() => void refresh()}>
 								Refresh
 							</button>
 						</p>
-					)}
-
-					{paused && (
-						<p className={`${css.state} small`}>{paused}</p>
 					)}
 
 					<div className={css.hero}>
@@ -226,7 +205,9 @@ export default function App() {
 						</div>
 					</div>
 
-					<PointsPanel address={chain === "solana" ? solana.address : evm.address} />
+					<PointsPanel
+						address={chain === "solana" ? solana.address : evm.address}
+					/>
 
 					<Details vault={data.vault} pool={pool} loading={loading} />
 				</>
@@ -235,11 +216,6 @@ export default function App() {
 	);
 }
 
-/**
- * The EVM action area. One way to deposit shown at a time — single tier,
- * one-click profiles, or index — as tabs, so the column is one clean widget
- * instead of a tall stack. Chains with no baskets/index skip the tab strip.
- */
 function EvmActions({
 	chain,
 	data,
@@ -256,7 +232,13 @@ function EvmActions({
 	onDone: () => void;
 }) {
 	const tier = evm.address ? (
-		<EvmPanel data={data} trancheId={selected} pool={pool} wallet={evm} onDone={onDone} />
+		<EvmPanel
+			data={data}
+			trancheId={selected}
+			pool={pool}
+			wallet={evm}
+			onDone={onDone}
+		/>
 	) : (
 		<p className="muted state">
 			Connect an EVM wallet to deposit. Pool state above is live on-chain.
@@ -265,10 +247,22 @@ function EvmActions({
 
 	const tabs = [
 		...(chainHasBaskets(chain)
-			? [{ id: "oneclick", label: "One-click", content: <BasketsPanel chain={chain} wallet={evm} /> }]
+			? [
+					{
+						id: "oneclick",
+						label: "One-click",
+						content: <BasketsPanel chain={chain} wallet={evm} />,
+					},
+				]
 			: []),
 		...(chainHasIndexes(chain)
-			? [{ id: "index", label: "Index", content: <IndexPanel chain={chain} wallet={evm} /> }]
+			? [
+					{
+						id: "index",
+						label: "Index",
+						content: <IndexPanel chain={chain} wallet={evm} />,
+					},
+				]
 			: []),
 		{ id: "tier", label: "Single tier", content: tier },
 	];
@@ -312,14 +306,14 @@ function Details({
 				<div>
 					<dt>Total deposited</dt>
 					<dd className="num">
-							{fmtAmount(vault.principalDeposited, 2, BigInt(pool.decimals))}
-						</dd>
+						{fmtAmount(vault.principalDeposited, 2, BigInt(pool.decimals))}
+					</dd>
 				</div>
 				<div>
 					<dt>Losses applied</dt>
 					<dd className="num">
-							{fmtAmount(vault.cumulativeLoss, 2, BigInt(pool.decimals))}
-						</dd>
+						{fmtAmount(vault.cumulativeLoss, 2, BigInt(pool.decimals))}
+					</dd>
 				</div>
 			</dl>
 
@@ -332,8 +326,7 @@ function Details({
 				<li>
 					Vault <Addr pool={pool} addr={pool.vault} />
 				</li>
-				{/* Not every chain has a Registry: on HyperEVM loss is not
-				    declared but observed, and there's no one to declare it. */}
+
 				{pool.registry && (
 					<li>
 						Registry <Addr pool={pool} addr={pool.registry} />
@@ -342,8 +335,7 @@ function Details({
 				<li>
 					Asset ({pool.asset}) <Addr pool={pool} addr={pool.jettonMaster} />
 				</li>
-				{/* Share token addresses: wallets don't find them on their own, and without
-				    these rows a person won't see their position in their wallet. */}
+
 				{pool.trancheMasters.map((addr, i) => (
 					<li key={addr}>
 						{TRANCHES[i].tech} shares <Addr pool={pool} addr={addr} />
@@ -354,10 +346,6 @@ function Details({
 	);
 }
 
-/**
- * An address linked to the right chain's block explorer. An empty address is
- * a dash with no link: some pools don't have all addresses yet.
- */
 function Addr({ pool, addr }: { pool: Pool; addr: string | null }) {
 	if (!addr) return <code>—</code>;
 	return (
@@ -376,14 +364,11 @@ function Addr({ pool, addr }: { pool: Pool; addr: string | null }) {
 function NotDeployed({ pool }: { pool: Pool }) {
 	return (
 		<section>
-			<h2 className={css.title}>{pool.label} pool is not deployed yet</h2>
+			<h2 className={css.title}>{pool.label} is not live yet</h2>
 			<p className="muted small">
-				The contracts are ready; this pool has no addresses on {pool.network}{" "}
-				yet. Switch pools above to use one that is live.
+				The contracts are ready and this pool is next in line. Pick another pool
+				above to deposit today.
 			</p>
-			<pre className={css.code}>
-				<code>npx blueprint run deployAll --{pool.network}</code>
-			</pre>
 		</section>
 	);
 }

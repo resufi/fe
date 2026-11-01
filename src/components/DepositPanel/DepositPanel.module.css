@@ -29,7 +29,7 @@
 }
 
 .balance:hover:not(:disabled) {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .balance:disabled {
@@ -65,7 +65,8 @@
 	background: var(--brand);
 	color: white;
 	border: 1px solid var(--brand);
-	border-radius: var(--radius);
+
+	border-radius: 999px;
 	cursor: pointer;
 	transition: opacity 120ms ease;
 }

@@ -23,8 +23,7 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 	const [note, setNote] = useState<string | null>(null);
 
 	const decimals = BigInt(pool.decimals);
-	// Addresses come from the pool, not a hardcoded HLP: the same contract lives on
-	// different EVM chains with different addresses.
+
 	const assetAddr = pool.jettonMaster!;
 	const vaultAddr = pool.vault!;
 	const gasSymbol = evmChain(pool.chain).nativeCurrency.symbol;
@@ -32,9 +31,6 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 	const meta = TRANCHES[trancheId];
 	const w = data.wallet;
 
-	// Spending approval is a separate transaction — that's how ERC20 works.
-	// While it's insufficient we show it rather than "deposit": otherwise
-	// a person confirms the transfer and sees a rejection.
 	const needsApproval =
 		amount !== null && w?.allowance !== undefined && w.allowance < amount;
 
@@ -67,8 +63,6 @@ export function EvmPanel({ data, trancheId, pool, wallet, onDone }: Props) {
 	}
 
 	async function approve() {
-		// Infinite approval, to avoid paying for it on every deposit.
-		// It can be revoked with the same call and a zero.
 		await run(
 			assetAddr,
 			encode(SIG.approve, vaultAddr, MAX_UINT),

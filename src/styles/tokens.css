@@ -1,5 +1,3 @@
-
-
 :root {
 	color-scheme: light;
 
@@ -18,6 +16,14 @@
 	--brand: #a684ff;
 	--brand-fg: #12100e;
 
+	--logo-fill: #ffffff;
+	--logo-stroke: #1b1b19;
+	--logo-brand: #a684ff;
+
+	--logo-stroke-w: 5;
+	--logo-vector-effect: none;
+	--logo-rendering: auto;
+
 	--s1: 4px;
 	--s2: 8px;
 	--s3: 12px;
@@ -34,11 +40,6 @@
 		-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
 }
 
-/*
- * Dark theme. The same tokens, redefined. It applies when the OS prefers dark
- * (unless the user forced light), and whenever [data-theme="dark"] is set by the
- * toggle. Keeping both selectors means a manual choice always wins over the OS.
- */
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
 		color-scheme: dark;
@@ -57,6 +58,15 @@
 
 		--brand: #a684ff;
 		--brand-fg: #15140f;
+
+		--logo-fill: #121210;
+		--logo-stroke: #ededea;
+
+		--logo-brand: color-mix(in srgb, var(--brand) 82%, #12100e);
+
+		--logo-stroke-w: 1.25px;
+		--logo-vector-effect: non-scaling-stroke;
+		--logo-rendering: geometricPrecision;
 	}
 }
 
@@ -77,6 +87,15 @@
 
 	--brand: #a684ff;
 	--brand-fg: #15140f;
+
+	--logo-fill: #121210;
+	--logo-stroke: #ededea;
+
+	--logo-brand: color-mix(in srgb, var(--brand) 82%, #12100e);
+
+	--logo-stroke-w: 1.25px;
+	--logo-vector-effect: non-scaling-stroke;
+	--logo-rendering: geometricPrecision;
 }
 
 * {

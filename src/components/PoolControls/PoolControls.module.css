@@ -1,7 +1,8 @@
 .rows {
 	display: grid;
 	justify-items: start;
-	gap: var(--s2);
+
+	gap: var(--s4);
 }
 
 .row {
@@ -10,14 +11,6 @@
 	gap: var(--s2);
 }
 
-/*
- * Chains aren't pills.
- *
- * Both rows looked the same, and the chain choice read like another pool.
- * So chains have no border and no fixed width: they're labels, and the
- * selected one is marked by a bottom underline. Only the hover backing and
- * the underline itself are rounded — the shape stays round but adds no weight to the row.
- */
 .chain {
 	flex: 0 0 auto;
 	position: relative;
@@ -36,10 +29,6 @@
 	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-/*
- * Every item has an underline; unselected ones keep it at zero: that way the row
- * doesn't change height on switch, and the line slides in rather than appearing.
- */
 .chain::after {
 	content: "";
 	position: absolute;
@@ -51,13 +40,7 @@
 	background: var(--brand);
 	transform: scaleX(0);
 	opacity: 0;
-	/*
-	 * The curve ends at one — no overshoot, see the tab-slider fix.
-	 * The duration is noticeably longer than the text color's: the line is the main
-	 * motion, and it should finish reading after the label
-	 * has reached its color. Opacity fades faster than it grows, otherwise
-	 * the departing line shrinks into a bright dot.
-	 */
+
 	transition:
 		transform 340ms cubic-bezier(0.2, 0, 0, 1),
 		opacity 200ms ease;
@@ -85,19 +68,13 @@
 }
 
 .block {
-	/*
-	 * Width is set on the block, not the grid column: the waterfall header is aligned
-	 * left, its width is undefined, and `auto-fill` would collapse the row into
-	 * one column. Fractions (`1fr`) don't fit either — rows vary in length, and
-	 * a lone pool would stretch across the whole row.
-	 */
 	flex: 0 0 116px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
 	padding: 6px 10px;
-	/* The label shouldn't bulge the block: width comes from the column. */
+
 	overflow: hidden;
 	text-overflow: ellipsis;
 	font: inherit;
@@ -105,10 +82,7 @@
 	white-space: nowrap;
 	background: transparent;
 	color: var(--muted);
-	/*
-	 * The border is always there, only its color changes: otherwise the selected block
-	 * would grow in size and the row would jump on every switch.
-	 */
+
 	border: 1px solid var(--line);
 	border-radius: 999px;
 	cursor: pointer;
@@ -127,10 +101,7 @@
 .on:hover {
 	color: var(--fg);
 	border-color: var(--brand);
-	/*
-	 * The shadow is purple, not gray: gray would read as a lift above the
-	 * surface, while here it only reinforces the selected border.
-	 */
+
 	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
 }
 
@@ -144,13 +115,6 @@
 	padding: 1px 5px;
 }
 
-/*
- * Row skeleton.
- *
- * The chain and pool lists are static, nowhere to load them — the skeleton isn't
- * for waiting on data but so that on the first frame the blocks don't pop over
- * the waterfall skeleton fully formed.
- */
 .skeleton {
 	animation: pulse 1.4s ease-in-out infinite;
 }

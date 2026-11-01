@@ -1,42 +1,43 @@
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
 import { isMobile } from "../../lib/evmWallets.ts";
+import { CHAIN_BRAND } from "../../lib/chainBrand.ts";
+import type { ChainId } from "../../lib/chains.ts";
 import css from "../SolanaConnect/SolanaConnect.module.css";
 
-type Props = { wallet: EvmWallet };
+type Props = { wallet: EvmWallet; chain: ChainId };
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
-/**
- * A neutral wallet glyph for the EVM connect button. EVM covers many chains
- * (Base, Arbitrum, Monad, HyperEVM, Robinhood), so a single chain logo would be
- * wrong — unlike Solana/TON, which each get their own mark.
- */
-function WalletGlyph() {
-	return (
-		<svg
-			width="15"
-			height="15"
-			viewBox="0 0 24 24"
-			aria-hidden="true"
-			style={{ flex: "none" }}
-		>
-			<path
-				fill="currentColor"
-				d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17a1 1 0 1 1 0 2H6.5a.5.5 0 0 0 0 1H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5Zm12 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
+function ChainMark({ chain }: { chain: ChainId }) {
+	const brand = CHAIN_BRAND[chain];
+	if (!brand) return null;
+
+	if (brand.mono) {
+		return (
+			<span
+				className={css.chainMask}
+				aria-hidden="true"
+				style={{
+					maskImage: `url(${brand.mark})`,
+					WebkitMaskImage: `url(${brand.mark})`,
+				}}
 			/>
-		</svg>
-	);
+		);
+	}
+	return <img className={css.chainMark} src={brand.mark} alt="" width={16} height={16} />;
 }
 
-/**
- * The wallet icon.
- *
- * Under EIP-6963 the wallet sends its own icon, and we don't need to draw it for it
- * — unlike Solana, where three icons are drawn in our code.
- * An empty string means WalletConnect or a wallet with no icon: there we put
- * the first letter of the name so the row doesn't fall apart.
- */
+function brandStyle(chain: ChainId): CSSProperties | undefined {
+	const brand = CHAIN_BRAND[chain];
+	if (!brand) return undefined;
+	return {
+		["--btn-bg" as string]: brand.bg,
+		["--btn-fg" as string]: brand.fg,
+	};
+}
+
 function Mark({ icon, name }: { icon: string; name: string }) {
 	if (icon) {
 		return <img className={css.icon} src={icon} alt="" width={20} height={20} />;
@@ -48,7 +49,7 @@ function Mark({ icon, name }: { icon: string; name: string }) {
 	);
 }
 
-export function EvmConnect({ wallet }: Props) {
+export function EvmConnect({ wallet, chain }: Props) {
 	const [open, setOpen] = useState(false);
 
 	useEffect(() => {
@@ -63,15 +64,15 @@ export function EvmConnect({ wallet }: Props) {
 	}, [open]);
 
 	if (wallet.address) {
-		// The wrong network is one click, not an error. We show it instead of
-		// the address: otherwise a person taps "deposit" and hits a rejection.
 		if (wallet.wrongChain) {
 			return (
 				<button
 					type="button"
 					className={css.button}
+					style={brandStyle(chain)}
 					onClick={() => void wallet.switchChain()}
 				>
+					<ChainMark chain={chain} />
 					Switch to {wallet.chainName}
 				</button>
 			);
@@ -80,10 +81,11 @@ export function EvmConnect({ wallet }: Props) {
 			<button
 				type="button"
 				className={css.button}
+				style={brandStyle(chain)}
 				onClick={() => void wallet.disconnect()}
 				title={`${wallet.address} · click to disconnect`}
 			>
-				<WalletGlyph />
+				<ChainMark chain={chain} />
 				{short(wallet.address)}
 			</button>
 		);
@@ -91,8 +93,13 @@ export function EvmConnect({ wallet }: Props) {
 
 	return (
 		<>
-			<button type="button" className={css.button} onClick={() => setOpen(true)}>
-				<WalletGlyph />
+			<button
+				type="button"
+				className={css.button}
+				style={brandStyle(chain)}
+				onClick={() => setOpen(true)}
+			>
+				<ChainMark chain={chain} />
 				Connect Wallet
 			</button>
 

@@ -7,8 +7,6 @@ const TONCENTER = {
     testnet: 'https://testnet.toncenter.com/api/v2/jsonRPC',
 };
 
-// The network comes from the environment, not a pool artifact: there are now
-// several pools on TON, and they share one node.
 const NETWORK = (env("VITE_NETWORK") ?? "testnet") as "testnet" | "mainnet";
 
 const OVERRIDE = env("VITE_TON_ENDPOINT");
