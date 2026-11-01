@@ -40,7 +40,7 @@ export default function App() {
 	// The EVM wallet targets the active pool's chain; for a non-EVM pool we take
 	// any EVM chain as a stub — it isn't used there anyway.
 	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
-	const { data, error, paused, loading, refresh, network } = useProtocol(
+	const { data, error, loading, refresh, network } = useProtocol(
 		pool,
 		pool.chain === "solana" ? solana.address : null,
 		pool.chain in EVM_CHAINS ? evm.address : null,
@@ -164,9 +164,6 @@ export default function App() {
 						</p>
 					)}
 
-					{paused && (
-						<p className={`${css.state} small`}>{paused}</p>
-					)}
 
 					<div className={css.hero}>
 						<Waterfall
@@ -379,17 +376,22 @@ function Addr({ pool, addr }: { pool: Pool; addr: string | null }) {
 	);
 }
 
+/*
+ * What a visitor sees on a pool that has no addresses yet.
+ *
+ * It used to print the deploy command — `npx blueprint run deployAll` — on the
+ * live site: an instruction to someone who cannot run it, about a repository
+ * they do not have. The pill above already says SOON; this only says what to
+ * do instead.
+ */
 function NotDeployed({ pool }: { pool: Pool }) {
 	return (
 		<section>
-			<h2 className={css.title}>{pool.label} pool is not deployed yet</h2>
+			<h2 className={css.title}>{pool.label} is not live yet</h2>
 			<p className="muted small">
-				The contracts are ready; this pool has no addresses on {pool.network}{" "}
-				yet. Switch pools above to use one that is live.
+				The contracts are ready and this pool is next in line. Pick another
+				pool above to deposit today.
 			</p>
-			<pre className={css.code}>
-				<code>npx blueprint run deployAll --{pool.network}</code>
-			</pre>
 		</section>
 	);
 }

@@ -173,15 +173,6 @@
 	margin: 0 0 var(--s4);
 }
 
-.code {
-	overflow-x: auto;
-	padding: var(--s3);
-	background: var(--raise);
-	font-family: var(--mono);
-	font-size: 12px;
-	line-height: 1.7;
-}
-
 .sign {
 	margin: var(--s7) 0 0;
 	font-size: 13px;
