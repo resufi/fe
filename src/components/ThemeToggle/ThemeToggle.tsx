@@ -16,13 +16,19 @@ export function ThemeToggle() {
 	const theme = useTheme();
 	const dark = theme === "dark";
 
+	/*
+	 * The label is an aria-label and not a title: a title brings the browser's
+	 * own tooltip, which drops in a second after the cursor stops, in the
+	 * system's font and its own box — a panel from another interface over
+	 * ours. Screen readers get the label either way.
+	 */
+
 	return (
 		<button
 			type="button"
 			className={css.toggle}
 			onClick={() => setTheme(dark ? "light" : "dark")}
 			aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-			title="Toggle theme"
 		>
 			{dark ? (
 				// Sun
