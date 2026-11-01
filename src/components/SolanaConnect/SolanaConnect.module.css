@@ -8,11 +8,29 @@
 	padding: 0 14px;
 	font: inherit;
 	font-size: 13px;
-	background: var(--accent);
-	color: var(--accent-fg);
-	border: 1px solid var(--accent);
+	/*
+	 * The chain paints the button through these two: EvmConnect sets them to
+	 * the chain's own colours. Nothing set them — the neutral button, which is
+	 * what Solana and an unknown chain get.
+	 */
+	background: var(--btn-bg, var(--accent));
+	color: var(--btn-fg, var(--accent-fg));
+	border: 1px solid var(--btn-bg, var(--accent));
 	border-radius: 999px;
 	cursor: pointer;
+}
+
+/*
+ * A chain logo keeps its own colours — the fill under it is the same colour as
+ * the logo's own tile, so no edge shows. Not a mask like .mark below, which
+ * exists to tint Solana's single-colour mark with the button's text colour.
+ */
+.chainMark {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	border-radius: 4px;
+	object-fit: contain;
 }
 
 .mark {

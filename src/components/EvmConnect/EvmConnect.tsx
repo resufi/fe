@@ -1,32 +1,37 @@
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type { EvmWallet } from "../../hooks/useEvmWallet.ts";
 import { isMobile } from "../../lib/evmWallets.ts";
+import { CHAIN_BRAND } from "../../lib/chainBrand.ts";
+import type { ChainId } from "../../lib/chains.ts";
 import css from "../SolanaConnect/SolanaConnect.module.css";
 
-type Props = { wallet: EvmWallet };
+type Props = { wallet: EvmWallet; chain: ChainId };
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 /**
- * A neutral wallet glyph for the EVM connect button. EVM covers many chains
- * (Base, Arbitrum, Monad, HyperEVM, Robinhood), so a single chain logo would be
- * wrong — unlike Solana/TON, which each get their own mark.
+ * The chain's own mark, and with it the chain's colours on the button.
+ *
+ * A generic wallet glyph used to stand here for every EVM chain at once,
+ * because one chain's logo would have been wrong for the others. It is right
+ * now: the button belongs to the chain currently chosen, and that chain is
+ * what a person is about to connect to.
  */
-function WalletGlyph() {
-	return (
-		<svg
-			width="15"
-			height="15"
-			viewBox="0 0 24 24"
-			aria-hidden="true"
-			style={{ flex: "none" }}
-		>
-			<path
-				fill="currentColor"
-				d="M4 6.5A2.5 2.5 0 0 1 6.5 4H17a1 1 0 1 1 0 2H6.5a.5.5 0 0 0 0 1H18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5Zm12 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
-			/>
-		</svg>
-	);
+function ChainMark({ chain }: { chain: ChainId }) {
+	const brand = CHAIN_BRAND[chain];
+	if (!brand) return null;
+	return <img className={css.chainMark} src={brand.mark} alt="" width={16} height={16} />;
+}
+
+/** Inline so an unknown chain falls back to the neutral button, not to blank. */
+function brandStyle(chain: ChainId): CSSProperties | undefined {
+	const brand = CHAIN_BRAND[chain];
+	if (!brand) return undefined;
+	return {
+		["--btn-bg" as string]: brand.bg,
+		["--btn-fg" as string]: brand.fg,
+	};
 }
 
 /**
@@ -48,7 +53,7 @@ function Mark({ icon, name }: { icon: string; name: string }) {
 	);
 }
 
-export function EvmConnect({ wallet }: Props) {
+export function EvmConnect({ wallet, chain }: Props) {
 	const [open, setOpen] = useState(false);
 
 	useEffect(() => {
@@ -70,8 +75,10 @@ export function EvmConnect({ wallet }: Props) {
 				<button
 					type="button"
 					className={css.button}
+					style={brandStyle(chain)}
 					onClick={() => void wallet.switchChain()}
 				>
+					<ChainMark chain={chain} />
 					Switch to {wallet.chainName}
 				</button>
 			);
@@ -80,10 +87,11 @@ export function EvmConnect({ wallet }: Props) {
 			<button
 				type="button"
 				className={css.button}
+				style={brandStyle(chain)}
 				onClick={() => void wallet.disconnect()}
 				title={`${wallet.address} · click to disconnect`}
 			>
-				<WalletGlyph />
+				<ChainMark chain={chain} />
 				{short(wallet.address)}
 			</button>
 		);
@@ -91,8 +99,13 @@ export function EvmConnect({ wallet }: Props) {
 
 	return (
 		<>
-			<button type="button" className={css.button} onClick={() => setOpen(true)}>
-				<WalletGlyph />
+			<button
+				type="button"
+				className={css.button}
+				style={brandStyle(chain)}
+				onClick={() => setOpen(true)}
+			>
+				<ChainMark chain={chain} />
 				Connect Wallet
 			</button>
 
