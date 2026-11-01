@@ -90,10 +90,14 @@
 	color: var(--muted);
 }
 
+/*
+ * One tier per line. In a row the three ran together — the eye had to find
+ * where one description ended and the next name began — and the list is read
+ * once, top to bottom, not scanned.
+ */
 .key {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--s2) var(--s5);
+	display: grid;
+	gap: var(--s1);
 	font-size: 13px;
 	color: var(--muted);
 }
