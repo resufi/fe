@@ -78,6 +78,12 @@
 	font-family: var(--mono);
 	font-size: 12px;
 	color: var(--muted);
+	/*
+	 * Fixed, because the legend below indents by exactly this plus the gap to
+	 * sit under the step titles. A number whose width depends on the glyph
+	 * would take that alignment with it.
+	 */
+	flex: 0 0 12px;
 }
 .steps b {
 	display: block;
@@ -91,13 +97,14 @@
 }
 
 /*
- * One tier per line. In a row the three ran together — the eye had to find
- * where one description ended and the next name began — and the list is read
- * once, top to bottom, not scanned.
+ * The legend repeats the steps' grid, so each tier stands under the step it
+ * belongs to: Protected under "Pick a tier", and so on. Same columns, same
+ * gap — the only addition is the indent past the step number.
  */
 .key {
 	display: grid;
-	gap: var(--s1);
+	grid-template-columns: repeat(3, 1fr);
+	gap: var(--s5);
 	font-size: 13px;
 	color: var(--muted);
 }
@@ -105,16 +112,13 @@
 	color: var(--fg);
 	font-weight: 500;
 }
-/*
- * Plain text, not a flex row: the inline-flex here existed to align the colour
- * dots, and with them gone it turned the name and the dash into two flex
- * items with a 6px gap on top of the space between them.
- */
 .key > span {
-	display: inline;
+	/* The number's width plus the gap after it — see .num. */
+	padding-left: calc(12px + var(--s2));
 }
 @media (max-width: 560px) {
-	.steps {
+	.steps,
+	.key {
 		grid-template-columns: 1fr;
 		gap: var(--s3);
 	}

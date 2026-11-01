@@ -103,21 +103,6 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 			mezzFeeBps: 0,
 		},
 	},
-	ton: {
-		id: "ton",
-		name: "TON",
-		asset: "tsTON",
-		unit: "GRAM",
-		deployed: true,
-
-		mandate: {
-			maxLossBps: 0,
-			withdrawDelay: 0,
-			seniorFeeBps: 0,
-			seniorFeeToMezzBps: 0,
-			mezzFeeBps: 0,
-		},
-	},
 	hyperevm: {
 		id: "hyperevm",
 		name: "Hyperliquid",
@@ -129,6 +114,21 @@ export const CHAINS: Record<ChainId, ChainInfo> = {
 		mandate: {
 			maxLossBps: 0,
 			withdrawDelay: 86400,
+			seniorFeeBps: 0,
+			seniorFeeToMezzBps: 0,
+			mezzFeeBps: 0,
+		},
+	},
+	ton: {
+		id: "ton",
+		name: "TON",
+		asset: "tsTON",
+		unit: "GRAM",
+		deployed: true,
+
+		mandate: {
+			maxLossBps: 0,
+			withdrawDelay: 0,
 			seniorFeeBps: 0,
 			seniorFeeToMezzBps: 0,
 			mezzFeeBps: 0,
