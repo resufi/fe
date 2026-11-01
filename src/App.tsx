@@ -94,7 +94,7 @@ export default function App() {
 					Resu
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
-				<span style={{ display: "inline-flex", alignItems: "center", gap: "var(--s3)" }}>
+				<span className={css.actions}>
 					<ThemeToggle />
 					<NetworkControls chain={chain} solana={solana} evm={evm} />
 				</span>

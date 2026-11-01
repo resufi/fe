@@ -47,6 +47,13 @@
 	max-width: 46ch;
 }
 
+/* The header's right side: theme, then the wallet. */
+.actions {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--s3);
+}
+
 /* Switchers above the message where there is no waterfall. */
 .stateBlock {
 	display: grid;
