@@ -3,20 +3,12 @@
 	height: 40px;
 	display: block;
 	flex: none;
-	/*
-	 * The browser decides on its own how to rasterise a shape, and for a mark
-	 * this small it tends to pick speed; said plainly, it draws by geometry.
-	 */
-	shape-rendering: geometricPrecision;
+	/* Both set per theme — see tokens.css. */
+	shape-rendering: var(--logo-rendering);
 }
 
-/*
- * The outline is 5 units wide in a 237-unit box, so at 40px it lands on about
- * four fifths of a pixel — a width no screen can place, which is what made the
- * petals shimmer. Taken out of the scale, it is a clean 1.25px instead.
- */
 .logo path,
 .logo circle {
-	vector-effect: non-scaling-stroke;
-	stroke-width: 1.25px;
+	vector-effect: var(--logo-vector-effect);
+	stroke-width: var(--logo-stroke-w);
 }
