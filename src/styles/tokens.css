@@ -18,6 +18,15 @@
 	--brand: #a684ff;
 	--brand-fg: #12100e;
 
+	/*
+	 * The mark's three colours. Petals and outline swap with the theme — a
+	 * white flower outlined in near-black is right on paper-coloured ground
+	 * and wrong on a near-black one.
+	 */
+	--logo-fill: #ffffff;
+	--logo-stroke: #1b1b19;
+	--logo-brand: #a684ff;
+
 	--s1: 4px;
 	--s2: 8px;
 	--s3: 12px;
@@ -57,6 +66,11 @@
 
 		--brand: #a684ff;
 		--brand-fg: #15140f;
+
+		--logo-fill: #121210;
+		--logo-stroke: #ededea;
+		/* A touch brighter than --brand: it is the only colour on a dark page. */
+		--logo-brand: #b99cff;
 	}
 }
 
@@ -77,6 +91,11 @@
 
 	--brand: #a684ff;
 	--brand-fg: #15140f;
+
+	--logo-fill: #121210;
+	--logo-stroke: #ededea;
+	/* A touch brighter than --brand: it is the only colour on a dark page. */
+	--logo-brand: #b99cff;
 }
 
 * {
