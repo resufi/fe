@@ -27,9 +27,16 @@
 		transform 320ms cubic-bezier(0.2, 0, 0, 1);
 }
 
+/*
+ * Brand mixed a fifth of the way towards the foreground, not brand itself:
+ * #a684ff on the near-white ground gives about 2.6:1, and an 18px glyph at
+ * that contrast reads as grey that moved rather than as a colour. The mix
+ * works in both themes — it darkens over light, lightens over dark, because
+ * --fg flips with the theme.
+ */
 .toggle:hover {
-	color: var(--brand);
-	box-shadow: 0 2px 14px color-mix(in srgb, var(--brand) 42%, transparent);
+	color: color-mix(in srgb, var(--brand) 80%, var(--fg));
+	box-shadow: 0 2px 14px color-mix(in srgb, var(--brand) 50%, transparent);
 }
 
 /* The focus ring has to be drawn here: there is no border left to show it. */
