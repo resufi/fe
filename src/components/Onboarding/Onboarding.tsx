@@ -87,13 +87,13 @@ export function Onboarding() {
 
 			<div className={css.key}>
 				<span>
-					<i className={css.dotSafe} /> <b>Protected</b> — loses last, steady yield
+					<b>Protected</b> — loses last, steady yield
 				</span>
 				<span>
-					<i className={css.dotMid} /> <b>Balanced</b> — a middle ground
+					<b>Balanced</b> — a middle ground
 				</span>
 				<span>
-					<i className={css.dotAgg} /> <b>Aggressive</b> — highest yield, takes the first loss
+					<b>Aggressive</b> — highest yield, takes the first loss
 				</span>
 			</div>
 		</section>

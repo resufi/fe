@@ -101,29 +101,14 @@
 	color: var(--fg);
 	font-weight: 500;
 }
+/*
+ * Plain text, not a flex row: the inline-flex here existed to align the colour
+ * dots, and with them gone it turned the name and the dash into two flex
+ * items with a 6px gap on top of the space between them.
+ */
 .key > span {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
+	display: inline;
 }
-.dotSafe,
-.dotMid,
-.dotAgg {
-	width: 7px;
-	height: 7px;
-	border-radius: 999px;
-	flex: 0 0 7px;
-}
-.dotSafe {
-	background: var(--senior);
-}
-.dotMid {
-	background: var(--mezz);
-}
-.dotAgg {
-	background: var(--junior);
-}
-
 @media (max-width: 560px) {
 	.steps {
 		grid-template-columns: 1fr;
