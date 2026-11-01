@@ -146,12 +146,18 @@ export default function App() {
 				</div>
 			) : (
 				<>
-					{(error || !hasApiKey) && (
+					{/*
+					  * The toncenter notice belongs to TON and was shown on every
+					  * chain: a person reading pools on Base was told that an API
+					  * key for another network's node would speed them up. A real
+					  * error still speaks everywhere — that one is about the data
+					  * on screen, whatever chain produced it.
+					  */}
+					{(error || (chain === "ton" && !hasApiKey)) && (
 						<p className={`${css.state} small`}>
 							{error
 								? "Data may be stale."
-								: "Public node is rate-limited, so reads are slow."}
-							{!hasApiKey && " A toncenter API key removes the limit."}{" "}
+								: "Public node is rate-limited, so reads are slow. A toncenter API key removes the limit."}{" "}
 							<button className={css.linkish} onClick={() => void refresh()}>
 								Refresh
 							</button>
