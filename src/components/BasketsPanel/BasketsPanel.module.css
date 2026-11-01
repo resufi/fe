@@ -105,7 +105,12 @@
 	 * selected pill would gain size and the row would jump on every switch.
 	 */
 	border: 1px solid var(--line);
-	border-radius: 999px;
+	/*
+	 * Not a stadium: the pill holds two lines, and at 999px the ends bulged
+	 * into fat arcs that ate the padding beside the shorter words. Ten keeps
+	 * the shape soft without pretending the content is one line tall.
+	 */
+	border-radius: 10px;
 	cursor: pointer;
 	transition:
 		border-color 160ms ease,
