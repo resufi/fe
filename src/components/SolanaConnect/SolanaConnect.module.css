@@ -25,6 +25,19 @@
  * the logo's own tile, so no edge shows. Not a mask like .mark below, which
  * exists to tint Solana's single-colour mark with the button's text colour.
  */
+.chainMask {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	background-color: currentColor;
+	mask-size: contain;
+	mask-repeat: no-repeat;
+	mask-position: center;
+	-webkit-mask-size: contain;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+}
+
 .chainMark {
 	flex: none;
 	width: 16px;

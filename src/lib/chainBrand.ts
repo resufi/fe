@@ -1,6 +1,6 @@
 import type { ChainId } from "./chains.ts";
 
-import arbitrumMark from "../icons/chains/arbitrum.png";
+import arbitrumMark from "../icons/chains/arbitrum-mono.png";
 import baseMark from "../icons/chains/base.svg";
 import hyperevmMark from "../icons/chains/hyperevm.png";
 import monadMark from "../icons/chains/monad.png";
@@ -25,6 +25,11 @@ export type ChainBrand = {
 	fg: string;
 	/** The chain's mark, 16px on the button. */
 	mark: string;
+	/**
+	 * The mark is a silhouette: it is painted through as a mask in the text
+	 * colour rather than shown as a picture of itself.
+	 */
+	mono?: boolean;
 };
 
 export const CHAIN_BRAND: Partial<Record<ChainId, ChainBrand>> = {
@@ -38,7 +43,11 @@ export const CHAIN_BRAND: Partial<Record<ChainId, ChainBrand>> = {
 		 */
 		mark: baseMark,
 	},
-	arbitrum: { bg: "#2c374b", fg: "#ffffff", mark: arbitrumMark },
+	/*
+	 * Single-colour, and taken from the official file rather than redrawn: the
+	 * silhouette is everything in it that is not the tile's own background.
+	 */
+	arbitrum: { bg: "#2c374b", fg: "#ffffff", mark: arbitrumMark, mono: true },
 	monad: { bg: "#6e54ff", fg: "#ffffff", mark: monadMark },
 	/* Hyperliquid signs itself in mint on near-black green. */
 	hyperevm: { bg: "#072723", fg: "#97fce4", mark: hyperevmMark },

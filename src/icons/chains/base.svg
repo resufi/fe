@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-	<!-- Base's mark: a circle with its right side cut by a vertical chord. -->
-	<path d="M18.2 4.154A10 10 0 1 0 18.2 19.846Z" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+	<!--
+		Base's mark: a disc with a horizontal slot cut out of its right half.
+		One path with evenodd, so the slot is a hole — the button's own colour
+		shows through it instead of a painted-in stripe.
+	-->
+	<path
+		fill="#ffffff"
+		fill-rule="evenodd"
+		d="M12 2.8A9.2 9.2 0 1 0 12 21.2A9.2 9.2 0 1 0 12 2.8ZM8.3 11.1H22V12.9H8.3Z"
+	/>
 </svg>

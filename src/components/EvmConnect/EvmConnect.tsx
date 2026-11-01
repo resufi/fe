@@ -21,6 +21,21 @@ const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 function ChainMark({ chain }: { chain: ChainId }) {
 	const brand = CHAIN_BRAND[chain];
 	if (!brand) return null;
+
+	// A silhouette is painted in the button's text colour, so it holds together
+	// with the label; a full-colour logo is shown as it is.
+	if (brand.mono) {
+		return (
+			<span
+				className={css.chainMask}
+				aria-hidden="true"
+				style={{
+					maskImage: `url(${brand.mark})`,
+					WebkitMaskImage: `url(${brand.mark})`,
+				}}
+			/>
+		);
+	}
 	return <img className={css.chainMark} src={brand.mark} alt="" width={16} height={16} />;
 }
 
