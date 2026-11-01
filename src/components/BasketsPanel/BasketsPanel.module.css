@@ -22,7 +22,7 @@
 	border-right: 0;
 }
 .seg button:hover:not(.on) {
-	color: var(--fg);
+	color: var(--brand);
 }
 .seg .on {
 	background: var(--accent);

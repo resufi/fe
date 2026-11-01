@@ -108,7 +108,7 @@
 }
 
 .linkish:hover {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .details {

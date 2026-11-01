@@ -29,7 +29,7 @@
 }
 
 .balance:hover:not(:disabled) {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .balance:disabled {

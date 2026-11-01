@@ -22,7 +22,7 @@
 	cursor: pointer;
 }
 .reopen:hover {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .top {
@@ -50,7 +50,7 @@
 	cursor: pointer;
 }
 .close:hover {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .lead {

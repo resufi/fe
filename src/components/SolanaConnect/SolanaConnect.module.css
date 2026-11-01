@@ -101,7 +101,7 @@
 }
 
 .close:hover {
-	color: var(--fg);
+	color: var(--brand);
 }
 
 .list {

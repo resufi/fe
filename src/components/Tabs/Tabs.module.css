@@ -23,7 +23,7 @@
 	transition: color 120ms ease;
 }
 .tab:hover:not(.on) {
-	color: var(--fg);
+	color: var(--brand);
 }
 .on {
 	color: var(--fg);
