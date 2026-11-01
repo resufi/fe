@@ -234,61 +234,51 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 			</header>
 
 			{assets.length > 1 && (
-				<div className={bs.seg}>
-					{assets.map((a) => (
-						<button
-							key={a}
-							type="button"
-							className={activeAsset === a ? bs.on : ""}
-							onClick={() => {
-								setAssetSel(a);
-								setNote(null);
-							}}
-						>
-							{a}
-						</button>
-					))}
+				<div className={bs.group}>
+					<div className={bs.label}>Asset</div>
+					<div className={bs.assets} role="radiogroup" aria-label="Asset">
+						{assets.map((a) => (
+							<button
+								key={a}
+								type="button"
+								role="radio"
+								aria-checked={activeAsset === a}
+								className={`${bs.asset} ${activeAsset === a ? bs.assetOn : ""}`}
+								onClick={() => {
+									setAssetSel(a);
+									setNote(null);
+								}}
+							>
+								{a}
+							</button>
+						))}
+					</div>
 				</div>
 			)}
 
-			<div className={bs.profiles}>
-				{orderedProfiles.map((p) => (
-					<button
-						key={p.address}
-						type="button"
-						className={`${bs.profile} ${p.profile === b.profile ? bs.profileOn : ""}`}
-						onClick={() => {
-							setProfileSel(p.profile);
-							setNote(null);
-						}}
-					>
-						<span className={bs.pName}>{cap(p.profile)}</span>
-						<span className={bs.pBlend}>
-							{p.blendPct[0]}/{p.blendPct[1]}/{p.blendPct[2]}
-						</span>
-					</button>
-				))}
+			<div className={bs.group}>
+				<div className={bs.label}>Profile</div>
+				<div className={bs.profiles} role="radiogroup" aria-label="Profile">
+					{orderedProfiles.map((p) => (
+						<button
+							key={p.address}
+							type="button"
+							role="radio"
+							aria-checked={p.profile === b.profile}
+							className={`${bs.profile} ${p.profile === b.profile ? bs.profileOn : ""}`}
+							onClick={() => {
+								setProfileSel(p.profile);
+								setNote(null);
+							}}
+						>
+							<span className={bs.pName}>{cap(p.profile)}</span>
+							<span className={bs.pBlend}>
+								{p.blendPct[0]}/{p.blendPct[1]}/{p.blendPct[2]}
+							</span>
+						</button>
+					))}
+				</div>
 			</div>
-
-			{canZap && (
-				<div className={bs.seg}>
-					{[false, true].map((mode) => (
-						<button
-							key={String(mode)}
-							type="button"
-							className={payUsdc === mode ? bs.on : ""}
-							onClick={() => {
-								setPayUsdc(mode);
-								setRaw("");
-								setNote(null);
-								setQuote(null);
-							}}
-						>
-							{mode ? "Pay with USDC" : `Pay with ${b.assetSymbol}`}
-						</button>
-					))}
-				</div>
-			)}
 
 			<input
 				className={`${css.input} num`}
@@ -298,6 +288,29 @@ export function BasketsPanel({ chain, wallet }: { chain: ChainId; wallet: EvmWal
 				onChange={(e) => setRaw(e.target.value)}
 				aria-label={payUsdc ? "USDC amount" : "Deposit amount"}
 			/>
+
+			{/*
+			  * Funding is a footnote, not a decision of the same weight as the
+			  * profile: almost everyone pays with the asset itself. A sentence
+			  * with one link says the same as two segments and takes a line.
+			  */}
+			{canZap && (
+				<p className={bs.payline}>
+					<span>Paying with {payUsdc ? "USDC" : b.assetSymbol} ·</span>
+					<button
+						type="button"
+						className={bs.payswap}
+						onClick={() => {
+							setPayUsdc(!payUsdc);
+							setRaw("");
+							setNote(null);
+							setQuote(null);
+						}}
+					>
+						use {payUsdc ? b.assetSymbol : "USDC"} instead
+					</button>
+				</p>
+			)}
 
 			{payUsdc && amount !== null && amount > 0n && (
 				<p className="small muted" style={{ marginTop: 2 }}>

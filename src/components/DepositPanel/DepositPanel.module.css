@@ -65,7 +65,8 @@
 	background: var(--brand);
 	color: white;
 	border: 1px solid var(--brand);
-	border-radius: var(--radius);
+	/* A pill, like everything else that is pressed in this app. */
+	border-radius: 999px;
 	cursor: pointer;
 	transition: opacity 120ms ease;
 }

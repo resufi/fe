@@ -1,67 +1,165 @@
-/* Segmented control — asset picker and the pay-with toggle. */
-.seg {
-	display: flex;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	overflow: hidden;
-}
-.seg button {
-	flex: 1 1 0;
-	padding: 6px 10px;
-	font: inherit;
-	font-size: 13px;
-	background: transparent;
-	border: 0;
-	border-right: 1px solid var(--line);
-	color: var(--muted);
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background 120ms ease, color 120ms ease;
-}
-.seg button:last-child {
-	border-right: 0;
-}
-.seg button:hover:not(.on) {
-	color: var(--brand);
-}
-.seg .on {
-	background: var(--accent);
-	color: var(--accent-fg);
-}
+/*
+ * The panel speaks the app's two existing languages and adds none.
+ *
+ * Three choices used to be dressed three different ways — a black segmented
+ * control for the asset, bordered cards for the profile, another black segment
+ * for what to pay with. The solid fill was the heaviest thing on the screen,
+ * heavier than the deposit button, and nothing else in the app uses it; the
+ * cards were the same shape we had already rejected for pools. Nothing told
+ * you which of the three choices mattered, because all three shouted equally.
+ *
+ * Now: the asset is picked the way a chain is (bare text, brand underline),
+ * the profile the way a pool is (a pill with a brand shadow when selected),
+ * and what to pay with is a quiet line of text under the amount.
+ */
 
-/* Three compact profile cards, side by side — no stretched text links. */
-.profiles {
+/* A caption and its row of controls. */
+.group {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
 	gap: var(--s2);
 }
-.profile {
-	display: grid;
-	gap: 2px;
-	padding: var(--s3) var(--s2);
+
+/* A small caption over a group of controls. */
+.label {
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+/* --- Asset: the chain row, down to the curve. --- */
+
+.assets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--s4);
+}
+
+.asset {
+	position: relative;
+	padding: 6px 0 8px;
 	font: inherit;
-	text-align: center;
-	background: transparent;
-	color: var(--fg);
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	cursor: pointer;
-	transition: border-color 120ms ease, background 120ms ease;
-}
-.profile:hover:not(.profileOn) {
-	border-color: var(--muted);
-}
-.profileOn {
-	border-color: var(--accent);
-	background: var(--raise);
-}
-.pName {
 	font-size: 13px;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	cursor: pointer;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * The underline belongs to every asset, unselected ones hold it at zero: the
+ * row keeps its height and the line slides in instead of appearing.
+ */
+.asset::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 2px;
+	border-radius: 999px;
+	background: var(--brand);
+	transform: scaleX(0);
+	opacity: 0;
+	transition:
+		transform 340ms cubic-bezier(0.2, 0, 0, 1),
+		opacity 200ms ease;
+}
+
+.asset:hover {
+	color: var(--brand);
+}
+
+.assetOn,
+.assetOn:hover {
+	color: var(--fg);
+}
+
+.assetOn::after {
+	transform: scaleX(1);
+	opacity: 1;
+}
+
+/* --- Profile: the pool pill. --- */
+
+.profiles {
+	display: flex;
+	gap: var(--s2);
+}
+
+.profile {
+	display: inline-flex;
+	flex: 1 1 0;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 8px 6px;
+	font: inherit;
+	font-size: 13px;
+	white-space: nowrap;
+	background: transparent;
+	color: var(--muted);
+	/*
+	 * The border is always there and only changes colour: otherwise the
+	 * selected pill would gain size and the row would jump on every switch.
+	 */
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	cursor: pointer;
+	transition:
+		border-color 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease;
+}
+
+.profile:hover:not(.profileOn) {
+	color: var(--brand);
+	border-color: var(--brand);
+}
+
+.profileOn,
+.profileOn:hover {
+	color: var(--fg);
+	border-color: var(--brand);
+	/* Purple, not grey: grey would read as a lift above the plane. */
+	box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.pName {
 	font-weight: 500;
 }
+
 .pBlend {
 	font-family: var(--mono);
-	font-size: 11px;
+	font-size: 10px;
 	color: var(--muted);
 	letter-spacing: -0.01em;
+}
+
+/* --- What to pay with: a sentence, not a control. --- */
+
+.payline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.payswap {
+	padding: 0;
+	font: inherit;
+	background: none;
+	border: 0;
+	color: var(--muted);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.payswap:hover {
+	color: var(--brand);
 }
