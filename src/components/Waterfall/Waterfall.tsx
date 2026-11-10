@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { TrancheState } from "../../lib/chain.ts";
 import { Mandate, TRANCHES } from "../../lib/config.ts";
-import type { PoolKind } from "../../lib/pools.ts";
+import type { Pool, PoolKind } from "../../lib/pools.ts";
 import { fmtAmount, fmtBps, toGram } from "../../lib/format.ts";
 import s from "./Waterfall.module.css";
 
@@ -17,6 +17,7 @@ type Props = {
 	decimals: number;
 
 	kind: PoolKind;
+	priceFeed?: Pool["priceFeed"];
 
 	controls?: ReactNode;
 	selected: number;
@@ -61,6 +62,7 @@ export function Waterfall({
 	asset,
 	decimals,
 	kind,
+	priceFeed,
 	controls,
 	selected,
 	onSelect,
@@ -128,6 +130,26 @@ export function Waterfall({
 					);
 				})}
 			</div>
+
+			{priceFeed === "chainlink" && (
+				<p className={s.feed}>
+					<svg className={s.feedMark} viewBox="0 0 24 24" aria-hidden="true">
+						<path
+							fill="currentColor"
+							d="M12 0L9.798 1.266l-6 3.468L1.596 6v12l2.202 1.266 6.055 3.468L12.055 24l2.202-1.266 5.945-3.468L22.404 18V6l-2.202-1.266-6-3.468zM6 15.468V8.532l6-3.468 6 3.468v6.936l-6 3.468z"
+						/>
+					</svg>
+					Prices provided by{" "}
+					<a
+						className={s.feedLink}
+						href="https://chain.link/"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Chainlink
+					</a>
+				</p>
+			)}
 
 			{empty ? (
 				<p className="muted small">

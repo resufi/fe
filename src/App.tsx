@@ -150,6 +150,7 @@ export default function App() {
 							asset={pool.kind === "coupon" ? pool.unit : pool.asset}
 							decimals={pool.decimals}
 							kind={pool.kind}
+							priceFeed={pool.priceFeed}
 							controls={controls}
 							selected={selected}
 							onSelect={setSelected}

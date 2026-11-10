@@ -125,3 +125,30 @@
 	font-size: 13px;
 	color: var(--muted);
 }
+
+.feed {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.feedMark {
+	flex: none;
+	width: 13px;
+	height: 13px;
+	color: #375bd2;
+}
+
+.feedLink {
+	color: inherit;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.feedLink:hover {
+	color: var(--brand);
+}
