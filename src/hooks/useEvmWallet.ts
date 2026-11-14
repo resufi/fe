@@ -39,6 +39,20 @@ export type EvmWallet = {
 
 const WC = "walletconnect";
 
+/** chainChanged arrives in different shapes: hex "0x2105" (injected), a decimal
+ * string "8453", or CAIP "eip155:8453" (WalletConnect). Normalise all to a number. */
+function parseChainId(raw: unknown): number | null {
+	if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+	if (typeof raw !== "string") return null;
+	const s = (raw.includes(":") ? raw.split(":").pop()! : raw).trim();
+	try {
+		const n = s.startsWith("0x") ? Number(BigInt(s)) : Number(s);
+		return Number.isFinite(n) ? n : null;
+	} catch {
+		return null;
+	}
+}
+
 export function useEvmWallet(target: EvmChainParams): EvmWallet {
 	const [found, setFound] = useState<DiscoveredWallet[]>([]);
 	const [active, setActive] = useState<{ id: string; provider: Eip1193 } | null>(null);
@@ -86,7 +100,10 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 		const p = active?.provider;
 		if (!p?.on) return;
 		const onAccounts = (...a: unknown[]) => setAddress((a[0] as string[])?.[0] ?? null);
-		const onChain = (...a: unknown[]) => setChainId(Number(BigInt(a[0] as string)));
+		const onChain = (...a: unknown[]) => {
+			const id = parseChainId(a[0]);
+			if (id !== null) setChainId(id);
+		};
 		p.on("accountsChanged", onAccounts);
 		p.on("chainChanged", onChain);
 		return () => {
@@ -112,7 +129,10 @@ export function useEvmWallet(target: EvmChainParams): EvmWallet {
 					setActive({ id, provider: s.provider });
 					setWcDisconnect(() => s.disconnect);
 					setAddress(s.address);
-					await readChain(s.provider);
+					// Take the chain from the session, not from eth_chainId: on
+					// UniversalProvider that RPC reports an unset default (chain 1)
+					// and would wrongly flag wrongChain even when on the target.
+					setChainId(s.chainId);
 				} else {
 					const w = found.find((f) => f.id === id) ?? legacyProvider();
 					if (!w) throw new Error("Wallet is no longer available");

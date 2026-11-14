@@ -5,6 +5,9 @@ export const projectId = () => env("VITE_WALLETCONNECT_PROJECT_ID");
 
 export type EvmWcSession = {
 	address: string;
+	/** The chain the wallet actually approved, taken from the session — not from
+	 * an `eth_chainId` RPC, which on UniversalProvider returns an unset default. */
+	chainId: number;
 	provider: Eip1193;
 	disconnect: () => Promise<void>;
 };
@@ -66,13 +69,27 @@ export async function connectEvmWalletConnect(chainId: number): Promise<EvmWcSes
 
 	const accounts = provider.session?.namespaces?.eip155?.accounts ?? [];
 
-	const address = accounts[0]?.split(":").pop() ?? null;
+	// A CAIP-10 account is "eip155:<chainId>:<address>". Read both from it: the
+	// address is the last segment, the approved chain the middle one.
+	const parts = accounts[0]?.split(":") ?? [];
+	const address = parts.length === 3 ? parts[2] : null;
+	const sessionChainId = parts.length === 3 ? Number(parts[1]) : NaN;
 	if (!address) {
 		throw new Error(cancelled ? "Connection cancelled" : "The wallet returned no address");
 	}
 
+	// Pin the default chain so eth_chainId / eth_sendTransaction route to it rather
+	// than to UniversalProvider's unset default (which otherwise reports chain 1).
+	const resolvedChainId = Number.isFinite(sessionChainId) ? sessionChainId : chainId;
+	try {
+		provider.setDefaultChain(`eip155:${resolvedChainId}`);
+	} catch {
+		/* older provider without setDefaultChain — session is single-chain anyway */
+	}
+
 	return {
 		address,
+		chainId: resolvedChainId,
 		provider: provider as unknown as Eip1193,
 		disconnect: async () => {
 			await provider.disconnect().catch(() => undefined);
