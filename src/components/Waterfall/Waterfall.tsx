@@ -35,8 +35,10 @@ function rateLabel(
 		if (id === 2) return `+${fmtBps(m.seniorRateBps ?? 0)}`;
 		if (id === 1) return `+${fmtBps(m.mezzRateBps ?? 0)}`;
 
-		if (juniorAssets > 0n) return `${(Number(total) / Number(juniorAssets)).toFixed(1)}×`;
-		if (m.weights && m.weights[0] > 0) return `${(100 / m.weights[0]).toFixed(1)}×`;
+		if (juniorAssets > 0n)
+			return `${(Number(total) / Number(juniorAssets)).toFixed(1)}×`;
+		if (m.weights && m.weights[0] > 0)
+			return `${(100 / m.weights[0]).toFixed(1)}×`;
 		return "highest yield";
 	}
 	if (id === 2) return `−${fmtBps(m.seniorFeeBps)}`;
@@ -48,7 +50,8 @@ function rateLabel(
 }
 
 function rateCaption(id: number, kind: PoolKind): string {
-	if (kind === "coupon") return id === 0 ? "price leverage" : "fixed · per year";
+	if (kind === "coupon")
+		return id === 0 ? "price leverage" : "fixed · per year";
 	if (id === 2) return "protection fee · yr";
 	if (id === 1) return "net · per year";
 	return "variable yield";
@@ -83,7 +86,10 @@ export function Waterfall({
 				<div className={s.headline}>
 					<h2 className={s.title}>
 						Risk tiers
-						<span className="muted"> — protected on top, a loss hits the bottom first</span>
+						<span className="muted">
+							{" "}
+							— protected on top, a loss hits the bottom first
+						</span>
 					</h2>
 					{!empty && (
 						<span className="muted small">
@@ -131,49 +137,46 @@ export function Waterfall({
 				})}
 			</div>
 
-			{priceFeed === "chainlink" && (
-				<p className={s.feed}>
-					<svg className={s.feedMark} viewBox="0 0 24 24" aria-hidden="true">
-						<path
-							fill="currentColor"
-							d="M12 0L9.798 1.266l-6 3.468L1.596 6v12l2.202 1.266 6.055 3.468L12.055 24l2.202-1.266 5.945-3.468L22.404 18V6l-2.202-1.266-6-3.468zM6 15.468V8.532l6-3.468 6 3.468v6.936l-6 3.468z"
-						/>
-					</svg>
-					Prices provided by{" "}
-					<a
-						className={s.feedLink}
-						href="https://chain.link/"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Chainlink
-					</a>
-				</p>
-			)}
-
 			{empty ? (
 				<p className="muted small">
 					No deposits yet — be the first. Your deposit sets the starting mix.
 				</p>
 			) : kind === "coupon" ? (
-
 				<p className={s.capNote}>
 					Your tier's value tracks the pool live. Aggressive absorbs a drop
 					first, then Balanced, and Protected only if both are used up.
 				</p>
 			) : (
-
 				<div className={s.cap}>
 					<div className={s.bar}>
 						<div className={s.fill} style={{ width: `${headroomPct}%` }} />
 					</div>
 					<p className={s.capNote}>
 						Loss buffer:{" "}
-						<span className="num">{fmtAmount(headroom, 2, BigInt(decimals))}</span>. A loss larger
-						than this is rejected outright.
+						<span className="num">
+							{fmtAmount(headroom, 2, BigInt(decimals))}
+						</span>
+						. A loss larger than this is rejected outright.
 					</p>
 				</div>
 			)}
+			<p className={s.feed}>
+				Prices provided by{" "}
+				<svg className={s.feedMark} viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						fill="currentColor"
+						d="M12 0L9.798 1.266l-6 3.468L1.596 6v12l2.202 1.266 6.055 3.468L12.055 24l2.202-1.266 5.945-3.468L22.404 18V6l-2.202-1.266-6-3.468zM6 15.468V8.532l6-3.468 6 3.468v6.936l-6 3.468z"
+					/>
+				</svg>
+				<a
+					className={s.feedLink}
+					href="https://chain.link/"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					Chainlink
+				</a>
+			</p>
 		</section>
 	);
 }

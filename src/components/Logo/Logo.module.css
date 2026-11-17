@@ -1,14 +1,12 @@
 .logo {
-	width: 40px;
-	height: 40px;
 	display: block;
 	flex: none;
-
-	shape-rendering: var(--logo-rendering);
+	width: 40px;
+	height: 39px;
 }
 
-.logo path,
-.logo circle {
-	vector-effect: var(--logo-vector-effect);
-	stroke-width: var(--logo-stroke-w);
+.logo svg {
+	display: block;
+	width: 100%;
+	height: 100%;
 }
