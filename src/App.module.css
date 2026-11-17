@@ -104,12 +104,8 @@
 	cursor: pointer;
 }
 
-.linkish:hover {
-	color: var(--brand);
-}
-
 .details {
-	margin-top: var(--s8);
+	margin-top: var(--s6);
 	padding-top: var(--s5);
 	border-top: 1px solid var(--line);
 	font-size: 13px;
@@ -181,7 +177,13 @@
 	text-decoration: none;
 }
 
-.addrLink:hover code {
-	text-decoration: underline;
-	text-underline-offset: 3px;
+@media (hover: hover) and (pointer: fine) {
+	.linkish:hover {
+		color: var(--brand);
+	}
+
+	.addrLink:hover code {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
 }
