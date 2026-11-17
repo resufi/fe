@@ -2,7 +2,7 @@ import css from "./HeroSkeleton.module.css";
 
 export const HeroSkeleton = () => {
 	return (
-		<div className={css.wrap} aria-busy="true" aria-label="Loading pool">
+		<div className={css.wrap} data-skeleton aria-busy="true" aria-label="Loading pool">
 			<div className={css.hero}>
 				<div className={css.wf}>
 					<div className={css.line} style={{ width: "260px" }} />
