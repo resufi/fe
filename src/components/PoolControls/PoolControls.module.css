@@ -45,13 +45,7 @@
 		transform 340ms cubic-bezier(0.2, 0, 0, 1),
 		opacity 200ms ease;
 }
-
-.chain:hover {
-	color: var(--brand);
-}
-
-.chainOn,
-.chainOn:hover {
+.chainOn {
 	color: var(--fg);
 }
 
@@ -89,16 +83,15 @@
 	transition:
 		border-color 160ms ease,
 		color 160ms ease,
-		box-shadow 160ms ease;
+		box-shadow 160ms ease,
+		transform 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.block:hover {
-	color: var(--brand);
-	border-color: var(--brand);
+.block:active {
+	transform: scale(0.97);
+	transition-duration: 90ms;
 }
-
-.on,
-.on:hover {
+.on {
 	color: var(--fg);
 	border-color: var(--brand);
 
@@ -135,5 +128,27 @@
 
 	50% {
 		opacity: 0.55;
+	}
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.chain:hover {
+		color: var(--brand);
+	}
+
+	.chainOn:hover {
+		color: var(--fg);
+	}
+
+	.block:hover {
+		color: var(--brand);
+		border-color: var(--brand);
+	}
+
+	.on:hover {
+		color: var(--fg);
+		border-color: var(--brand);
+
+		box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
 	}
 }

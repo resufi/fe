@@ -57,10 +57,6 @@
 	transition: opacity 120ms ease;
 }
 
-.btn:hover:not(:disabled) {
-	opacity: 0.85;
-}
-
 .btn:disabled {
 	opacity: 0.35;
 	cursor: not-allowed;
@@ -76,4 +72,10 @@
 	margin: 0;
 	font-size: 13px;
 	color: var(--muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.btn:hover:not(:disabled) {
+		opacity: 0.85;
+	}
 }

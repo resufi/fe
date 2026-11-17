@@ -19,9 +19,6 @@
 	text-underline-offset: 3px;
 	cursor: pointer;
 }
-.reopen:hover {
-	color: var(--brand);
-}
 
 .top {
 	display: flex;
@@ -46,9 +43,6 @@
 	text-decoration: underline;
 	text-underline-offset: 3px;
 	cursor: pointer;
-}
-.close:hover {
-	color: var(--brand);
 }
 
 .lead {
@@ -108,5 +102,15 @@
 	.key {
 		grid-template-columns: 1fr;
 		gap: var(--s3);
+	}
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.reopen:hover {
+		color: var(--brand);
+	}
+
+	.close:hover {
+		color: var(--brand);
 	}
 }

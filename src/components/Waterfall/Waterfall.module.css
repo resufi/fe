@@ -60,10 +60,6 @@
 	background: transparent;
 }
 
-.band:hover {
-	background: color-mix(in srgb, var(--brand) 7%, transparent);
-}
-
 .band.on {
 	background: color-mix(in srgb, var(--brand) 14%, transparent);
 	box-shadow: inset 3px 0 0 var(--brand);
@@ -149,6 +145,12 @@
 	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.feedLink:hover {
-	color: var(--brand);
+@media (hover: hover) and (pointer: fine) {
+	.band:hover {
+		background: color-mix(in srgb, var(--brand) 7%, transparent);
+	}
+
+	.feedLink:hover {
+		color: var(--brand);
+	}
 }
