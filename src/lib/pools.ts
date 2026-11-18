@@ -39,6 +39,8 @@ export type Pool = {
 
 	ratePool?: string;
 
+	priceFeed?: "chainlink";
+
 	vault: string | null;
 	registry: string | null;
 	jettonMaster: string | null;
@@ -142,6 +144,7 @@ export const POOLS: Pool[] = [
 		decimals: 18,
 		network: "mainnet",
 		deployed: true,
+		priceFeed: "chainlink",
 		mandate: ROBINHOOD_MANDATE,
 
 		minDeposit: 20_000_000_000_000_000n, // 0.02 SPY (~$15)
@@ -161,6 +164,7 @@ export const POOLS: Pool[] = [
 		decimals: 18,
 		network: "mainnet",
 		deployed: true,
+		priceFeed: "chainlink",
 		mandate: ARBITRUM_MANDATE,
 		minDeposit: 6_000_000_000_000_000n, // 0.006 WETH (~$16)
 		vault: ARBITRUM.vault,
@@ -179,6 +183,7 @@ export const POOLS: Pool[] = [
 		decimals: 8,
 		network: "mainnet",
 		deployed: true,
+		priceFeed: "chainlink",
 		mandate: MSFT_MANDATE,
 		minDeposit: 3_000_000n, // 0.03 MSFT (~$15)
 		vault: BASE_MSFT.vault,
@@ -197,6 +202,7 @@ export const POOLS: Pool[] = [
 		decimals: 8,
 		network: "mainnet",
 		deployed: true,
+		priceFeed: "chainlink",
 		mandate: NVDA_MANDATE,
 		minDeposit: 7_000_000n, // 0.07 NVDA (~$16)
 		vault: BASE_NVDA.vault,
@@ -215,6 +221,7 @@ export const POOLS: Pool[] = [
 		decimals: 18,
 		network: "mainnet",
 		deployed: true,
+		priceFeed: "chainlink",
 		mandate: MONAD_MANDATE,
 		minDeposit: 300_000_000_000_000_000_000n, // ~300 aprMON (~$11)
 		vault: MONAD.vault,

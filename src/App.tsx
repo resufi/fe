@@ -30,7 +30,6 @@ import { Onboarding } from "./components/Onboarding/Onboarding.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
-import { Loader } from "./components/Loader/Loader.tsx";
 import { HeroSkeleton } from "./components/HeroSkeleton/HeroSkeleton.tsx";
 import css from "./App.module.css";
 
@@ -69,13 +68,8 @@ export default function App() {
 		/>
 	);
 
-	const [intro, setIntro] = useState(true);
-	const ready = Boolean(data) || Boolean(error) || !pool.deployed;
-
 	return (
 		<div className={css.page}>
-			{intro && <Loader ready={ready} onDone={() => setIntro(false)} />}
-
 			<header className={css.topbar}>
 				<span className={css.brand}>
 					<Logo />
@@ -150,6 +144,7 @@ export default function App() {
 							asset={pool.kind === "coupon" ? pool.unit : pool.asset}
 							decimals={pool.decimals}
 							kind={pool.kind}
+							priceFeed={pool.priceFeed}
 							controls={controls}
 							selected={selected}
 							onSelect={setSelected}

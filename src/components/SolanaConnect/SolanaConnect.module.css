@@ -14,6 +14,12 @@
 	border: 1px solid var(--btn-bg, var(--accent));
 	border-radius: 999px;
 	cursor: pointer;
+	transition: transform 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.button:active {
+	transform: scale(0.97);
+	transition-duration: 90ms;
 }
 
 .chainMask {
@@ -54,6 +60,14 @@
 	place-items: center;
 	padding: 20px;
 	background: rgb(0 0 0 / 45%);
+	opacity: 1;
+	transition: opacity 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@starting-style {
+	.backdrop {
+		opacity: 0;
+	}
 }
 
 .modal {
@@ -65,6 +79,18 @@
 	border: 1px solid var(--fg);
 	border-radius: 14px;
 	box-shadow: 0 20px 50px rgb(0 0 0 / 25%);
+	opacity: 1;
+	transform: scale(1);
+	transition:
+		opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+		transform 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@starting-style {
+	.modal {
+		opacity: 0;
+		transform: scale(0.97);
+	}
 }
 
 .head {
@@ -91,10 +117,6 @@
 	cursor: pointer;
 }
 
-.close:hover {
-	color: var(--brand);
-}
-
 .list {
 	display: grid;
 	gap: 4px;
@@ -115,10 +137,6 @@
 	border-radius: 10px;
 	cursor: pointer;
 	transition: background 120ms ease;
-}
-
-.item:hover:not(:disabled) {
-	background: var(--raise);
 }
 
 .item:disabled {
@@ -166,4 +184,14 @@
 	font-weight: 600;
 	color: var(--muted);
 	text-transform: uppercase;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.close:hover {
+		color: var(--brand);
+	}
+
+	.item:hover:not(:disabled) {
+		background: var(--raise);
+	}
 }

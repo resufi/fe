@@ -43,13 +43,7 @@
 		transform 340ms cubic-bezier(0.2, 0, 0, 1),
 		opacity 200ms ease;
 }
-
-.asset:hover {
-	color: var(--brand);
-}
-
-.assetOn,
-.assetOn:hover {
+.assetOn {
 	color: var(--fg);
 }
 
@@ -83,16 +77,15 @@
 	transition:
 		border-color 160ms ease,
 		color 160ms ease,
-		box-shadow 160ms ease;
+		box-shadow 160ms ease,
+		transform 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.profile:hover:not(.profileOn) {
-	color: var(--brand);
-	border-color: var(--brand);
+.profile:active {
+	transform: scale(0.97);
+	transition-duration: 90ms;
 }
-
-.profileOn,
-.profileOn:hover {
+.profileOn {
 	color: var(--fg);
 	border-color: var(--brand);
 
@@ -131,6 +124,28 @@
 	transition: color 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.payswap:hover {
-	color: var(--brand);
+@media (hover: hover) and (pointer: fine) {
+	.asset:hover {
+		color: var(--brand);
+	}
+
+	.assetOn:hover {
+		color: var(--fg);
+	}
+
+	.profile:hover:not(.profileOn) {
+		color: var(--brand);
+		border-color: var(--brand);
+	}
+
+	.profileOn:hover {
+		color: var(--fg);
+		border-color: var(--brand);
+
+		box-shadow: 0 1px 6px color-mix(in srgb, var(--brand) 35%, transparent);
+	}
+
+	.payswap:hover {
+		color: var(--brand);
+	}
 }

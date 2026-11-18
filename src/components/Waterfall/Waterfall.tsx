@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { TrancheState } from "../../lib/chain.ts";
 import { Mandate, TRANCHES } from "../../lib/config.ts";
-import type { PoolKind } from "../../lib/pools.ts";
+import type { Pool, PoolKind } from "../../lib/pools.ts";
 import { fmtAmount, fmtBps, toGram } from "../../lib/format.ts";
 import s from "./Waterfall.module.css";
 
@@ -17,6 +17,7 @@ type Props = {
 	decimals: number;
 
 	kind: PoolKind;
+	priceFeed?: Pool["priceFeed"];
 
 	controls?: ReactNode;
 	selected: number;
@@ -64,6 +65,7 @@ export function Waterfall({
 	asset,
 	decimals,
 	kind,
+	priceFeed,
 	controls,
 	selected,
 	onSelect,

@@ -28,10 +28,6 @@
 	cursor: pointer;
 }
 
-.balance:hover:not(:disabled) {
-	color: var(--brand);
-}
-
 .balance:disabled {
 	cursor: default;
 	text-decoration: none;
@@ -68,10 +64,14 @@
 
 	border-radius: 999px;
 	cursor: pointer;
-	transition: opacity 120ms ease;
+	transition:
+		opacity 120ms ease,
+		transform 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.submit:hover:not(:disabled) {
+.submit:active:not(:disabled) {
+	transform: scale(0.97);
+	transition-duration: 90ms;
 }
 
 .submit:disabled {
@@ -85,4 +85,14 @@
 	margin: 0;
 	font-size: 13px;
 	color: var(--muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.balance:hover:not(:disabled) {
+		color: var(--brand);
+	}
+
+	.submit:hover:not(:disabled) {
+
+	}
 }
