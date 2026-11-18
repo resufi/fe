@@ -74,7 +74,7 @@
 }
 
 .details {
-	margin-top: var(--s8);
+	margin-top: var(--s6);
 	padding-top: var(--s5);
 	border-top: 1px solid var(--line);
 }
