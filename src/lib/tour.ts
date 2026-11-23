@@ -1,4 +1,4 @@
-import { driver, type DriveStep } from "driver.js";
+import { driver, type DriveStep, type Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import "../styles/tour.css";
 
@@ -10,7 +10,7 @@ const STEPS: DriveStep[] = [
 		popover: {
 			title: "Connect a wallet",
 			description:
-				"Every chain here has its own wallet. The button changes with the network you are on — TON, Solana or an EVM one — and reading the pools works without connecting at all.",
+				"Every chain here has its own wallet. The button changes with the network you are on - TON, Solana or an EVM one - and reading the pools works without connecting at all.",
 		},
 	},
 	{
@@ -34,10 +34,27 @@ const STEPS: DriveStep[] = [
 		popover: {
 			title: "Choose your place in the loss queue",
 			description:
-				"Three tiers over the same pool. Protected loses last and earns least; Aggressive takes the first loss and earns most. This choice is the whole product.",
+				"Three tiers over the same pool. Protected loses last and earns least. Aggressive takes the first loss and earns most. This choice is the whole product.",
 		},
 	},
 ];
+
+const STAGE_PADDING = 4;
+
+function fitStage(tour: Driver | undefined, el?: Element) {
+	if (!tour || !el) return;
+
+	const own = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+	const { height } = el.getBoundingClientRect();
+	const pill = own > height / 2;
+	const radius = Math.round(
+		(pill ? height / 2 : own) + (pill ? STAGE_PADDING : STAGE_PADDING / 2),
+	);
+
+	if (tour.getConfig().stageRadius === radius) return;
+	tour.setConfig({ ...tour.getConfig(), stageRadius: radius });
+	tour.refresh();
+}
 
 export function tourSeen(): boolean {
 	try {
@@ -65,13 +82,18 @@ export function startTour(): void {
 		typeof window.matchMedia === "function" &&
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-	driver({
-		steps,
+	const tour = driver({
+		steps: steps.map((step) => ({
+			...step,
+			disableActiveInteraction: true,
+			onHighlightStarted: (el) => fitStage(tour, el),
+		})),
 		animate: !reduced,
 		overlayColor: "var(--tour-overlay)",
 		overlayOpacity: 1,
-		stagePadding: 8,
-		stageRadius: 12,
+		stagePadding: STAGE_PADDING,
+		stageRadius: 10,
+		disableActiveInteraction: true,
 		showProgress: true,
 		progressText: "{{current}} / {{total}}",
 		nextBtnText: "Next",
@@ -79,5 +101,7 @@ export function startTour(): void {
 		doneBtnText: "Done",
 		popoverClass: "resu-tour",
 		onDestroyed: remember,
-	}).drive();
+	});
+
+	tour.drive();
 }

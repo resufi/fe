@@ -86,7 +86,7 @@ export default function App() {
 			<h1 className={css.lede} data-lede>
 				Choose your risk on any asset -
 				<br />
-				from protected to high-upside.
+				from protected to high-upside
 			</h1>
 
 			<p className={css.subhead}>
@@ -94,7 +94,6 @@ export default function App() {
 				ETH, staking tokens and yield-bearing stablecoins. One deposit, your
 				choice of risk.
 			</p>
-
 
 			{!CHAINS[chain].deployed ? (
 				<div className={css.stateBlock}>
@@ -108,7 +107,6 @@ export default function App() {
 				</div>
 			) : !data ? (
 				<div className={css.stateBlock}>
-
 					{controls}
 					{error ? (
 						<p className={css.state}>
@@ -123,7 +121,6 @@ export default function App() {
 				</div>
 			) : (
 				<>
-
 					{(error || (chain === "ton" && !hasApiKey)) && (
 						<p className={`${css.state} small`}>
 							{error
