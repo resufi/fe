@@ -13,6 +13,7 @@ import { Logo } from "./components/Logo/Logo.tsx";
 import { ChainNotReady } from "./components/ChainNotReady/ChainNotReady.tsx";
 import { NetworkControls } from "./components/NetworkControls/NetworkControls.tsx";
 import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle.tsx";
+import { TourButton } from "./components/TourButton/TourButton.tsx";
 import { PoolControls } from "./components/PoolControls/PoolControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
@@ -26,7 +27,6 @@ import { chainHasIndexes } from "./lib/indexes.ts";
 import type { EvmWallet } from "./hooks/useEvmWallet.ts";
 import type { ProtocolData } from "./hooks/useProtocol.ts";
 import { PointsPanel } from "./components/PointsPanel/PointsPanel.tsx";
-import { Onboarding } from "./components/Onboarding/Onboarding.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
@@ -77,6 +77,7 @@ export default function App() {
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
 				<span className={css.actions}>
+					<TourButton />
 					<ThemeToggle />
 					<NetworkControls chain={chain} solana={solana} evm={evm} />
 				</span>
@@ -94,7 +95,6 @@ export default function App() {
 				choice of risk.
 			</p>
 
-			<Onboarding />
 
 			{!CHAINS[chain].deployed ? (
 				<div className={css.stateBlock}>
