@@ -13,6 +13,15 @@
 	display: none;
 }
 
+/*
+ * driver measures against window.innerWidth but positions with an inset from
+ * the layout viewport, so a classic scrollbar pulls a right-side popover back
+ * over the element it belongs to. --tour-scrollbar carries that difference.
+ */
+.driver-popover.resu-tour.driver-popover-side-right {
+	transform: translateX(var(--tour-scrollbar, 0px));
+}
+
 .driver-popover.resu-tour .driver-popover-title {
 	font-size: 14px;
 	font-weight: 500;

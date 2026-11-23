@@ -1,4 +1,4 @@
-import { driver, type DriveStep, type Driver } from "driver.js";
+import { driver, type Config, type DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
 import "../styles/tour.css";
 
@@ -33,27 +33,22 @@ const STEPS: DriveStep[] = [
 		element: '[data-tour="tiers"]',
 		popover: {
 			title: "Choose your place in the loss queue",
+			side: "right",
+			align: "start",
 			description:
 				"Three tiers over the same pool. Protected loses last and earns least. Aggressive takes the first loss and earns most. This choice is the whole product.",
 		},
 	},
 ];
 
-const STAGE_PADDING = 4;
+const STAGE_PADDING = 0;
 
-function fitStage(tour: Driver | undefined, el?: Element) {
-	if (!tour || !el) return;
+const MIN_RADIUS = 10;
 
+function radiusOf(el: Element): number {
 	const own = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
 	const { height } = el.getBoundingClientRect();
-	const pill = own > height / 2;
-	const radius = Math.round(
-		(pill ? height / 2 : own) + (pill ? STAGE_PADDING : STAGE_PADDING / 2),
-	);
-
-	if (tour.getConfig().stageRadius === radius) return;
-	tour.setConfig({ ...tour.getConfig(), stageRadius: radius });
-	tour.refresh();
+	return Math.round(own > height / 2 ? height / 2 : Math.max(own, MIN_RADIUS));
 }
 
 export function tourSeen(): boolean {
@@ -82,18 +77,18 @@ export function startTour(): void {
 		typeof window.matchMedia === "function" &&
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-	const tour = driver({
-		steps: steps.map((step) => ({
-			...step,
-			disableActiveInteraction: true,
-			onHighlightStarted: (el) => fitStage(tour, el),
-		})),
+	document.documentElement.style.setProperty(
+		"--tour-scrollbar",
+		`${Math.max(0, window.innerWidth - document.documentElement.clientWidth)}px`,
+	);
+
+	const config: Config = {
 		animate: !reduced,
 		overlayColor: "var(--tour-overlay)",
 		overlayOpacity: 1,
 		stagePadding: STAGE_PADDING,
-		stageRadius: 10,
-		disableActiveInteraction: true,
+		stageRadius: MIN_RADIUS,
+		popoverOffset: 14,
 		showProgress: true,
 		progressText: "{{current}} / {{total}}",
 		nextBtnText: "Next",
@@ -101,7 +96,27 @@ export function startTour(): void {
 		doneBtnText: "Done",
 		popoverClass: "resu-tour",
 		onDestroyed: remember,
-	});
+	};
+
+	/*
+	 * The radius is the element's own, so the cutout repeats its shape instead
+	 * of approximating it. It has to be set on the config, which driver takes
+	 * whole — hence the spread of our own object: spreading getConfig() back
+	 * quietly dropped the other options.
+	 */
+	config.steps = steps.map((step) => ({
+		...step,
+		disableActiveInteraction: true,
+		onHighlightStarted: (el) => {
+			if (!el) return;
+			const stageRadius = radiusOf(el);
+			if (tour.getConfig().stageRadius === stageRadius) return;
+			tour.setConfig({ ...config, stageRadius });
+			tour.refresh();
+		},
+	}));
+
+	const tour = driver(config);
 
 	tour.drive();
 }
