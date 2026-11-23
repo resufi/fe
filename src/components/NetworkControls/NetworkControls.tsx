@@ -20,7 +20,7 @@ export function NetworkControls({
 }: Props) {
 	return (
 		<span className={css.controls}>
-			<span className={css.wallet}>
+			<span className={css.wallet} data-tour="wallet">
 				{chain === "ton" ? (
 					<TonConnectButton />
 				) : chain in EVM_CHAINS ? (

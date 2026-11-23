@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { startTour } from "../../lib/tour.ts";
 import css from "./Onboarding.module.css";
 
 const KEY = "resu_onboarding_dismissed_v1";
@@ -44,9 +45,14 @@ export function Onboarding() {
 		<section className={css.card}>
 			<div className={css.top}>
 				<h2 className={css.title}>Getting started</h2>
-				<button className={css.close} onClick={dismiss} aria-label="Dismiss">
-					Dismiss
-				</button>
+				<span className={css.topActions}>
+					<button type="button" className={css.tour} onClick={() => void startTour()}>
+						Show me around
+					</button>
+					<button className={css.close} onClick={dismiss} aria-label="Dismiss">
+						Dismiss
+					</button>
+				</span>
 			</div>
 
 			<p className={css.lead}>
