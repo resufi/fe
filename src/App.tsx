@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTonAddress } from "@tonconnect/ui-react";
 
-import { TRANCHES } from "./lib/config.ts";
+import { BALANCED, TRANCHES } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { explorerAddressUrl } from "./lib/explorer.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
@@ -44,7 +44,7 @@ export default function App() {
 		pool.chain in EVM_CHAINS ? evm.address : null,
 	);
 	const wallet = useTonAddress();
-	const [selected, setSelected] = useState(0);
+	const [selected, setSelected] = useState(BALANCED);
 	const chain = pool.chain;
 
 	function switchPool(p: Pool) {
