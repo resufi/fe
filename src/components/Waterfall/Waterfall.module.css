@@ -87,8 +87,14 @@
 }
 
 .rate {
-	font-size: 22px;
+	font-size: 20px;
 	line-height: 1.1;
+}
+
+.rateWord {
+	font-size: 15px;
+	line-height: 1.25;
+	text-wrap: balance;
 }
 
 .pool {
@@ -162,7 +168,11 @@
 	}
 
 	.rate {
-		font-size: 20px;
+		font-size: 18px;
+	}
+
+	.rateWord {
+		font-size: 13px;
 	}
 
 	.band .name {
