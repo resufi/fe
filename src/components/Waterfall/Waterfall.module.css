@@ -92,7 +92,8 @@
 }
 
 .rateWord {
-	font-size: 15px;
+	font-family: var(--mono);
+	font-size: 17px;
 	line-height: 1.25;
 	text-wrap: balance;
 }
@@ -172,7 +173,7 @@
 	}
 
 	.rateWord {
-		font-size: 13px;
+		font-size: 15px;
 	}
 
 	.band .name {
