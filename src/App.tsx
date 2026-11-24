@@ -73,7 +73,7 @@ export default function App() {
 			<header className={css.topbar}>
 				<span className={css.brand}>
 					<Logo />
-					Resu
+					<span className={css.brandName}>Resu</span>
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
 				<span className={css.actions}>
@@ -84,7 +84,7 @@ export default function App() {
 			</header>
 
 			<h1 className={css.lede} data-lede>
-				Choose your risk on any asset -
+				Choose your risk on any asset -{" "}
 				<br />
 				from protected to high-upside
 			</h1>

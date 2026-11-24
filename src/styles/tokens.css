@@ -111,6 +111,10 @@
 	box-sizing: border-box;
 }
 
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
 body {
 	margin: 0;
 	background: var(--bg) var(--grain) 0 0 / 200px;
@@ -119,6 +123,12 @@ body {
 	font-size: 15px;
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+summary {
+	-webkit-tap-highlight-color: transparent;
 }
 
 code {

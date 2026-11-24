@@ -1,5 +1,5 @@
 .driver-popover.resu-tour {
-	max-width: 320px;
+	max-width: min(320px, calc(100vw - 32px));
 	padding: 16px 18px 14px;
 	background: var(--bg);
 	color: var(--fg);
@@ -18,8 +18,12 @@
  * the layout viewport, so a classic scrollbar pulls a right-side popover back
  * over the element it belongs to. --tour-scrollbar carries that difference.
  */
+.driver-popover.resu-tour {
+	transform: translateX(var(--tour-nudge, 0px));
+}
+
 .driver-popover.resu-tour.driver-popover-side-right {
-	transform: translateX(var(--tour-scrollbar, 0px));
+	transform: translateX(calc(var(--tour-scrollbar, 0px) + var(--tour-nudge, 0px)));
 }
 
 .driver-popover.resu-tour .driver-popover-title {

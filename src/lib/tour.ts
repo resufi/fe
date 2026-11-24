@@ -43,6 +43,8 @@ const STEPS: DriveStep[] = [
 
 const STAGE_PADDING = 0;
 
+const GUTTER = 12;
+
 const MIN_RADIUS = 10;
 
 function radiusOf(el: Element): number {
@@ -95,6 +97,16 @@ export function startTour(): void {
 		prevBtnText: "Back",
 		doneBtnText: "Done",
 		popoverClass: "resu-tour",
+		onPopoverPositioned: (popover) => {
+			const el = popover.wrapper;
+			el.style.setProperty("--tour-nudge", "0px");
+			const box = el.getBoundingClientRect();
+			const vw = document.documentElement.clientWidth;
+			let dx = 0;
+			if (box.right > vw - GUTTER) dx = vw - GUTTER - box.right;
+			if (box.left + dx < GUTTER) dx = GUTTER - box.left;
+			if (dx !== 0) el.style.setProperty("--tour-nudge", `${Math.round(dx)}px`);
+		},
 		onDestroyed: remember,
 	};
 

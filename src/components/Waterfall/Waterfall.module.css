@@ -32,11 +32,6 @@
 	min-height: 360px;
 }
 
-@media (max-width: 780px) {
-	.stack {
-		min-height: 300px;
-	}
-}
 
 .band {
 	display: grid;
@@ -152,5 +147,25 @@
 
 	.feedLink:hover {
 		color: var(--brand);
+	}
+}
+
+@media (max-width: 780px) {
+	.stack {
+		min-height: 0;
+	}
+
+	.band {
+		flex: 0 0 auto;
+		gap: var(--s2) var(--s4);
+		padding: var(--s4);
+	}
+
+	.rate {
+		font-size: 20px;
+	}
+
+	.band .name {
+		font-size: 14px;
 	}
 }
