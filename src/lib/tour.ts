@@ -7,6 +7,7 @@ const KEY = "resu_tour_done_v1";
 const STEPS: DriveStep[] = [
 	{
 		element: '[data-tour="wallet"]',
+		data: { pad: 2, shape: "pill" },
 		popover: {
 			title: "Connect a wallet",
 			description:
@@ -15,6 +16,7 @@ const STEPS: DriveStep[] = [
 	},
 	{
 		element: '[data-tour="chains"]',
+		data: { pad: 8, shape: 12 },
 		popover: {
 			title: "Pick a network",
 			description:
@@ -23,6 +25,7 @@ const STEPS: DriveStep[] = [
 	},
 	{
 		element: '[data-tour="pools"]',
+		data: { pad: 6, shape: "pill" },
 		popover: {
 			title: "Pick a pool",
 			description:
@@ -31,6 +34,7 @@ const STEPS: DriveStep[] = [
 	},
 	{
 		element: '[data-tour="tiers"]',
+		data: { pad: 8, shape: 12 },
 		popover: {
 			title: "Choose your place in the loss queue",
 			side: "right",
@@ -41,16 +45,21 @@ const STEPS: DriveStep[] = [
 	},
 ];
 
-const STAGE_PADDING = 0;
-
 const GUTTER = 12;
 
-const MIN_RADIUS = 10;
+const DEFAULT_PAD = 0;
 
-function radiusOf(el: Element): number {
-	const own = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
-	const { height } = el.getBoundingClientRect();
-	return Math.round(own > height / 2 ? height / 2 : Math.max(own, MIN_RADIUS));
+const DEFAULT_SHAPE = 10;
+
+type Stage = { pad: number; radius: number };
+
+function stageOf(el: Element, step: DriveStep): Stage {
+	const pad = typeof step.data?.pad === "number" ? step.data.pad : DEFAULT_PAD;
+	const shape = step.data?.shape ?? DEFAULT_SHAPE;
+	const height = el.getBoundingClientRect().height + pad * 2;
+	const radius =
+		shape === "pill" ? Math.round(height / 2) : Math.round(Number(shape) + pad);
+	return { pad, radius };
 }
 
 export function tourSeen(): boolean {
@@ -64,9 +73,7 @@ export function tourSeen(): boolean {
 function remember() {
 	try {
 		localStorage.setItem(KEY, "1");
-	} catch {
-		/* private mode: the tour simply offers itself again */
-	}
+	} catch {}
 }
 
 export function startTour(): void {
@@ -88,9 +95,9 @@ export function startTour(): void {
 		animate: !reduced,
 		overlayColor: "var(--tour-overlay)",
 		overlayOpacity: 1,
-		stagePadding: STAGE_PADDING,
-		stageRadius: MIN_RADIUS,
-		popoverOffset: 14,
+		stagePadding: DEFAULT_PAD,
+		stageRadius: DEFAULT_SHAPE,
+		popoverOffset: 10,
 		showProgress: true,
 		progressText: "{{current}} / {{total}}",
 		nextBtnText: "Next",
@@ -110,20 +117,15 @@ export function startTour(): void {
 		onDestroyed: remember,
 	};
 
-	/*
-	 * The radius is the element's own, so the cutout repeats its shape instead
-	 * of approximating it. It has to be set on the config, which driver takes
-	 * whole — hence the spread of our own object: spreading getConfig() back
-	 * quietly dropped the other options.
-	 */
 	config.steps = steps.map((step) => ({
 		...step,
 		disableActiveInteraction: true,
-		onHighlightStarted: (el) => {
+		onHighlightStarted: (el, active) => {
 			if (!el) return;
-			const stageRadius = radiusOf(el);
-			if (tour.getConfig().stageRadius === stageRadius) return;
-			tour.setConfig({ ...config, stageRadius });
+			const { pad, radius } = stageOf(el, active);
+			const live = tour.getConfig();
+			if (live.stagePadding === pad && live.stageRadius === radius) return;
+			tour.setConfig({ ...config, stagePadding: pad, stageRadius: radius });
 			tour.refresh();
 		},
 	}));
