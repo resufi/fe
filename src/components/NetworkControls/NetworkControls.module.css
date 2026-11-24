@@ -7,6 +7,7 @@
 .wallet {
 	display: flex;
 	width: 168px;
+	max-width: 100%;
 }
 
 .wallet > * {
@@ -57,4 +58,20 @@
 	background: var(--bg) !important;
 	color: var(--fg) !important;
 	border: 1px solid var(--fg) !important;
+}
+
+@media (max-width: 560px) {
+	.controls {
+		gap: var(--s2);
+	}
+
+	.wallet {
+		width: 146px;
+	}
+
+	.wallet button,
+	.wallet :global([data-tc-connect-button]),
+	.wallet :global([data-tc-dropdown-button]) {
+		padding: 0 10px !important;
+	}
 }

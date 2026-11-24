@@ -19,7 +19,7 @@ export function PoolControls({
 }: Props) {
 	return (
 		<div className={css.rows}>
-			<div className={css.row} role="radiogroup" aria-label="Network">
+			<div className={css.row} role="radiogroup" aria-label="Network" data-tour="chains">
 				{CHAIN_LIST.map((c) => (
 					<button
 						key={c.id}
@@ -36,7 +36,7 @@ export function PoolControls({
 				))}
 			</div>
 
-			<div className={css.row} role="radiogroup" aria-label="Pool">
+			<div className={css.row} role="radiogroup" aria-label="Pool" data-tour="pools">
 				{pools.map((p) => (
 					<button
 						key={p.id}

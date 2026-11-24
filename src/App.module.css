@@ -73,18 +73,49 @@
 }
 
 @media (max-width: 900px) {
-.stateBlock {
-	display: grid;
-	gap: var(--s5);
-}
-
-.hero {
+	.hero {
 		grid-template-columns: 1fr;
 		gap: var(--s6);
 	}
 
 	.side {
 		position: static;
+	}
+}
+
+@media (max-width: 560px) {
+	.page {
+		padding: var(--s4) var(--s4) 72px;
+	}
+
+	.topbar {
+		gap: var(--s3);
+		margin-bottom: var(--s6);
+	}
+
+	.brandName {
+		display: none;
+	}
+
+	.actions {
+		gap: var(--s2);
+	}
+
+	.lede br {
+		display: none;
+	}
+
+	.subhead {
+		margin-bottom: var(--s6);
+	}
+
+	.hero {
+		gap: var(--s5);
+	}
+
+	.facts {
+		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+		gap: var(--s4);
 	}
 }
 

@@ -90,6 +90,8 @@ export function hueStyle(trancheId: number): CSSProperties {
 	return { ["--hue" as string]: `var(${TRANCHES[trancheId].hue})` };
 }
 
+export const BALANCED = 1;
+
 export type TrancheMeta = (typeof TRANCHES)[number];
 
 export { DECIMALS } from "./units.ts";

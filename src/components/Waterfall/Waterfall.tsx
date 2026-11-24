@@ -99,7 +99,7 @@ export function Waterfall({
 				</div>
 			</header>
 
-			<div className={s.stack}>
+			<div className={s.stack} data-tour="tiers">
 				{order.map((id) => {
 					const meta = TRANCHES[id];
 					const state = tranches[id];
@@ -121,9 +121,25 @@ export function Waterfall({
 							</span>
 
 							<span className={s.figures}>
-								<span className={`${s.rate} num`}>
-									{rateLabel(id, mandate, kind, tranches[0].totalAssets, total)}
-								</span>
+								{(() => {
+									const label = rateLabel(
+										id,
+										mandate,
+										kind,
+										tranches[0].totalAssets,
+										total,
+									);
+									const figure = /\d/.test(label);
+									return (
+										<span
+											className={
+												figure ? `${s.rate} num` : `${s.rate} ${s.rateWord}`
+											}
+										>
+											{label}
+										</span>
+									);
+								})()}
 								<span className={s.caption}>{rateCaption(id, kind)}</span>
 								<span className={`${s.pool} num`}>
 									{rate === null

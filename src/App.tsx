@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTonAddress } from "@tonconnect/ui-react";
 
-import { TRANCHES } from "./lib/config.ts";
+import { BALANCED, TRANCHES } from "./lib/config.ts";
 import { fmtAmount, fmtBps, fmtDuration, shortAddress } from "./lib/format.ts";
 import { explorerAddressUrl } from "./lib/explorer.ts";
 import { useProtocol } from "./hooks/useProtocol.ts";
@@ -13,6 +13,7 @@ import { Logo } from "./components/Logo/Logo.tsx";
 import { ChainNotReady } from "./components/ChainNotReady/ChainNotReady.tsx";
 import { NetworkControls } from "./components/NetworkControls/NetworkControls.tsx";
 import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle.tsx";
+import { TourButton } from "./components/TourButton/TourButton.tsx";
 import { PoolControls } from "./components/PoolControls/PoolControls.tsx";
 import { SolanaPanel } from "./components/SolanaPanel/SolanaPanel.tsx";
 import { useSolanaWallet } from "./hooks/useSolanaWallet.ts";
@@ -26,7 +27,6 @@ import { chainHasIndexes } from "./lib/indexes.ts";
 import type { EvmWallet } from "./hooks/useEvmWallet.ts";
 import type { ProtocolData } from "./hooks/useProtocol.ts";
 import { PointsPanel } from "./components/PointsPanel/PointsPanel.tsx";
-import { Onboarding } from "./components/Onboarding/Onboarding.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
 import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
@@ -44,7 +44,7 @@ export default function App() {
 		pool.chain in EVM_CHAINS ? evm.address : null,
 	);
 	const wallet = useTonAddress();
-	const [selected, setSelected] = useState(0);
+	const [selected, setSelected] = useState(BALANCED);
 	const chain = pool.chain;
 
 	function switchPool(p: Pool) {
@@ -73,19 +73,20 @@ export default function App() {
 			<header className={css.topbar}>
 				<span className={css.brand}>
 					<Logo />
-					Resu
+					<span className={css.brandName}>Resu</span>
 					{network === "testnet" && <span className={css.chip}>testnet</span>}
 				</span>
 				<span className={css.actions}>
+					<TourButton />
 					<ThemeToggle />
 					<NetworkControls chain={chain} solana={solana} evm={evm} />
 				</span>
 			</header>
 
 			<h1 className={css.lede} data-lede>
-				Choose your risk on any asset -
+				Choose your risk on any asset -{" "}
 				<br />
-				from protected to high-upside.
+				from protected to high-upside
 			</h1>
 
 			<p className={css.subhead}>
@@ -93,8 +94,6 @@ export default function App() {
 				ETH, staking tokens and yield-bearing stablecoins. One deposit, your
 				choice of risk.
 			</p>
-
-			<Onboarding />
 
 			{!CHAINS[chain].deployed ? (
 				<div className={css.stateBlock}>
@@ -108,7 +107,6 @@ export default function App() {
 				</div>
 			) : !data ? (
 				<div className={css.stateBlock}>
-
 					{controls}
 					{error ? (
 						<p className={css.state}>
@@ -123,7 +121,6 @@ export default function App() {
 				</div>
 			) : (
 				<>
-
 					{(error || (chain === "ton" && !hasApiKey)) && (
 						<p className={`${css.state} small`}>
 							{error

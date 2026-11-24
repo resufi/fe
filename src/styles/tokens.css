@@ -17,6 +17,8 @@
 	--brand: #a684ff;
 	--brand-fg: #12100e;
 
+	--tour-overlay: rgb(28 26 23 / 62%);
+
 	--logo-fill: #ffffff;
 	--logo-stroke: #1b1b19;
 	--logo-brand: #a684ff;
@@ -61,6 +63,8 @@
 		--brand: #a684ff;
 		--brand-fg: #15140f;
 
+		--tour-overlay: rgb(10 9 8 / 72%);
+
 		--logo-fill: #121210;
 		--logo-stroke: #ededea;
 
@@ -91,6 +95,8 @@
 	--brand: #a684ff;
 	--brand-fg: #15140f;
 
+	--tour-overlay: rgb(10 9 8 / 72%);
+
 	--logo-fill: #121210;
 	--logo-stroke: #ededea;
 
@@ -105,6 +111,10 @@
 	box-sizing: border-box;
 }
 
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
 body {
 	margin: 0;
 	background: var(--bg) var(--grain) 0 0 / 200px;
@@ -113,6 +123,12 @@ body {
 	font-size: 15px;
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+summary {
+	-webkit-tap-highlight-color: transparent;
 }
 
 code {
