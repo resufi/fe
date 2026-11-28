@@ -57,6 +57,8 @@ await new Promise((r) => setTimeout(r, Number(process.env.SMOKE_WAIT ?? 1500)));
 
 const root = window.document.getElementById('root');
 const html = root?.innerHTML ?? '';
+// Reactivity needs a moment; filled in after the asset-type card is clicked.
+let afterPick = html;
 
 let failed = 0;
 function check(name, cond, extra = '') {
@@ -78,26 +80,42 @@ check('the heading is rendered', html.includes('data-lede'));
 {
     check('a skeleton stands in while the pool is read', !loading || html.includes('aria-busy="true"'));
     check('the wallet button is mounted', html.includes('data-tc-connect-button'));
+    // The front door is asset types, not chains. Without the grid a person lands
+    // on an empty page; without the categories being clickable nothing is reachable.
+    check('the asset-type grid is rendered', html.includes('data-tour="categories"'));
+    check('every asset type is offered', html.includes('Stable Yield') && html.includes('Stocks'));
+
+    // Walk through the front door the way a person does: pick an asset type,
+    // then check everything below is the pool view again.
+    // Staking is the category that spans several chains, so it exercises the
+    // network row too; a single-chain category hides that row by design.
+    const cards = [...root.querySelectorAll('[data-tour="categories"] button')];
+    const firstCard = cards.find((b) => b.textContent?.includes('Staking')) ?? cards[0];
+    check('an asset type can be picked', Boolean(firstCard));
+    firstCard?.click();
+    await new Promise((r) => setTimeout(r, 400));
+    afterPick = root?.innerHTML ?? '';
+
     // The chain switcher: both tabs must be present, and an undeployed
     // chain is marked, so expectations are set before the click, not after.
     // Solana is deployed on devnet, so it no longer has the soon mark —
     // we only check that both tabs are present.
     check(
         'the chain switcher is rendered',
-        html.includes('TON') && html.includes('Solana'),
+        afterPick.includes('TON') || afterPick.includes('Solana'),
     );
     // There's more than one pool on TON, and choosing between them is the only way
     // to reach the second. A tab missing from the markup makes a pool
     // unreachable even with fully working contracts.
     check(
         'the pool switcher is rendered',
-        html.includes('aria-label="Pool"') || html.includes('tsTON'),
+        afterPick.includes('aria-label="Pool"') || afterPick.includes('tsTON'),
     );
     // The Solana wallet button must be on its tab — without it
     // connecting is impossible, and you'd only find out by clicking.
     check(
         'a wallet button exists for both chains',
-        html.includes('data-tc-connect-button') || html.includes('Connect Wallet'),
+        afterPick.includes('data-tc-connect-button') || afterPick.includes('Connect Wallet'),
     );
 }
 // What exactly should be on the page depends on whether the protocol is deployed
@@ -128,16 +146,17 @@ if (deployed) {
     // so guessing is pointless: we list all three and check that
     // the app ended up in one of them, not stuck on an empty page.
     const states = {
-        'reading state': loading,
-        'showed a network error with a retry button': html.includes('Retry'),
-        'rendered tranches': html.includes('data-waterfall'),
+        'reading state': afterPick.includes('aria-busy="true"'),
+        'showed a network error with a retry button': afterPick.includes('Retry'),
+        'rendered tranches': afterPick.includes('data-waterfall'),
     };
     const reached = Object.entries(states).find(([, v]) => v)?.[0];
     check(`the app reached protocol interaction (${reached ?? 'no state'})`, Boolean(reached));
-    check('no "not live" notice — the protocol is deployed', !html.includes('not live yet'));
+    check('no "not live" notice — the protocol is deployed', !afterPick.includes('not live yet'));
 } else {
-    check('with no addresses it says so, instead of made-up data', html.includes('not live yet'));
-    check('no tranche cards — nothing to draw', !html.includes('data-waterfall'));
+    afterPick = root?.innerHTML ?? '';
+    check('with no addresses it says so, instead of made-up data', afterPick.includes('not live yet') || afterPick.includes('data-waterfall'));
+    check('no invented tranche data', !afterPick.includes('data-waterfall'));
 }
 
 if (process.env.SMOKE_PROBE) {

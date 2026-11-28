@@ -1,10 +1,13 @@
 import type { Mandate } from "./config.ts";
 import type { ChainId } from "./chains.ts";
+import type { CategoryId } from "./categories.ts";
 import tonTestnet from "../deployments/testnet.json" with { type: "json" };
 import tonMainnet from "../deployments/mainnet.json" with { type: "json" };
 import tonStable from "../deployments/mainnet-stable.json" with { type: "json" };
 import solanaDevnet from "../deployments/solana-devnet.json" with { type: "json" };
 import solanaMainnet from "../deployments/solana-mainnet.json" with { type: "json" };
+import solanaP0Mainnet from "../deployments/solana-p0-mainnet.json" with { type: "json" };
+import solanaP0Devnet from "../deployments/solana-p0-devnet.json" with { type: "json" };
 import { env } from "./env.ts";
 import { CONTRACTS, MANDATE as HYPEREVM_MANDATE } from "./hyperevm.ts";
 import { CONTRACTS as ROBINHOOD, MANDATE as ROBINHOOD_MANDATE } from "./robinhood.ts";
@@ -23,6 +26,10 @@ export type Pool = {
 	id: string;
 	chain: ChainId;
 	kind: PoolKind;
+	/** Asset type — what the navigation is organised by. */
+	category: CategoryId;
+	/** Shown as a badge; P0 pools are partner integrations. */
+	partner?: string;
 
 	label: string;
 
@@ -68,6 +75,7 @@ function tonPool(
 	label: string,
 	asset: string,
 	raw: unknown,
+	category: CategoryId = "staking",
 	decimalsFallback = 9,
 ): Pool {
 	const a = raw as Artifact;
@@ -76,6 +84,7 @@ function tonPool(
 		id,
 		chain: "ton",
 		kind: "fee",
+		category,
 		label,
 		asset,
 
@@ -108,15 +117,26 @@ const solanaRaw = (SOLANA_NETWORK === "mainnet" ? solanaMainnet : solanaDevnet) 
 	trancheMints?: string[];
 };
 
+/**
+ * A P0 pool is a second Solana deployment whose base asset is USDC and whose
+ * vault lends into a marginfi bank. Its artifact is separate from the JitoSOL
+ * one, and stays absent until that vault is deployed.
+ */
+const p0Raw = (SOLANA_NETWORK === "mainnet" ? solanaP0Mainnet : solanaP0Devnet) as unknown as Artifact & {
+	assetMint?: string | null;
+	trancheMints?: string[];
+};
+
 export const POOLS: Pool[] = [
 	TON_NETWORK === "mainnet"
 		? tonPool("ton-tston", "tsTON", "tsTON", tonMainnet)
 		: tonPool("ton-tston", "tsTON", "tsTON", tonTestnet),
 	...(TON_NETWORK === "mainnet"
-		? [tonPool("ton-tsusde", "tsUSDe", "tsUSDe", tonStable, 6)]
+		? [tonPool("ton-tsusde", "tsUSDe", "tsUSDe", tonStable, "stable", 6)]
 		: []),
 	{
 		id: "hyperevm",
+		category: "rwa",
 		chain: "hyperevm",
 		kind: "coupon",
 		label: "HLP",
@@ -135,6 +155,7 @@ export const POOLS: Pool[] = [
 	},
 	{
 		id: "robinhood-spy",
+		category: "stocks",
 		chain: "robinhood",
 		kind: "coupon",
 		label: "SPY",
@@ -155,6 +176,7 @@ export const POOLS: Pool[] = [
 	},
 	{
 		id: "arbitrum-weth",
+		category: "crypto",
 		chain: "arbitrum",
 		kind: "coupon",
 		label: "WETH",
@@ -174,6 +196,7 @@ export const POOLS: Pool[] = [
 	},
 	{
 		id: "base-msft",
+		category: "stocks",
 		chain: "base",
 		kind: "coupon",
 		label: "MSFT",
@@ -193,6 +216,7 @@ export const POOLS: Pool[] = [
 	},
 	{
 		id: "base-nvda",
+		category: "stocks",
 		chain: "base",
 		kind: "coupon",
 		label: "NVDA",
@@ -212,6 +236,7 @@ export const POOLS: Pool[] = [
 	},
 	{
 		id: "monad-aprmon",
+		category: "staking",
 		chain: "monad",
 		kind: "coupon",
 		label: "aprMON",
@@ -233,6 +258,7 @@ export const POOLS: Pool[] = [
 		id: "solana",
 		chain: "solana",
 		kind: "fee",
+		category: "staking",
 		label: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
 		asset: SOLANA_NETWORK === "mainnet" ? "JitoSOL" : "devSOL",
 		unit: "SOL",
@@ -246,10 +272,32 @@ export const POOLS: Pool[] = [
 		jettonMaster: solanaRaw.assetMint ?? null,
 		trancheMasters: solanaRaw.trancheMints ?? [],
 	},
+	{
+		id: "solana-p0",
+		chain: "solana",
+		kind: "fee",
+		category: "project0",
+		partner: "Project Ø",
+		label: "USDC",
+		asset: "USDC",
+		unit: "USD",
+		decimals: 6,
+		network: SOLANA_NETWORK,
+		deployed: Boolean(p0Raw.vault),
+		mandate: p0Raw.mandate,
+		minDeposit: minDepositOf(p0Raw, 6),
+		vault: p0Raw.vault ?? null,
+		registry: p0Raw.registry ?? null,
+		jettonMaster: p0Raw.assetMint ?? null,
+		trancheMasters: p0Raw.trancheMints ?? [],
+	},
 ];
 
 export const poolsOfChain = (chain: ChainId): Pool[] =>
 	POOLS.filter((p) => p.chain === chain);
+
+export const poolsOfCategory = (category: CategoryId): Pool[] =>
+	POOLS.filter((p) => p.category === category);
 
 export const findPool = (id: string): Pool | undefined =>
 	POOLS.find((p) => p.id === id);

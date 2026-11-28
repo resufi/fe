@@ -28,13 +28,22 @@ import type { EvmWallet } from "./hooks/useEvmWallet.ts";
 import type { ProtocolData } from "./hooks/useProtocol.ts";
 import { PointsPanel } from "./components/PointsPanel/PointsPanel.tsx";
 import { CHAINS, saveChain, type ChainId } from "./lib/chains.ts";
+import { loadCategory, saveCategory, type CategoryId } from "./lib/categories.ts";
+import { poolsOfCategory } from "./lib/pools.ts";
+import { CategoryGrid } from "./components/CategoryGrid/CategoryGrid.tsx";
 import { evmChain, EVM_CHAINS } from "./lib/evm.ts";
-import { loadPool, poolsOfChain, savePool, type Pool } from "./lib/pools.ts";
+import { loadPool, savePool, type Pool } from "./lib/pools.ts";
 import { HeroSkeleton } from "./components/HeroSkeleton/HeroSkeleton.tsx";
 import css from "./App.module.css";
 
 export default function App() {
-	const [pool, setPoolState] = useState<Pool>(loadPool);
+	const [category, setCategoryState] = useState<CategoryId | null>(loadCategory);
+	const [pool, setPoolState] = useState<Pool>(() => {
+		// A remembered category decides the starting pool: coming back to the app
+		// must land where the person left, not on the first pool overall.
+		const saved = loadCategory();
+		return (saved ? poolsOfCategory(saved)[0] : undefined) ?? loadPool();
+	});
 	const solana = useSolanaWallet();
 
 	const evm = useEvmWallet(EVM_CHAINS[pool.chain] ?? evmChain("hyperevm"));
@@ -53,20 +62,43 @@ export default function App() {
 		saveChain(p.chain);
 	}
 
-	function switchChain(id: ChainId) {
-		const next = poolsOfChain(id)[0];
+	function openCategory(id: CategoryId) {
+		setCategoryState(id);
+		saveCategory(id);
+		const next = poolsOfCategory(id)[0];
 		if (next) switchPool(next);
 	}
 
-	const controls = (
+	function closeCategory() {
+		setCategoryState(null);
+		saveCategory(null);
+	}
+
+	function switchChain(id: ChainId) {
+		// Stay inside the category: switching chain must not jump to another
+		// asset class.
+		const inCat = poolsOfCategory(category ?? pool.category).filter(
+			(p) => p.chain === id,
+		);
+		if (inCat[0]) switchPool(inCat[0]);
+	}
+
+	const inCategory = category !== null;
+	// Data is only meaningful once a category is open; the narrow happens here so
+	// the render tree below sees a plain non-null value.
+	const live = inCategory ? data : null;
+	const controls = category ? (
 		<PoolControls
+			category={category}
+			chains={[...new Set(poolsOfCategory(category).map((p) => p.chain))]}
 			chain={chain}
 			onChainChange={switchChain}
-			pools={poolsOfChain(chain)}
+			pools={poolsOfCategory(category)}
 			pool={pool}
 			onPoolChange={switchPool}
+			onBack={closeCategory}
 		/>
-	);
+	) : null;
 
 	return (
 		<div className={css.page}>
@@ -95,17 +127,21 @@ export default function App() {
 				choice of risk.
 			</p>
 
-			{!CHAINS[chain].deployed ? (
+			{!category && (
+				<CategoryGrid active={null} onPick={openCategory} />
+			)}
+
+			{inCategory && !CHAINS[chain].deployed ? (
 				<div className={css.stateBlock}>
 					{controls}
 					<ChainNotReady chain={chain} />
 				</div>
-			) : !pool.deployed ? (
+			) : inCategory && !pool.deployed ? (
 				<div className={css.stateBlock}>
 					{controls}
 					<NotDeployed pool={pool} />
 				</div>
-			) : !data ? (
+			) : inCategory && !live ? (
 				<div className={css.stateBlock}>
 					{controls}
 					{error ? (
@@ -119,7 +155,7 @@ export default function App() {
 						<HeroSkeleton />
 					)}
 				</div>
-			) : (
+			) : inCategory && live ? (
 				<>
 					{(error || (chain === "ton" && !hasApiKey)) && (
 						<p className={`${css.state} small`}>
@@ -134,10 +170,10 @@ export default function App() {
 
 					<div className={css.hero}>
 						<Waterfall
-							tranches={data.tranches}
-							headroom={data.headroom}
+							tranches={live.tranches}
+							headroom={live.headroom}
 							mandate={pool.mandate}
-							rate={data.rate}
+							rate={live.rate}
 							asset={pool.kind === "coupon" ? pool.unit : pool.asset}
 							decimals={pool.decimals}
 							kind={pool.kind}
@@ -151,7 +187,7 @@ export default function App() {
 							{chain in EVM_CHAINS ? (
 								<EvmActions
 									chain={chain}
-									data={data}
+									data={live}
 									selected={selected}
 									pool={pool}
 									evm={evm}
@@ -160,7 +196,7 @@ export default function App() {
 							) : chain === "solana" ? (
 								solana.address ? (
 									<SolanaPanel
-										data={data}
+										data={live}
 										trancheId={selected}
 										asset={pool.asset}
 										wallet={solana}
@@ -175,14 +211,14 @@ export default function App() {
 							) : wallet ? (
 								<>
 									<DepositPanel
-										data={data}
+										data={live}
 										trancheId={selected}
 										pool={pool}
 										onDone={() => void refresh()}
 									/>
 									<PositionsPanel
-										data={data}
-										withdrawDelay={data.vault.withdrawDelay}
+										data={live}
+										withdrawDelay={live.vault.withdrawDelay}
 										asset={pool.asset}
 										unit={pool.unit}
 										decimals={pool.decimals}
@@ -201,9 +237,9 @@ export default function App() {
 						address={chain === "solana" ? solana.address : evm.address}
 					/>
 
-					<Details vault={data.vault} pool={pool} loading={loading} />
+					<Details vault={live.vault} pool={pool} loading={loading} />
 				</>
-			)}
+			) : null}
 		</div>
 	);
 }

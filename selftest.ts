@@ -192,6 +192,21 @@ console.log('\npool registry');
     check('every chain has at least one pool', poolsOfChain('ton').length > 0 && poolsOfChain('solana').length > 0);
     check('a forgotten pool choice doesn\'t crash the app', findPool('no-such') === undefined);
 
+    // Navigation is by asset type, so every pool must carry one and every
+    // category must be reachable. A pool with a typo'd category would simply
+    // vanish from the app.
+    const { CATEGORIES, findCategory } = await import('./src/lib/categories.ts');
+    check('every pool has a known category', POOLS.every((p) => Boolean(findCategory(p.category))));
+    check('category ids are unique', new Set(CATEGORIES.map((c) => c.id)).size === CATEGORIES.length);
+    // Some categories are network-specific (a stable pool exists only on TON
+    // mainnet), so an empty one is allowed — but it must be marked, or the card
+    // leads nowhere.
+    const empty = CATEGORIES.filter((c) => !POOLS.some((p) => p.category === c.id));
+    check('empty categories are the known ones', empty.every((c) => c.id === 'stable'));
+    check('a P0 pool is filed under project0', POOLS.filter((p) => p.partner === 'Project Ø').every(
+        (p) => p.category === 'project0',
+    ));
+
     // Economics differ per chain, and it's not cosmetic: in "fee" senior PAYS
     // for protection, in "coupon" it EARNS a fixed rate. The sign is
     // opposite, and swapping one for the other would show an expense as

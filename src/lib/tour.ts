@@ -15,12 +15,21 @@ const STEPS: DriveStep[] = [
 		},
 	},
 	{
+		element: '[data-tour="categories"]',
+		data: { pad: 8, shape: 12 },
+		popover: {
+			title: "Start from what you are protecting",
+			description:
+				"Pick an asset type first: stablecoins, staking, tokenized stocks, crypto. The chain comes after - it is a detail of where the asset runs, not where you start.",
+		},
+	},
+	{
 		element: '[data-tour="chains"]',
 		data: { pad: 8, shape: 12 },
 		popover: {
 			title: "Pick a network",
 			description:
-				"The same product on seven chains. Each one holds different assets: tokenized stocks on Base and Robinhood, WETH on Arbitrum, staking tokens on TON and Solana.",
+				"Inside a type, assets can sit on several chains. Only the chains that actually have this asset class are listed here.",
 		},
 	},
 	{

@@ -1,0 +1,20 @@
+{
+  "network": "devnet",
+  "deployedAt": null,
+  "programId": null,
+  "vault": null,
+  "registry": null,
+  "assetMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "assetVault": null,
+  "trancheMints": [],
+  "mandate": {
+    "maxLossBps": 3000,
+    "withdrawDelay": 259200,
+    "seniorFeeBps": 200,
+    "seniorFeeToMezzBps": 300,
+    "mezzFeeBps": 0
+  },
+  "strategy": {
+    "enabled": false
+  }
+}
